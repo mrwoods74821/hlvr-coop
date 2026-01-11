@@ -318,14 +318,11 @@ namespace KiwisCoOpMod
                             {
                                 if (response.data != null)
                                 {
-                                    if (indexed2 != null && indexed2 != null)
+                                    Response output5 = new("vconsole", response.data)
                                     {
-                                        Response output5 = new("vconsole", response.data)
-                                        {
-                                            clientUsername = indexed2.Username
-                                        };
-                                        socket.Send(JsonConvert.SerializeObject(output5));
-                                    }
+                                        clientUsername = indexed2.Username
+                                    };
+                                    socket.Send(JsonConvert.SerializeObject(output5));
                                 }
                             }
                             break;

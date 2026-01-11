@@ -1,4 +1,4 @@
-# Comprehensive Guide: Half-Life: Alyx Co-Op Mod
+# Comprehensive Guide: Half-Life: Alyx Co-Op Mod (Source 2 Engine)
 
 **Complete documentation for understanding, using, and developing the HLVR Co-Op Mod**
 
