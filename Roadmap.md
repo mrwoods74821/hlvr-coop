@@ -818,19 +818,19 @@ public static void LogError(string source, Exception ex, ErrorSeverity severity 
 
 #### Problem Statement
 
-The `PLYR` packet is sent by the game (line 47 in `kcom_interval.lua`) but not handled in `AlyxGamemode.cs`. This means player body position and health are not synchronized.
+The `PLYR` packet is sent by the game (line 47 in `hlvrcoop_interval.lua`) but not handled in `AlyxGamemode.cs`. This means player body position and health are not synchronized.
 
 **Current Behavior:**
-- Lua sends: `print("PLYR x y z pitch yaw roll health KCOM")`
+- Lua sends: `print("PLYR x y z pitch yaw roll health HLVRCOOP")`
 - Server receives packet but doesn't process it
 - Player body position not synchronized
 - Player health not synchronized
 
 #### Technical Details
 
-**Packet Format (from kcom_interval.lua line 47):**
+**Packet Format (from hlvrcoop_interval.lua line 47):**
 ```
-PLYR <origin_x> <origin_y> <origin_z> <pitch> <yaw> <roll> <health> KCOM
+PLYR <origin_x> <origin_y> <origin_z> <pitch> <yaw> <roll> <health> HLVRCOOP
 ```
 
 **Packet Type:** `PacketType.PlayerPosAng` (defined in `Packet.cs`)
@@ -925,7 +925,7 @@ case PacketType.PlayerPosAng:
 #### Investigation Steps
 
 **Step 1: Search Lua Scripts for Packet Usage**
-- Search for packet codes in `kcom_interval.lua`
+- Search for packet codes in `hlvrcoop_interval.lua`
 - Check if any of these packets are sent
 - Document which are actually used
 - **Command:** `grep -r "RHND\|LHND\|HSET\|TAGS\|NPCS\|PRFX\|ALIV\|DMGE\|PROP\|BUTN\|DOOR\|TRIG\|TRGD" WorkshopAddon/`

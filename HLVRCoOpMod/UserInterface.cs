@@ -32,7 +32,7 @@ namespace KiwisCoOpMod
         public ClientProgram clientProgram;
         private bool started = false;
         private DateTime startTime;
-        private readonly Channel channel = new("KCOM", "Kiwi's Co-Op Mod", Color.Purple);
+        private readonly Channel channel = new("HLVRCOOP", "Half-Life: VR Co-Op", Color.Purple);
         private readonly Random random = new();
         private Type gamemodeType = typeof(CoreGamemode);
         private readonly List<AddonInitializer> addons = new();
@@ -179,7 +179,7 @@ namespace KiwisCoOpMod
         }
         public void UseUriScheme(Uri uri)
         {
-            string[] args = uri.ToString().Replace("kcom://", "").Split("/");
+            string[] args = uri.ToString().Replace("hlvrcoop://", "").Split("/");
             if (args.Length > 0)
                 UseArgs(args);
         }

@@ -173,7 +173,7 @@ namespace KiwisCoOpMod
             {
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PreClose, ui, ws);
                 LuaEnvironment.instance.Handle(PluginHandleType.Client_PreClose, ui, ws);
-                ws.Stop(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "Closed by KCOM.");
+                ws.Stop(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "Closed by HLVRCOOP.");
                 ws.Dispose();
                 ws = null;
                 ui.Invoke(() => ui.LogToOutput(channel, "Client closed"));

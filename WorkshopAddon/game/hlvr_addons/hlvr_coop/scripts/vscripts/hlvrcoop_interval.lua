@@ -2,12 +2,12 @@ require "util.utilinit"
 
 local Player = Entities:GetLocalPlayer();
 
-KCOM_USE_UUIDS = true;
-KCOM_API_VERSION = 4; -- this value will change if breaking changes are pushed to workshop
-KCOM_ACTIVE = false;
-KCOM_ENTCACHE = {};
+HLVRCOOP_USE_UUIDS = true;
+HLVRCOOP_API_VERSION = 4; -- this value will change if breaking changes are pushed to workshop
+HLVRCOOP_ACTIVE = false;
+HLVRCOOP_ENTCACHE = {};
 
-print("KCOM Enabled!");
+print("HLVRCOOP Enabled!");
 
 function Precache(context)
     PrecacheModel("models/props/choreo_office/headset_prop.vmdl", context)
@@ -16,9 +16,9 @@ function Precache(context)
 end
 
 function KiwisCoOpMod()
-    if KCOM_ACTIVE then
-        if kcom_inbetween >= 5 then
-            kcom_inbetween = 0;
+    if HLVRCOOP_ACTIVE then
+        if hlvrcoop_inbetween >= 5 then
+            hlvrcoop_inbetween = 0;
             local playerOrigin = Player:GetOrigin();
             local playerCenter = Player:GetCenter();
             local playerAngles = Player:GetAnglesAsVector();
@@ -38,17 +38,17 @@ function KiwisCoOpMod()
                 local playerLeftHandAngles = leftHand:GetAnglesAsVector();
                 local playerRightHandAngles = rightHand:GetAnglesAsVector();
 
-                print("HEAD "..playerHead[1].." "..playerHead[2].." "..playerHead[3].." "..playerHeadAng[1].." "..playerHeadAng[2].." "..playerHeadAng[3].." KCOM");
-                print("HAND "..playerLeftHand[1].." "..playerLeftHand[2].." "..playerLeftHand[3].." "..playerLeftHandAngles[1].." "..playerLeftHandAngles[2].." "..playerLeftHandAngles[3].." "..playerRightHand[1].." "..playerRightHand[2].." "..playerRightHand[3].." "..playerRightHandAngles[1].." "..playerRightHandAngles[2].." "..playerRightHandAngles[3].." KCOM");
+                print("HEAD "..playerHead[1].." "..playerHead[2].." "..playerHead[3].." "..playerHeadAng[1].." "..playerHeadAng[2].." "..playerHeadAng[3].." HLVRCOOP");
+                print("HAND "..playerLeftHand[1].." "..playerLeftHand[2].." "..playerLeftHand[3].." "..playerLeftHandAngles[1].." "..playerLeftHandAngles[2].." "..playerLeftHandAngles[3].." "..playerRightHand[1].." "..playerRightHand[2].." "..playerRightHand[3].." "..playerRightHandAngles[1].." "..playerRightHandAngles[2].." "..playerRightHandAngles[3].." HLVRCOOP");
             else
-                print("HEAD "..playerCenter[1].." "..playerCenter[2].." "..(playerCenter[3]+30).." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." KCOM");
+                print("HEAD "..playerCenter[1].." "..playerCenter[2].." "..(playerCenter[3]+30).." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." HLVRCOOP");
             end
 
-            print("PLYR "..playerOrigin[1].." "..playerOrigin[2].." "..playerOrigin[3].." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." "..playerHealth.." KCOM");
+            print("PLYR "..playerOrigin[1].." "..playerOrigin[2].." "..playerOrigin[3].." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." "..playerHealth.." HLVRCOOP");
             
-            KCOM_CacheSync();
+            HLVRCOOP_CacheSync();
         else
-            kcom_inbetween = kcom_inbetween + 1;
+            hlvrcoop_inbetween = hlvrcoop_inbetween + 1;
         end
     else
         function uuid(name, x, y, z, classname)
@@ -57,18 +57,18 @@ function KiwisCoOpMod()
             return classname.."+"..name.."+"..math.floor(x).."+"..math.floor(y).."+"..math.floor(z);
         end
 
-        function KCOM_CacheSync()
-            for i, object in pairs(KCOM_ENTCACHE) do
+        function HLVRCOOP_CacheSync()
+            for i, object in pairs(HLVRCOOP_ENTCACHE) do
                 local entity = object.entity;
                 if IsValidEntity(entity) then
                     if not string.find(object.class, "trigger_") and not string.find(object.class, "func_") then
                         local origin = entity:GetAbsOrigin();
                         local angles = entity:GetAnglesAsVector();
                         if object.class == "prop_door_rotating_physics" and (math.floor(angles[1]) ~= math.floor(object.angles[1])) or (math.floor(angles[2]) ~= math.floor(object.angles[2])) or (math.floor(angles[3]) ~= math.floor(object.angles[3])) then
-                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." KCOM");
+                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
                             object.angles = angles;
                         elseif (math.floor(origin[1]) ~= math.floor(object.origin[1])) or (math.floor(origin[2]) ~= math.floor(object.origin[2])) or (math.floor(origin[3]) ~= math.floor(object.origin[3])) then
-                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." KCOM");
+                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
                             object.origin = origin;
                             object.angles = angles;
                         end
@@ -76,9 +76,9 @@ function KiwisCoOpMod()
                             if object.class ~= "npc_furniture" then
                                 local health = entity:GetHealth();
                                 if health <= 0 then
-                                    print("NPHP "..object.name.." 0 KCOM");
+                                    print("NPHP "..object.name.." 0 HLVRCOOP");
                                 elseif object.health == nil or object.health > health then
-                                    print("NPHP "..object.name.." "..health.." KCOM");
+                                    print("NPHP "..object.name.." "..health.." HLVRCOOP");
                                     object.health = health;
                                 end
                             end
@@ -90,30 +90,30 @@ function KiwisCoOpMod()
                             -- bruteforce npc death
                             if object.health == nil or object.health > 0 then
                                 object.health = 0
-                                print("NPHP "..object.name.." 0 KCOM");
+                                print("NPHP "..object.name.." 0 HLVRCOOP");
                             end
                         elseif string.find(object.class, "prop_") or string.find(object.class, "item_") then
-                            print("BRAK "..object.name.." KCOM");
+                            print("BRAK "..object.name.." HLVRCOOP");
                         else
-                            print("EREM "..object.name.." KCOM");
+                            print("EREM "..object.name.." HLVRCOOP");
                         end
                     end
                     object = nil;
                 end
-                KCOM_ENTCACHE[i] = object;
+                HLVRCOOP_ENTCACHE[i] = object;
             end
         end
 
-        function KCOM_Teleport()
+        function HLVRCOOP_Teleport()
             local origin = Player:GetAbsOrigin();
             local angles = Player:GetAnglesAsVector();
-            print("TELE "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." KCOM");
+            print("TELE "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
         end
 
-        function KCOM_EntitySyncSpecific(entity)
+        function HLVRCOOP_EntitySyncSpecific(entity)
             local precached = {}
 
-            for _, object in ipairs(KCOM_ENTCACHE) do
+            for _, object in ipairs(HLVRCOOP_ENTCACHE) do
                 if IsValidEntity(object.entity) then
                     precached[object.entity:GetEntityIndex()] = true;
                 end
@@ -132,8 +132,8 @@ function KiwisCoOpMod()
             object.entity = entity; --entity:GetEntityIndex();
 
             
-            for _, output in pairs(kcom_outputs) do
-                entity:RedirectOutput(output, "KCOM_"..output, thisEntity);
+            for _, output in pairs(hlvrcoop_outputs) do
+                entity:RedirectOutput(output, "HLVRCOOP_"..output, thisEntity);
             end
 
             if string.find(object.class, "door") then
@@ -142,43 +142,43 @@ function KiwisCoOpMod()
             end
 
             if object.class == "trigger_teleport" then
-                entity:RedirectOutput("OnStartTouch", "KCOM_Teleport", thisEntity);
+                entity:RedirectOutput("OnStartTouch", "HLVRCOOP_Teleport", thisEntity);
             end
 
             if object.name == "" then
-                object.name = "kcom_kcoords_"..math.floor(object.origin[1]).."_"..math.floor(object.origin[2]).."_"..math.floor(object.origin[3]);
+                object.name = "hlvrcoop_kcoords_"..math.floor(object.origin[1]).."_"..math.floor(object.origin[2]).."_"..math.floor(object.origin[3]);
             end
 
             entity:SetEntityName(object.name);
-            if KCOM_USE_UUIDS then
+            if HLVRCOOP_USE_UUIDS then
                 local uu = uuid(object.name, object.origin[1], object.origin[2], object.origin[3], object.class);
                 object.name = uu;
-                KCOM_ENTCACHE[uu] = object;
+                HLVRCOOP_ENTCACHE[uu] = object;
             else
-                KCOM_ENTCACHE[#KCOM_ENTCACHE+1] = object;
+                HLVRCOOP_ENTCACHE[#HLVRCOOP_ENTCACHE+1] = object;
             end
         end
 
-        function KCOM_Templated(tempent, ents)
+        function HLVRCOOP_Templated(tempent, ents)
             for entkey, entity in pairs(ents) do
                 local name = entity:GetName();
                 local origin = entity:GetAbsOrigin();
                 if name == "" then
-                    name = "kcom_kcoords_"..math.floor(origin[1]).."_"..math.floor(origin[2]).."_"..math.floor(origin[3]);
+                    name = "hlvrcoop_kcoords_"..math.floor(origin[1]).."_"..math.floor(origin[2]).."_"..math.floor(origin[3]);
                 end
-                SendToConsole("kcom_cache_entity_nonuuid "..name);
+                SendToConsole("hlvrcoop_cache_entity_nonuuid "..name);
             end
         end
 
-        function KCOM_EntitySync(first)
+        function HLVRCOOP_EntitySync(first)
             for _, template in pairs(Entities:FindAllByClassname("point_template")) do
-                template:SetSpawnCallback(KCOM_Templated, thisEntity);
+                template:SetSpawnCallback(HLVRCOOP_Templated, thisEntity);
             end
-            for prop, _ in pairs(kcom_trackers) do
+            for prop, _ in pairs(hlvrcoop_trackers) do
                 local props = Entities:FindAllByClassname(prop);
                 for _, entity in pairs(props) do
-                    if entity:GetName() ~= "kcom_timer" then -- logic_timer
-                        KCOM_EntitySyncSpecific(entity);
+                    if entity:GetName() ~= "hlvrcoop_timer" then -- logic_timer
+                        HLVRCOOP_EntitySyncSpecific(entity);
                     end
                 end
             end
@@ -195,7 +195,7 @@ function KiwisCoOpMod()
             return controller
         end
 
-        kcom_trackers = {
+        hlvrcoop_trackers = {
             -- triggers
             ["trigger_multiple"] = true,
             ["trigger_once"] = true, -- special case
@@ -264,7 +264,7 @@ function KiwisCoOpMod()
             ["npc_manhack"] = true,
             ["npc_barnacle"] = true,
         };
-        kcom_toggletypes = {
+        hlvrcoop_toggletypes = {
             ["trigger_multiple"] = {"Disable", "Enable"},
             ["trigger_once"] = {"Disable", "Enable"},
             ["trigger_look"] = {"Disable", "Enable"},
@@ -314,23 +314,23 @@ function KiwisCoOpMod()
             -- npcs are loose on purpose as they continuously move
         };
 
-        local function KCOM_PickupSync(data)
+        local function HLVRCOOP_PickupSync(data)
             local handId = util.GetHandIdFromTip(data.vr_tip_attachment)
             local hand = Player.Hands[handId + 1]
             local ent_held = util.EstimateNearestEntity(data.item_name, data.item, hand:GetOrigin())
             if IsValidEntity(ent_held) then
-                KCOM_EntitySyncSpecific(ent_held)
+                HLVRCOOP_EntitySyncSpecific(ent_held)
                 local name = ent_held:GetName()
                 local origin = ent_held:GetOrigin()
                 print("SPWN " .. data.item .. " " .. name .. " " .. origin[1] .. " " .. origin[2] .. " " .. origin[3])
             end
         end
-        ListenToGameEvent("item_pickup", KCOM_PickupSync, nil)
+        ListenToGameEvent("item_pickup", HLVRCOOP_PickupSync, nil)
 
-        local function KCOM_ResinSync(data)
-            print("CRFT " .. Player.Items.resin_found .. " KCOM");
+        local function HLVRCOOP_ResinSync(data)
+            print("CRFT " .. Player.Items.resin_found .. " HLVRCOOP");
         end
-        ListenToGameEvent("player_drop_resin_in_backpack", KCOM_ResinSync, nil)
+        ListenToGameEvent("player_drop_resin_in_backpack", HLVRCOOP_ResinSync, nil)
 
         function fireit(params, output)
             local ent = params.caller;
@@ -338,120 +338,120 @@ function KiwisCoOpMod()
                 return -- the entity must have been deleted?
             end
             local name = ent:GetName();
-            if not KCOM_USE_UUIDS then
+            if not HLVRCOOP_USE_UUIDS then
                 if name ~= "" then
-                    print("FIRE "..name.." "..output.." KCOM");
+                    print("FIRE "..name.." "..output.." HLVRCOOP");
                 end
             else
                 local class = ent:GetClassname();
                 local origin = ent:GetOrigin();
                 local uu = uuid(name, origin[1], origin[2], origin[3], class);
-                print("FIRE "..uu.." "..output.." KCOM");
+                print("FIRE "..uu.." "..output.." HLVRCOOP");
             end
         end
 
-        KCOM_OnTrigger = function(params) fireit(params, "OnTrigger") end
-        KCOM_OnStartTouch = function(params) fireit(params, "OnStartTouch") end
-        KCOM_OnEndTouch = function(params) fireit(params, "OnEndTouch") end
-        KCOM_OnStartLook = function(params) fireit(params, "OnStartLook") end
-        KCOM_OnEndLook = function(params) fireit(params, "OnEndLook") end
-        KCOM_OnIn = function(params) fireit(params, "OnIn") end
-        KCOM_OnPressed = function(params) fireit(params, "OnPressed") end
-        KCOM_OnOut = function(params) fireit(params, "OnOut") end
-        KCOM_OnPlayerUse = function(params) fireit(params, "OnPlayerUse") end
-        KCOM_OnPlayerPickup = function(params) fireit(params, "OnPlayerPickup") end
-        KCOM_OnGlovePulled = function(params) fireit(params, "OnGlovePulled") end
-        KCOM_OnAwakened = function(params) fireit(params, "OnAwakened") end
-        KCOM_OnMotionEnabled = function(params) fireit(params, "OnMotionEnabled") end
-        KCOM_OnAwake = function(params) fireit(params, "OnAwake") end
-        KCOM_OnAsleep = function(params) fireit(params, "OnAsleep") end
-        KCOM_OnOutOfWorld = function(params) fireit(params, "OnOutOfWorld") end
-        KCOM_OnHealthChanged = function(params) fireit(params, "OnHealthChanged") end
-        KCOM_OnBreak = function(params) fireit(params, "OnBreak") end
-        KCOM_OnTakeDamage = function(params) fireit(params, "OnTakeDamage") end
-        KCOM_OnIgnite = function(params) fireit(params, "OnIgnite") end
-        KCOM_OnUser1 = function(params) fireit(params, "OnUser1") end
-        KCOM_OnUser2 = function(params) fireit(params, "OnUser2") end
-        KCOM_OnUser3 = function(params) fireit(params, "OnUser3") end
-        KCOM_OnUser4 = function(params) fireit(params, "OnUser4") end
-        KCOM_OnKilled = function(params) fireit(params, "OnKilled") end
-        KCOM_OnInteractStart = function(params) fireit(params, "OnInteractStart") end
-        KCOM_OnInteractStop = function(params) fireit(params, "OnInteractStop") end
-        KCOM_OnCompletionA = function(params) fireit(params, "OnCompletionA") end
-        KCOM_OnCompletionB = function(params) fireit(params, "OnCompletionB") end
-        KCOM_OnCompletionC = function(params) fireit(params, "OnCompletionC") end
-        KCOM_OnCompletionD = function(params) fireit(params, "OnCompletionD") end
-        KCOM_OnCompletionE = function(params) fireit(params, "OnCompletionE") end
-        KCOM_OnCompletionF = function(params) fireit(params, "OnCompletionF") end
-        KCOM_OnCompletionA_Forward = function(params) fireit(params, "OnCompletionA_Forward") end
-        KCOM_OnCompletionB_Forward = function(params) fireit(params, "OnCompletionB_Forward") end
-        KCOM_OnCompletionC_Forward = function(params) fireit(params, "OnCompletionC_Forward") end
-        KCOM_OnCompletionD_Forward = function(params) fireit(params, "OnCompletionD_Forward") end
-        KCOM_OnCompletionE_Forward = function(params) fireit(params, "OnCompletionE_Forward") end
-        KCOM_OnCompletionF_Forward = function(params) fireit(params, "OnCompletionF_Forward") end
-        KCOM_OnCompletionA_Backward = function(params) fireit(params, "OnCompletionA_Forward") end
-        KCOM_OnCompletionB_Backward = function(params) fireit(params, "OnCompletionB_Forward") end
-        KCOM_OnCompletionC_Backward = function(params) fireit(params, "OnCompletionC_Forward") end
-        KCOM_OnCompletionD_Backward = function(params) fireit(params, "OnCompletionD_Forward") end
-        KCOM_OnCompletionE_Backward = function(params) fireit(params, "OnCompletionE_Forward") end
-        KCOM_OnCompletionF_Backward = function(params) fireit(params, "OnCompletionF_Forward") end
-        KCOM_OnCompletionExitA = function(params) fireit(params, "OnCompletionExitA") end
-        KCOM_OnCompletionExitB = function(params) fireit(params, "OnCompletionExitB") end
-        KCOM_OnCompletionExitC = function(params) fireit(params, "OnCompletionExitC") end
-        KCOM_OnCompletionExitD = function(params) fireit(params, "OnCompletionExitD") end
-        KCOM_OnCompletionExitE = function(params) fireit(params, "OnCompletionExitE") end
-        KCOM_OnCompletionExitF = function(params) fireit(params, "OnCompletionExitF") end
-        KCOM_OnReturnToCompletion = function(params) fireit(params, "OnReturnToCompletion") end
-        KCOM_Position = function(params) fireit(params, "Position") end
-        KCOM_PositionInverted = function(params) fireit(params, "PositionInverted") end
-        KCOM_PositionRaw = function(params) fireit(params, "PositionRaw") end
-        KCOM_Velocity = function(params) fireit(params, "Velocity") end
-        KCOM_PositionInitialLimitsRemap = function(params) fireit(params, "PositionInitialLimitsRemap") end
-        KCOM_OnGravityGunPull = function(params) fireit(params, "OnGravityGunPull") end
-        KCOM_OnHandPosed = function(params) fireit(params, "OnHandPosed") end
-        KCOM_OnHandUnPosed = function(params) fireit(params, "OnHandUnPosed") end
-        KCOM_OnExplode = function(params) fireit(params, "OnExplode") end
-        KCOM_OnHackStarted = function(params) fireit(params, "OnHackStarted") end
-        KCOM_OnHackStopped = function(params) fireit(params, "OnHackStopped") end
-        KCOM_OnHackSuccess = function(params) fireit(params, "OnHackSuccess") end
-        KCOM_OnHackFailed = function(params) fireit(params, "OnHackFailed") end
-        KCOM_OnHackSuccessAnimationComplete = function(params) fireit(params, "OnHackSuccessAnimationComplete") end
-        KCOM_OnPuzzleCompleted = function(params) fireit(params, "OnPuzzleCompleted") end
-        KCOM_OnPuzzleSuccess = function(params) fireit(params, "OnPuzzleSuccess") end
-        KCOM_OnPuzzleFailed = function(params) fireit(params, "OnPuzzleFailed") end
-        KCOM_OnEntitySpawned = function(params) fireit(params, "OnEntitySpawned") end
-        KCOM_OnTimer = function(params) fireit(params, "OnTimer") end
-        KCOM_OnTimerHigh = function(params) fireit(params, "OnTimerHigh") end
-        KCOM_OnTimerLow = function(params) fireit(params, "OnTimerLow") end
-        KCOM_OnTrue = function(params) fireit(params, "OnTrue") end
-        KCOM_OnFalse = function(params) fireit(params, "OnFalse") end
-        KCOM_OnCase01 = function(params) fireit(params, "OnCase01") end
-        KCOM_OnCase02 = function(params) fireit(params, "OnCase02") end
-        KCOM_OnCase03 = function(params) fireit(params, "OnCase03") end
-        KCOM_OnCase04 = function(params) fireit(params, "OnCase04") end
-        KCOM_OnCase05 = function(params) fireit(params, "OnCase05") end
-        KCOM_OnCase06 = function(params) fireit(params, "OnCase06") end
-        KCOM_OnCase07 = function(params) fireit(params, "OnCase07") end
-        KCOM_OnCase08 = function(params) fireit(params, "OnCase08") end
-        KCOM_OnCase09 = function(params) fireit(params, "OnCase09") end
-        KCOM_OnCase10 = function(params) fireit(params, "OnCase10") end
-        KCOM_OnCase11 = function(params) fireit(params, "OnCase11") end
-        KCOM_OnCase12 = function(params) fireit(params, "OnCase12") end
-        KCOM_OnCase13 = function(params) fireit(params, "OnCase13") end
-        KCOM_OnCase14 = function(params) fireit(params, "OnCase14") end
-        KCOM_OnCase15 = function(params) fireit(params, "OnCase15") end
-        KCOM_OnCase16 = function(params) fireit(params, "OnCase16") end
-        --KCOM_OutValue = function(params) fireit(params, "OutValue") end
-        KCOM_OnHitMin = function(params) fireit(params, "OnHitMin") end
-        KCOM_OnHitMax = function(params) fireit(params, "OnHitMax") end
-        KCOM_OnGetValue = function(params) fireit(params, "OnGetValue") end
-        KCOM_OnChangedFromMin = function(params) fireit(params, "OnChangedFromMin") end
-        KCOM_OnChangedFromMax = function(params) fireit(params, "OnChangedFromMax") end
-        KCOM_OnDetectedBulletFire = function(params) fireit(params, "OnDetectedBulletFire") end
-        KCOM_OnDetectedExplosion = function(params) fireit(params, "OnDetectedExplosion") end
-        KCOM_OnSoundGeneratedInside = function(params) fireit(params, "OnSoundGeneratedInside") end
+        HLVRCOOP_OnTrigger = function(params) fireit(params, "OnTrigger") end
+        HLVRCOOP_OnStartTouch = function(params) fireit(params, "OnStartTouch") end
+        HLVRCOOP_OnEndTouch = function(params) fireit(params, "OnEndTouch") end
+        HLVRCOOP_OnStartLook = function(params) fireit(params, "OnStartLook") end
+        HLVRCOOP_OnEndLook = function(params) fireit(params, "OnEndLook") end
+        HLVRCOOP_OnIn = function(params) fireit(params, "OnIn") end
+        HLVRCOOP_OnPressed = function(params) fireit(params, "OnPressed") end
+        HLVRCOOP_OnOut = function(params) fireit(params, "OnOut") end
+        HLVRCOOP_OnPlayerUse = function(params) fireit(params, "OnPlayerUse") end
+        HLVRCOOP_OnPlayerPickup = function(params) fireit(params, "OnPlayerPickup") end
+        HLVRCOOP_OnGlovePulled = function(params) fireit(params, "OnGlovePulled") end
+        HLVRCOOP_OnAwakened = function(params) fireit(params, "OnAwakened") end
+        HLVRCOOP_OnMotionEnabled = function(params) fireit(params, "OnMotionEnabled") end
+        HLVRCOOP_OnAwake = function(params) fireit(params, "OnAwake") end
+        HLVRCOOP_OnAsleep = function(params) fireit(params, "OnAsleep") end
+        HLVRCOOP_OnOutOfWorld = function(params) fireit(params, "OnOutOfWorld") end
+        HLVRCOOP_OnHealthChanged = function(params) fireit(params, "OnHealthChanged") end
+        HLVRCOOP_OnBreak = function(params) fireit(params, "OnBreak") end
+        HLVRCOOP_OnTakeDamage = function(params) fireit(params, "OnTakeDamage") end
+        HLVRCOOP_OnIgnite = function(params) fireit(params, "OnIgnite") end
+        HLVRCOOP_OnUser1 = function(params) fireit(params, "OnUser1") end
+        HLVRCOOP_OnUser2 = function(params) fireit(params, "OnUser2") end
+        HLVRCOOP_OnUser3 = function(params) fireit(params, "OnUser3") end
+        HLVRCOOP_OnUser4 = function(params) fireit(params, "OnUser4") end
+        HLVRCOOP_OnKilled = function(params) fireit(params, "OnKilled") end
+        HLVRCOOP_OnInteractStart = function(params) fireit(params, "OnInteractStart") end
+        HLVRCOOP_OnInteractStop = function(params) fireit(params, "OnInteractStop") end
+        HLVRCOOP_OnCompletionA = function(params) fireit(params, "OnCompletionA") end
+        HLVRCOOP_OnCompletionB = function(params) fireit(params, "OnCompletionB") end
+        HLVRCOOP_OnCompletionC = function(params) fireit(params, "OnCompletionC") end
+        HLVRCOOP_OnCompletionD = function(params) fireit(params, "OnCompletionD") end
+        HLVRCOOP_OnCompletionE = function(params) fireit(params, "OnCompletionE") end
+        HLVRCOOP_OnCompletionF = function(params) fireit(params, "OnCompletionF") end
+        HLVRCOOP_OnCompletionA_Forward = function(params) fireit(params, "OnCompletionA_Forward") end
+        HLVRCOOP_OnCompletionB_Forward = function(params) fireit(params, "OnCompletionB_Forward") end
+        HLVRCOOP_OnCompletionC_Forward = function(params) fireit(params, "OnCompletionC_Forward") end
+        HLVRCOOP_OnCompletionD_Forward = function(params) fireit(params, "OnCompletionD_Forward") end
+        HLVRCOOP_OnCompletionE_Forward = function(params) fireit(params, "OnCompletionE_Forward") end
+        HLVRCOOP_OnCompletionF_Forward = function(params) fireit(params, "OnCompletionF_Forward") end
+        HLVRCOOP_OnCompletionA_Backward = function(params) fireit(params, "OnCompletionA_Forward") end
+        HLVRCOOP_OnCompletionB_Backward = function(params) fireit(params, "OnCompletionB_Forward") end
+        HLVRCOOP_OnCompletionC_Backward = function(params) fireit(params, "OnCompletionC_Forward") end
+        HLVRCOOP_OnCompletionD_Backward = function(params) fireit(params, "OnCompletionD_Forward") end
+        HLVRCOOP_OnCompletionE_Backward = function(params) fireit(params, "OnCompletionE_Forward") end
+        HLVRCOOP_OnCompletionF_Backward = function(params) fireit(params, "OnCompletionF_Forward") end
+        HLVRCOOP_OnCompletionExitA = function(params) fireit(params, "OnCompletionExitA") end
+        HLVRCOOP_OnCompletionExitB = function(params) fireit(params, "OnCompletionExitB") end
+        HLVRCOOP_OnCompletionExitC = function(params) fireit(params, "OnCompletionExitC") end
+        HLVRCOOP_OnCompletionExitD = function(params) fireit(params, "OnCompletionExitD") end
+        HLVRCOOP_OnCompletionExitE = function(params) fireit(params, "OnCompletionExitE") end
+        HLVRCOOP_OnCompletionExitF = function(params) fireit(params, "OnCompletionExitF") end
+        HLVRCOOP_OnReturnToCompletion = function(params) fireit(params, "OnReturnToCompletion") end
+        HLVRCOOP_Position = function(params) fireit(params, "Position") end
+        HLVRCOOP_PositionInverted = function(params) fireit(params, "PositionInverted") end
+        HLVRCOOP_PositionRaw = function(params) fireit(params, "PositionRaw") end
+        HLVRCOOP_Velocity = function(params) fireit(params, "Velocity") end
+        HLVRCOOP_PositionInitialLimitsRemap = function(params) fireit(params, "PositionInitialLimitsRemap") end
+        HLVRCOOP_OnGravityGunPull = function(params) fireit(params, "OnGravityGunPull") end
+        HLVRCOOP_OnHandPosed = function(params) fireit(params, "OnHandPosed") end
+        HLVRCOOP_OnHandUnPosed = function(params) fireit(params, "OnHandUnPosed") end
+        HLVRCOOP_OnExplode = function(params) fireit(params, "OnExplode") end
+        HLVRCOOP_OnHackStarted = function(params) fireit(params, "OnHackStarted") end
+        HLVRCOOP_OnHackStopped = function(params) fireit(params, "OnHackStopped") end
+        HLVRCOOP_OnHackSuccess = function(params) fireit(params, "OnHackSuccess") end
+        HLVRCOOP_OnHackFailed = function(params) fireit(params, "OnHackFailed") end
+        HLVRCOOP_OnHackSuccessAnimationComplete = function(params) fireit(params, "OnHackSuccessAnimationComplete") end
+        HLVRCOOP_OnPuzzleCompleted = function(params) fireit(params, "OnPuzzleCompleted") end
+        HLVRCOOP_OnPuzzleSuccess = function(params) fireit(params, "OnPuzzleSuccess") end
+        HLVRCOOP_OnPuzzleFailed = function(params) fireit(params, "OnPuzzleFailed") end
+        HLVRCOOP_OnEntitySpawned = function(params) fireit(params, "OnEntitySpawned") end
+        HLVRCOOP_OnTimer = function(params) fireit(params, "OnTimer") end
+        HLVRCOOP_OnTimerHigh = function(params) fireit(params, "OnTimerHigh") end
+        HLVRCOOP_OnTimerLow = function(params) fireit(params, "OnTimerLow") end
+        HLVRCOOP_OnTrue = function(params) fireit(params, "OnTrue") end
+        HLVRCOOP_OnFalse = function(params) fireit(params, "OnFalse") end
+        HLVRCOOP_OnCase01 = function(params) fireit(params, "OnCase01") end
+        HLVRCOOP_OnCase02 = function(params) fireit(params, "OnCase02") end
+        HLVRCOOP_OnCase03 = function(params) fireit(params, "OnCase03") end
+        HLVRCOOP_OnCase04 = function(params) fireit(params, "OnCase04") end
+        HLVRCOOP_OnCase05 = function(params) fireit(params, "OnCase05") end
+        HLVRCOOP_OnCase06 = function(params) fireit(params, "OnCase06") end
+        HLVRCOOP_OnCase07 = function(params) fireit(params, "OnCase07") end
+        HLVRCOOP_OnCase08 = function(params) fireit(params, "OnCase08") end
+        HLVRCOOP_OnCase09 = function(params) fireit(params, "OnCase09") end
+        HLVRCOOP_OnCase10 = function(params) fireit(params, "OnCase10") end
+        HLVRCOOP_OnCase11 = function(params) fireit(params, "OnCase11") end
+        HLVRCOOP_OnCase12 = function(params) fireit(params, "OnCase12") end
+        HLVRCOOP_OnCase13 = function(params) fireit(params, "OnCase13") end
+        HLVRCOOP_OnCase14 = function(params) fireit(params, "OnCase14") end
+        HLVRCOOP_OnCase15 = function(params) fireit(params, "OnCase15") end
+        HLVRCOOP_OnCase16 = function(params) fireit(params, "OnCase16") end
+        --HLVRCOOP_OutValue = function(params) fireit(params, "OutValue") end
+        HLVRCOOP_OnHitMin = function(params) fireit(params, "OnHitMin") end
+        HLVRCOOP_OnHitMax = function(params) fireit(params, "OnHitMax") end
+        HLVRCOOP_OnGetValue = function(params) fireit(params, "OnGetValue") end
+        HLVRCOOP_OnChangedFromMin = function(params) fireit(params, "OnChangedFromMin") end
+        HLVRCOOP_OnChangedFromMax = function(params) fireit(params, "OnChangedFromMax") end
+        HLVRCOOP_OnDetectedBulletFire = function(params) fireit(params, "OnDetectedBulletFire") end
+        HLVRCOOP_OnDetectedExplosion = function(params) fireit(params, "OnDetectedExplosion") end
+        HLVRCOOP_OnSoundGeneratedInside = function(params) fireit(params, "OnSoundGeneratedInside") end
         
-        kcom_outputs = {
+        hlvrcoop_outputs = {
             "OnTrigger",
             "OnStartTouch",
             "OnEndTouch",
@@ -550,17 +550,17 @@ function KiwisCoOpMod()
             "OnChangedFromMax",
         };
 
-        KCOM_ACTIVE = true;
-        kcom_heads = {};
-        kcom_lefthands = {};
-        kcom_righthands = {};
-        kcom_text = {};
-        kcom_player_count = 16;
-        kcom_inbetween = 0;
+        HLVRCOOP_ACTIVE = true;
+        hlvrcoop_heads = {};
+        hlvrcoop_lefthands = {};
+        hlvrcoop_righthands = {};
+        hlvrcoop_text = {};
+        hlvrcoop_player_count = 16;
+        hlvrcoop_inbetween = 0;
 
         SpawnEntityFromTableSynchronous("point_worldtext", {
             origin = "16128 16128 16128",
-            targetname = "kcom_hud",
+            targetname = "hlvrcoop_hud",
             fullbright = "1",
             color = "255 255 255 255",
             world_units_per_pixel = "0.005",
@@ -575,28 +575,28 @@ function KiwisCoOpMod()
             enabled = "1",
         });
 
-        for i = 0, kcom_player_count - 1 do
-            table.insert(kcom_heads, SpawnEntityFromTableSynchronous("prop_dynamic", {
+        for i = 0, hlvrcoop_player_count - 1 do
+            table.insert(hlvrcoop_heads, SpawnEntityFromTableSynchronous("prop_dynamic", {
                 origin = "16128 16128 16128",
-                targetname = "kcom_head_" .. i,
+                targetname = "hlvrcoop_head_" .. i,
                 model = "models/props/choreo_office/headset_prop.vmdl",
                 solid = "0",
             }));
-            table.insert(kcom_lefthands, SpawnEntityFromTableSynchronous("prop_dynamic", {
+            table.insert(hlvrcoop_lefthands, SpawnEntityFromTableSynchronous("prop_dynamic", {
                 origin = "16128 16128 16128",
-                targetname = "kcom_lefthand_" .. i,
+                targetname = "hlvrcoop_lefthand_" .. i,
                 model = "models/hands/alyx_glove_left.vmdl",
                 solid = "0",
             }));
-            table.insert(kcom_righthands, SpawnEntityFromTableSynchronous("prop_dynamic", {
+            table.insert(hlvrcoop_righthands, SpawnEntityFromTableSynchronous("prop_dynamic", {
                 origin = "16128 16128 16128",
-                targetname = "kcom_righthand_" .. i,
+                targetname = "hlvrcoop_righthand_" .. i,
                 model = "models/hands/alyx_glove_right.vmdl",
                 solid = "0",
             }));
-            table.insert(kcom_text, SpawnEntityFromTableSynchronous("point_worldtext", {
+            table.insert(hlvrcoop_text, SpawnEntityFromTableSynchronous("point_worldtext", {
                 origin = "16128 16128 16128",
-                targetname = "kcom_text_" .. i,
+                targetname = "hlvrcoop_text_" .. i,
                 fullbright = "1",
                 color = "255 255 255 255",
                 world_units_per_pixel = "0.05",
@@ -612,7 +612,7 @@ function KiwisCoOpMod()
             }));
         end
 
-        Convars:RegisterCommand("kcom_teleport", function(command, x, y, z)
+        Convars:RegisterCommand("hlvrcoop_teleport", function(command, x, y, z)
             if Player then
                 local anchor = Player:GetHMDAnchor();
                 if Player:GetHMDAvatar() then
@@ -623,7 +623,7 @@ function KiwisCoOpMod()
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_teleportangles", function(command, x, y, z, pitch, yaw, roll)
+        Convars:RegisterCommand("hlvrcoop_teleportangles", function(command, x, y, z, pitch, yaw, roll)
             if Player then
                 local anchor = Player:GetHMDAnchor();
                 if Player:GetHMDAvatar() then
@@ -636,39 +636,39 @@ function KiwisCoOpMod()
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_setlocation", function(command, name, x, y, z, pitch, yaw, roll)
-            if not KCOM_USE_UUIDS then
+        Convars:RegisterCommand("hlvrcoop_setlocation", function(command, name, x, y, z, pitch, yaw, roll)
+            if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(name);
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
                         local class = entity:GetClassname();
-                        if kcom_toggletypes[class] ~= nil then
-                            DoEntFireByInstanceHandle(entity, kcom_toggletypes[class][1], "", 0, nil, nil);
+                        if hlvrcoop_toggletypes[class] ~= nil then
+                            DoEntFireByInstanceHandle(entity, hlvrcoop_toggletypes[class][1], "", 0, nil, nil);
                         end
                         entity:SetAbsOrigin(Vector(tonumber(x), tonumber(y), tonumber(z)));
                         entity:SetAbsAngles(tonumber(pitch), tonumber(yaw), tonumber(roll));
                     end
                 end
             else
-                local object = KCOM_ENTCACHE[name];
+                local object = HLVRCOOP_ENTCACHE[name];
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
-                if kcom_toggletypes[object.class] ~= nil then
-                    DoEntFireByInstanceHandle(entity, kcom_toggletypes[object.class][1], "", 0, nil, nil);
+                if hlvrcoop_toggletypes[object.class] ~= nil then
+                    DoEntFireByInstanceHandle(entity, hlvrcoop_toggletypes[object.class][1], "", 0, nil, nil);
                 end
                 entity:SetAbsOrigin(Vector(tonumber(x), tonumber(y), tonumber(z)));
                 entity:SetAbsAngles(tonumber(pitch), tonumber(yaw), tonumber(roll));
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_setlocation_nonuuid", function(command, name, x, y, z, pitch, yaw, roll)
+        Convars:RegisterCommand("hlvrcoop_setlocation_nonuuid", function(command, name, x, y, z, pitch, yaw, roll)
             local entities = Entities:FindAllByName(name);
             if entities ~= nil then
                 for _, entity in pairs(entities) do
                     local class = entity:GetClassname();
-                    if kcom_toggletypes[class] ~= nil then
-                        DoEntFireByInstanceHandle(entity, kcom_toggletypes[class][1], "", 0, nil, nil);
+                    if hlvrcoop_toggletypes[class] ~= nil then
+                        DoEntFireByInstanceHandle(entity, hlvrcoop_toggletypes[class][1], "", 0, nil, nil);
                     end
                     entity:SetAbsOrigin(Vector(tonumber(x), tonumber(y), tonumber(z)));
                     entity:SetAbsAngles(tonumber(pitch), tonumber(yaw), tonumber(roll));
@@ -676,8 +676,8 @@ function KiwisCoOpMod()
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_fireoutput", function(command, name, type)
-            if not KCOM_USE_UUIDS then
+        Convars:RegisterCommand("hlvrcoop_fireoutput", function(command, name, type)
+            if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(name);
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
@@ -690,7 +690,7 @@ function KiwisCoOpMod()
                     end
                 end
             else
-                local object = KCOM_ENTCACHE[name];
+                local object = HLVRCOOP_ENTCACHE[name];
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
@@ -702,30 +702,30 @@ function KiwisCoOpMod()
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_grace", function(command, name, type)
-            if not KCOM_USE_UUIDS then
+        Convars:RegisterCommand("hlvrcoop_grace", function(command, name, type)
+            if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(name);
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
                         local class = entity:GetClassname();
-                        if kcom_toggletypes[class] ~= nil then
-                            DoEntFireByInstanceHandle(entity, kcom_toggletypes[class][2], "", 0, nil, nil);
+                        if hlvrcoop_toggletypes[class] ~= nil then
+                            DoEntFireByInstanceHandle(entity, hlvrcoop_toggletypes[class][2], "", 0, nil, nil);
                         end
                     end
                 end
             else
-                local object = KCOM_ENTCACHE[name];
+                local object = HLVRCOOP_ENTCACHE[name];
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
-                if kcom_toggletypes[object.class] ~= nil then
-                    DoEntFireByInstanceHandle(entity, kcom_toggletypes[object.class][2], "", 0, nil, nil);
+                if hlvrcoop_toggletypes[object.class] ~= nil then
+                    DoEntFireByInstanceHandle(entity, hlvrcoop_toggletypes[object.class][2], "", 0, nil, nil);
                 end
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_npc_sethealth", function(command, name, health)
-            if not KCOM_USE_UUIDS then
+        Convars:RegisterCommand("hlvrcoop_npc_sethealth", function(command, name, health)
+            if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(name);
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
@@ -745,7 +745,7 @@ function KiwisCoOpMod()
                     --DoEntFireByInstanceHandle(entity, "BecomeTemporaryRagdoll", "", 0, nil, nil);
                 end
             else
-                local object = KCOM_ENTCACHE[name];
+                local object = HLVRCOOP_ENTCACHE[name];
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
@@ -764,8 +764,8 @@ function KiwisCoOpMod()
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_break", function(command, name)
-            if not KCOM_USE_UUIDS then
+        Convars:RegisterCommand("hlvrcoop_break", function(command, name)
+            if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(name);
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
@@ -773,7 +773,7 @@ function KiwisCoOpMod()
                     end
                 end
             else
-                local object = KCOM_ENTCACHE[name];
+                local object = HLVRCOOP_ENTCACHE[name];
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
@@ -781,52 +781,52 @@ function KiwisCoOpMod()
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_sethealth", function(command, health)
+        Convars:RegisterCommand("hlvrcoop_sethealth", function(command, health)
             if Player then
                 Player:SetHealth(tonumber(health));
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_command", function(command, kcomcommand)
-            print("CMND "..kcomcommand.." KCOM");
+        Convars:RegisterCommand("hlvrcoop_command", function(command, hlvrcoopcommand)
+            print("CMND "..hlvrcoopcommand.." HLVRCOOP");
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_cache_entity", function(command, cacheent)
-            if not KCOM_USE_UUIDS then
+        Convars:RegisterCommand("hlvrcoop_cache_entity", function(command, cacheent)
+            if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(cacheent);
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
                         if IsValidEntity(entity) then
-                            KCOM_EntitySyncSpecific(entity);
+                            HLVRCOOP_EntitySyncSpecific(entity);
                         end
                     end
                 end
             else
-                local object = KCOM_ENTCACHE[cacheent];
+                local object = HLVRCOOP_ENTCACHE[cacheent];
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
-                KCOM_EntitySyncSpecific(entity);
+                HLVRCOOP_EntitySyncSpecific(entity);
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_cache_entity_nonuuid", function(command, cacheent)
+        Convars:RegisterCommand("hlvrcoop_cache_entity_nonuuid", function(command, cacheent)
             print("Templated: "..cacheent);
             local entities = Entities:FindAllByName(cacheent);
             if entities ~= nil then
                 for _, entity in pairs(entities) do
                     if IsValidEntity(entity) then
-                        KCOM_EntitySyncSpecific(entity);
+                        HLVRCOOP_EntitySyncSpecific(entity);
                     end
                 end
             end
         end, "Kiwi's Co-Op Mod", 0);
 
-        Convars:RegisterCommand("kcom_cache_all_entities", function(command)
-            KCOM_EntitySync(false)
+        Convars:RegisterCommand("hlvrcoop_cache_all_entities", function(command)
+            HLVRCOOP_EntitySync(false)
         end, "Kiwi's Co-Op Mod", 0);
 
-        print("MAPN "..GetMapName().." "..KCOM_API_VERSION.." KCOM");
-        KCOM_EntitySync(true);
+        print("MAPN "..GetMapName().." "..HLVRCOOP_API_VERSION.." HLVRCOOP");
+        HLVRCOOP_EntitySync(true);
     end
 end

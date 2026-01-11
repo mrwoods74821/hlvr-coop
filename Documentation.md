@@ -86,10 +86,10 @@ The mod uses a **hybrid architecture**:
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │        Workshop Addon (hlvr_coop)                    │   │
 │  │  ┌────────────────────────────────────────────────┐  │   │
-│  │  │  Lua Scripts (kcom_interval.lua)               │  │   │
+│  │  │  Lua Scripts (hlvrcoop_interval.lua)               │  │   │
 │  │  │  - Tracks player/entity positions              │  │   │
 │  │  │  - Monitors entity outputs                     │  │   │
-│  │  │  - Sends data via print() with "KCOM" tag      │  │   │
+│  │  │  - Sends data via print() with "HLVRCOOP" tag      │  │   │
 │  │  └────────────────────────────────────────────────┘  │   │
 │  │              ↕ VConsole (TCP)                        │   │
 │  └──────────────────────────────────────────────────────┘   │
@@ -183,7 +183,7 @@ hlvr_coop/
 ├── scripts/
 │   ├── vlua_globals.lua   # Global definitions
 │   └── vscripts/
-│       ├── kcom_interval.lua  # Main game-side script
+│       ├── hlvrcoop_interval.lua  # Main game-side script
 │       └── util/              # Utility scripts
 ├── content/               # Assets (sounds, models)
 └── maps/                  # Custom maps
@@ -227,7 +227,7 @@ Server-side Lua scripts loaded automatically:
    - Game-side Lua scripts initialize
 
 5. **Game-side initialization**
-   - `kcom_interval.lua` creates player representation entities
+   - `hlvrcoop_interval.lua` creates player representation entities
    - Registers VConsole commands
    - Begins tracking entities and sending updates
 
@@ -240,7 +240,7 @@ Server-side Lua scripts loaded automatically:
    ↓
 2. Game: Lua script (every 5 frames) reads player position
    ↓
-3. Game: print("HEAD x y z pitch yaw roll KCOM")
+3. Game: print("HEAD x y z pitch yaw roll HLVRCOOP")
    ↓
 4. VConsole: Captures print output via TCP
    ↓
@@ -254,7 +254,7 @@ Server-side Lua scripts loaded automatically:
    ↓
 9. Server: Broadcasts to other clients
    ↓
-10. Clients: Receive Response("command", "kcom_setlocation_nonuuid...")
+10. Clients: Receive Response("command", "hlvrcoop_setlocation_nonuuid...")
    ↓
 11. Clients: VConsole sends command to game
    ↓
@@ -268,7 +268,7 @@ Server-side Lua scripts loaded automatically:
    ↓
 2. Game: Lua monitors entity cache for position changes
    ↓
-3. Game: print("PHYS entityName x y z pitch yaw roll KCOM")
+3. Game: print("PHYS entityName x y z pitch yaw roll HLVRCOOP")
    ↓
 4. C#: Receives packet, checks entity ownership
    ↓
@@ -286,9 +286,9 @@ Server-side Lua scripts loaded automatically:
    ↓
 2. Game: Entity output fires (OnStartTouch)
    ↓
-3. Game: Output redirected to KCOM_OnStartTouch function
+3. Game: Output redirected to HLVRCOOP_OnStartTouch function
    ↓
-4. Game: print("FIRE entityName OnStartTouch KCOM")
+4. Game: print("FIRE entityName OnStartTouch HLVRCOOP")
    ↓
 5. Server: Parses packet, broadcasts to all clients
    ↓
@@ -361,18 +361,18 @@ The mod sends various commands to the game:
 - `ent_remove <targetname>` - Remove entity
 - `ent_fire <targetname> <input> <value>` - Fire entity input
 
-#### Custom KCOM Commands (Registered in Workshop Addon)
-- `kcom_teleport <x> <y> <z>` - Teleport player
-- `kcom_teleportangles <x> <y> <z> <pitch> <yaw> <roll>` - Teleport with angles
-- `kcom_setlocation <entityName> <x> <y> <z> <pitch> <yaw> <roll>` - Move entity (UUID)
-- `kcom_setlocation_nonuuid <entityName> <x> <y> <z> <pitch> <yaw> <roll>` - Move entity (by name)
-- `kcom_fireoutput <entityName> <outputName>` - Fire entity output
-- `kcom_grace <entityName>` - Re-enable entity (after ownership timeout)
-- `kcom_npc_sethealth <entityName> <health>` - Set NPC health
-- `kcom_break <entityName>` - Break prop
-- `kcom_sethealth <health>` - Set player health
-- `kcom_cache_entity <entityName>` - Cache entity for sync
-- `kcom_cache_entity_nonuuid <entityName>` - Cache entity (by name)
+#### Custom HLVRCOOP Commands (Registered in Workshop Addon)
+- `hlvrcoop_teleport <x> <y> <z>` - Teleport player
+- `hlvrcoop_teleportangles <x> <y> <z> <pitch> <yaw> <roll>` - Teleport with angles
+- `hlvrcoop_setlocation <entityName> <x> <y> <z> <pitch> <yaw> <roll>` - Move entity (UUID)
+- `hlvrcoop_setlocation_nonuuid <entityName> <x> <y> <z> <pitch> <yaw> <roll>` - Move entity (by name)
+- `hlvrcoop_fireoutput <entityName> <outputName>` - Fire entity output
+- `hlvrcoop_grace <entityName>` - Re-enable entity (after ownership timeout)
+- `hlvrcoop_npc_sethealth <entityName> <health>` - Set NPC health
+- `hlvrcoop_break <entityName>` - Break prop
+- `hlvrcoop_sethealth <health>` - Set player health
+- `hlvrcoop_cache_entity <entityName>` - Cache entity for sync
+- `hlvrcoop_cache_entity_nonuuid <entityName>` - Cache entity (by name)
 
 ### 5.4 Connection Process
 
@@ -405,7 +405,7 @@ VConsole messages are parsed in `AlyxGamemode.cs`:
 
 ```csharp
 // Game output captured as "print" response type
-if (response.data.Contains("KCOM"))
+if (response.data.Contains("HLVRCOOP"))
 {
     // Split into packet parts
     List<string> packetList = response.data.Split(" ").ToList();
@@ -457,17 +457,17 @@ WorkshopAddon/
             └── scripts/
                 ├── vlua_globals.lua   # Global definitions
                 └── vscripts/
-                    ├── kcom_interval.lua  # Main script
+                    ├── hlvrcoop_interval.lua  # Main script
                     └── util/              # Utility libraries
 ```
 
-### 6.3 Main Script: kcom_interval.lua
+### 6.3 Main Script: hlvrcoop_interval.lua
 
 This script runs inside Half-Life: Alyx and handles:
 
 1. **Player Tracking**
    - Reads player head, hand, and body positions every 5 frames
-   - Sends data via `print()` with "KCOM" tag
+   - Sends data via `print()` with "HLVRCOOP" tag
 
 2. **Entity Tracking**
    - Maintains cache of synchronized entities
@@ -475,25 +475,25 @@ This script runs inside Half-Life: Alyx and handles:
    - Sends updates when entities move
 
 3. **Output Redirection**
-   - Redirects entity outputs (OnTrigger, OnStartTouch, etc.) to KCOM functions
+   - Redirects entity outputs (OnTrigger, OnStartTouch, etc.) to HLVRCOOP functions
    - Captures output events and sends to server
 
 4. **Player Representation**
    - Creates visual entities for other players:
-     - `kcom_head_<index>` - prop_dynamic (headset model)
-     - `kcom_lefthand_<index>` - prop_dynamic (left glove)
-     - `kcom_righthand_<index>` - prop_dynamic (right glove)
-     - `kcom_text_<index>` - point_worldtext (name tag)
+     - `hlvrcoop_head_<index>` - prop_dynamic (headset model)
+     - `hlvrcoop_lefthand_<index>` - prop_dynamic (left glove)
+     - `hlvrcoop_righthand_<index>` - prop_dynamic (right glove)
+     - `hlvrcoop_text_<index>` - point_worldtext (name tag)
 
 5. **VConsole Commands**
    - Registers custom commands via `Convars:RegisterCommand()`
 
 ### 6.4 Entity Tracking System
 
-The script maintains `KCOM_ENTCACHE`, a table of tracked entities:
+The script maintains `HLVRCOOP_ENTCACHE`, a table of tracked entities:
 
 ```lua
-KCOM_ENTCACHE = {
+HLVRCOOP_ENTCACHE = {
     ["uuid1"] = {
         name = "entity_name",
         origin = {x, y, z},
@@ -541,11 +541,11 @@ The script tracks these entity classes:
 
 ### 6.6 Output Events
 
-All entity outputs are redirected to KCOM functions:
+All entity outputs are redirected to HLVRCOOP functions:
 
 ```lua
 -- Example: OnTrigger output
-KCOM_OnTrigger = function(params)
+HLVRCOOP_OnTrigger = function(params)
     fireit(params, "OnTrigger")
 end
 
@@ -555,7 +555,7 @@ function fireit(params, output)
     local class = ent:GetClassname()
     local origin = ent:GetOrigin()
     local uu = uuid(name, origin[1], origin[2], origin[3], class)
-    print("FIRE "..uu.." "..output.." KCOM")
+    print("FIRE "..uu.." "..output.." HLVRCOOP")
 end
 ```
 
@@ -659,7 +659,7 @@ public class Response
 6. Server sends `Response("authenticated")` with map name
 7. Server triggers `OnOpen` events
 8. Client receives authentication, connects VConsole
-9. Client sends `Response("print", "INIT KCOM")` to initialize
+9. Client sends `Response("print", "INIT HLVRCOOP")` to initialize
 
 #### Server Initialization
 
@@ -674,7 +674,7 @@ When a client sends data, server broadcasts to other clients:
 
 ```csharp
 // Example: Broadcast head position
-Response movement = new("command", "kcom_setlocation_nonuuid kcom_head_" + playerIndex + " " + origin + " " + angles);
+Response movement = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_head_" + playerIndex + " " + origin + " " + angles);
 foreach (IndexedClient client in connections)
 {
     Player? otherPlayer = AlyxGlobalData.instance.GetPlayer(client.Session.ConnectionInfo.Id);
@@ -718,36 +718,36 @@ Packets are 4-letter codes sent from game via `print()`:
 | `TELE` | Teleport | Teleport command |
 | `SPWN` | Spawn | Entity spawn |
 | `TENT` | TemplateEntity | Template entity cache |
-| `CMND` | KCOMCommand | Custom command |
+| `CMND` | HLVRCOOPCommand | Custom command |
 
 ### 8.2 Packet Format
 
 Packets are space-separated strings:
 
 ```
-<CODE> <arg1> <arg2> ... <argN> KCOM
+<CODE> <arg1> <arg2> ... <argN> HLVRCOOP
 ```
 
 Example:
 ```
-HEAD 1234.5 5678.9 9012.3 0.0 90.0 0.0 KCOM
-FIRE entity_uuid OnStartTouch KCOM
-PHYS prop_physics_001 100.0 200.0 300.0 0.0 0.0 0.0 KCOM
+HEAD 1234.5 5678.9 9012.3 0.0 90.0 0.0 HLVRCOOP
+FIRE entity_uuid OnStartTouch HLVRCOOP
+PHYS prop_physics_001 100.0 200.0 300.0 0.0 0.0 0.0 HLVRCOOP
 ```
 
 ### 8.3 Packet Processing
 
-1. **Game sends**: `print("HEAD x y z pitch yaw roll KCOM")`
+1. **Game sends**: `print("HEAD x y z pitch yaw roll HLVRCOOP")`
 2. **VConsole captures**: Raw TCP message
-3. **C# receives**: `Response("print", "HEAD x y z pitch yaw roll KCOM")`
+3. **C# receives**: `Response("print", "HEAD x y z pitch yaw roll HLVRCOOP")`
 4. **AlyxGamemode parses**:
    ```csharp
-   if (response.data.Contains("KCOM"))
+   if (response.data.Contains("HLVRCOOP"))
    {
        List<string> parts = response.data.Split(" ").ToList();
        string code = parts[0];  // "HEAD"
        parts.RemoveAt(0);
-       parts.RemoveAt(parts.Count - 1);  // Remove "KCOM"
+       parts.RemoveAt(parts.Count - 1);  // Remove "HLVRCOOP"
        Packet packet = new(code, parts.ToArray());
    }
    ```
@@ -777,15 +777,15 @@ Moveable class tracks:
 - Entity reference
 - Owning client GUID
 - Timer (5 seconds)
-- On timeout: Sends "kcom_grace" command to re-enable entity
+- On timeout: Sends "hlvrcoop_grace" command to re-enable entity
 ```
 
 ### 9.2 Entity Cache System (Game-Side)
 
-The Workshop addon maintains `KCOM_ENTCACHE`:
+The Workshop addon maintains `HLVRCOOP_ENTCACHE`:
 
 ```lua
-KCOM_ENTCACHE = {
+HLVRCOOP_ENTCACHE = {
     [uuid] = {
         name = "entity_name",
         origin = {x, y, z},
@@ -801,7 +801,7 @@ KCOM_ENTCACHE = {
 1. Entity cached when first detected
 2. Position/angles monitored every frame
 3. Changes detected (position delta > 1 unit or angle change)
-4. Update sent via `print("PHYS ... KCOM")`
+4. Update sent via `print("PHYS ... HLVRCOOP")`
 5. Other clients receive update and move entity
 
 ### 9.3 Entity Tracking Flow
@@ -809,11 +809,11 @@ KCOM_ENTCACHE = {
 ```
 1. Entity spawns/created
    ↓
-2. Game: KCOM_EntitySyncSpecific() called
+2. Game: HLVRCOOP_EntitySyncSpecific() called
    ↓
-3. Game: Entity added to KCOM_ENTCACHE
+3. Game: Entity added to HLVRCOOP_ENTCACHE
    ↓
-4. Game: Entity outputs redirected to KCOM functions
+4. Game: Entity outputs redirected to HLVRCOOP functions
    ↓
 5. Game: Position monitored every frame
    ↓
@@ -832,11 +832,11 @@ KCOM_ENTCACHE = {
 
 Entity outputs (OnTrigger, OnStartTouch, etc.) are synchronized:
 
-1. **Output redirection**: All outputs redirected to KCOM functions
-2. **Output capture**: When output fires, KCOM function called
-3. **Packet sent**: `print("FIRE entity_uuid outputName KCOM")`
+1. **Output redirection**: All outputs redirected to HLVRCOOP functions
+2. **Output capture**: When output fires, HLVRCOOP function called
+3. **Packet sent**: `print("FIRE entity_uuid outputName HLVRCOOP")`
 4. **Server broadcasts**: All clients receive output
-5. **Clients execute**: `kcom_fireoutput` command sent to game
+5. **Clients execute**: `hlvrcoop_fireoutput` command sent to game
 6. **Game fires output**: Entity output executed for all players
 
 ### 9.5 Supported Entity Classes
@@ -859,10 +859,10 @@ public class Player : Location
 ```
 
 #### Client-Side (Game)
-- `kcom_head_<index>` - Headset model (prop_dynamic)
-- `kcom_lefthand_<index>` - Left hand model (prop_dynamic)
-- `kcom_righthand_<index>` - Right hand model (prop_dynamic)
-- `kcom_text_<index>` - Name tag (point_worldtext)
+- `hlvrcoop_head_<index>` - Headset model (prop_dynamic)
+- `hlvrcoop_lefthand_<index>` - Left hand model (prop_dynamic)
+- `hlvrcoop_righthand_<index>` - Right hand model (prop_dynamic)
+- `hlvrcoop_text_<index>` - Name tag (point_worldtext)
 
 ### 10.2 Player Limit
 
@@ -1139,38 +1139,38 @@ Half-Life: Alyx runs on **Source 2** engine, which supports:
 
 The Workshop addon uses Source 2 VScript functions. **Functions listed below are used by this mod, but verify availability in official documentation before using in new code:**
 
-**Entity Functions** (used in `kcom_interval.lua`):
+**Entity Functions** (used in `hlvrcoop_interval.lua`):
 - `Entities:GetLocalPlayer()` - Get player entity
-  - **Verified:** Used in `kcom_interval.lua` line 3
+  - **Verified:** Used in `hlvrcoop_interval.lua` line 3
   - **Official Docs:** [Entities:GetLocalPlayer()](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)
 - `Entities:FindAllByClassname(classname)` - Find entities
-  - **Verified:** Used in mod (check `kcom_interval.lua` for entity finding patterns)
+  - **Verified:** Used in mod (check `hlvrcoop_interval.lua` for entity finding patterns)
 - `entity:GetName()` - Get entity name
-  - **Verified:** Used in `kcom_interval.lua` line 127
+  - **Verified:** Used in `hlvrcoop_interval.lua` line 127
 - `entity:GetOrigin()` - Get position
-  - **Verified:** Used in `kcom_interval.lua` lines 22, 65, 108
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 22, 65, 108
 - `entity:GetAnglesAsVector()` - Get angles
-  - **Verified:** Used in `kcom_interval.lua` lines 24, 38, 66, 109
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 24, 38, 66, 109
 - `entity:GetClassname()` - Get entity class
-  - **Verified:** Used in `kcom_interval.lua` line 130
+  - **Verified:** Used in `hlvrcoop_interval.lua` line 130
 - `entity:GetHealth()` - Get health
-  - **Verified:** Used in `kcom_interval.lua` lines 25, 77
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 25, 77
 - `entity:SetHealth(value)` - Set health
   - **Note:** Verify availability in official docs before using
 - `entity:FireOutput(output, activator, caller, params, delay)` - Fire output
   - **Note:** Verify availability in official docs before using
 - `entity:RedirectOutput(output, targetInput, targetEntity)` - Redirect output
-  - **Verified:** Used in `kcom_interval.lua` lines 136, 145
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 136, 145
 
-**VR Functions** (used in `kcom_interval.lua`):
+**VR Functions** (used in `hlvrcoop_interval.lua`):
 - `Player:GetHMDAvatar()` - Get VR avatar
-  - **Verified:** Used in `kcom_interval.lua` line 26
+  - **Verified:** Used in `hlvrcoop_interval.lua` line 26
 - `avatar:GetVRHand(index)` - Get hand controller
-  - **Verified:** Used in `kcom_interval.lua` lines 29-30
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 29-30
 - `hand:GetAbsOrigin()` - Get hand position
-  - **Verified:** Used in `kcom_interval.lua` lines 36-37
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 36-37
 - `hand:GetAnglesAsVector()` - Get hand angles
-  - **Verified:** Used in `kcom_interval.lua` lines 38-39
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 38-39
 
 **Game Functions** (used in mod):
 - `GetMapName()` - Get current map
@@ -1178,13 +1178,13 @@ The Workshop addon uses Source 2 VScript functions. **Functions listed below are
 - `SpawnEntityFromTableSynchronous(table)` - Spawn entity
   - **Note:** Verify availability in official docs before using
 - `DoEntFireByInstanceHandle(entity, input, value, delay, activator, caller)` - Fire input
-  - **Verified:** Used in `kcom_interval.lua` lines 140, 145
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 140, 145
 - `ListenToGameEvent(eventName, callback, context)` - Listen to events
   - **Note:** Verify availability in official docs before using
 - `Convars:RegisterCommand(name, callback, help, flags)` - Register command
   - **Note:** Verify availability in official docs before using
 - `print(...)` - Print to console
-  - **Verified:** Used extensively throughout `kcom_interval.lua` (lines 41, 42, 47, 68, etc.)
+  - **Verified:** Used extensively throughout `hlvrcoop_interval.lua` (lines 41, 42, 47, 68, etc.)
 - `StartSoundEvent(event, entity)` - Play sound
   - **Note:** Verify availability in official docs before using
 
@@ -1198,19 +1198,19 @@ The Workshop addon uses Source 2 VScript functions. **Functions listed below are
 
 **Entity Classes**:
 - Entities have classnames (e.g., `prop_physics`, `trigger_multiple`)
-  - **Verified:** Used in `kcom_interval.lua` for entity tracking
+  - **Verified:** Used in `hlvrcoop_interval.lua` for entity tracking
 - Entities have names (targetname)
-  - **Verified:** Used in `kcom_interval.lua` line 127
+  - **Verified:** Used in `hlvrcoop_interval.lua` line 127
 - Entities can have inputs/outputs
-  - **Verified:** Used in `kcom_interval.lua` lines 135-137, 144-145
+  - **Verified:** Used in `hlvrcoop_interval.lua` lines 135-137, 144-145
 - Entities can be spawned, modified, removed
   - **Note:** Verify spawn/remove functions in official docs
 
 **Input/Output System**:
 - **Inputs**: Actions entities can receive (e.g., `Enable`, `Disable`, `SetHealth`)
-  - **Verified:** Used via `DoEntFireByInstanceHandle()` in `kcom_interval.lua`
+  - **Verified:** Used via `DoEntFireByInstanceHandle()` in `hlvrcoop_interval.lua`
 - **Outputs**: Events entities fire (e.g., `OnTrigger`, `OnStartTouch`)
-  - **Verified:** Outputs redirected in `kcom_interval.lua` lines 136, 145
+  - **Verified:** Outputs redirected in `hlvrcoop_interval.lua` lines 136, 145
 - **I/O connections**: Map-defined connections between entities
   - **Note:** See official Entity I/O documentation for details
 
@@ -1369,15 +1369,15 @@ case PacketType.YourPacket:
 
 **Add entity tracking**:
 ```lua
-kcom_trackers["your_entity_class"] = true
+hlvrcoop_trackers["your_entity_class"] = true
 ```
 
 **Add VConsole command**:
 ```lua
-Convars:RegisterCommand("kcom_yourcommand", function(command, arg1)
+Convars:RegisterCommand("hlvrcoop_yourcommand", function(command, arg1)
     -- Command logic
-    print("YOUR " .. arg1 .. " KCOM")
-end, "Kiwi's Co-Op Mod", 0)
+    print("YOUR " .. arg1 .. " HLVRCOOP")
+end, "Half-Life: VR Co-Op", 0)
 ```
 
 ### 14.5 Adding New Packet Types
@@ -1413,7 +1413,7 @@ public override string ToString()
 
 **Step 3**: Send from game
 ```lua
-print("YOUR " .. arg1 .. " " .. arg2 .. " KCOM")
+print("YOUR ... HLVRCOOP")
 ```
 
 **Step 4**: Handle in gamemode (`AlyxGamemode.cs`)
@@ -1484,7 +1484,7 @@ case PacketType.YourPacket:
 - Check firewall/antivirus blocking TCP connection
 
 #### Workshop Addon Not Loading
-**Symptoms**: "INIT KCOM" not received, entities not syncing
+**Symptoms**: "INIT HLVRCOOP" not received, entities not syncing
 **Solutions**:
 - Verify addon ID: 2739356543
 - Check addon enabled in game: `addon_enable hlvr_coop`
@@ -1497,15 +1497,15 @@ case PacketType.YourPacket:
 - Verify client connected successfully
 - Check player index assignment (max 16)
 - Verify Workshop addon loaded
-- Check entity creation in game (kcom_head_0, etc.)
+- Check entity creation in game (hlvrcoop_head_0, etc.)
 - Look for errors in mod UI
 
 #### Entity Sync Not Working
 **Symptoms**: Physics objects not syncing
 **Solutions**:
-- Verify entity class in `kcom_trackers` table
+- Verify entity class in `hlvrcoop_trackers` table
 - Check entity has name (or gets auto-named)
-- Verify entity cached: `KCOM_EntitySyncSpecific()` called
+- Verify entity cached: `HLVRCOOP_EntitySyncSpecific()` called
 - Check packet being sent: Look for "PHYS" in VConsole output
 - Verify ownership system (entity not locked by another player)
 
@@ -1548,10 +1548,10 @@ case PacketType.YourPacket:
 - Check script syntax: Lua syntax errors prevent loading
 
 #### Packet Debugging
-- Look for "KCOM" in VConsole output
+- Look for "HLVRCOOP" in VConsole output
 - Check packet parsing in `AlyxGamemode.cs`
 - Verify packet type registered in `Packet.cs`
-- Check packet format (space-separated, ends with "KCOM")
+- Check packet format (space-separated, ends with "HLVRCOOP")
 
 #### Network Debugging
 - Check WebSocket connection status
@@ -1660,3 +1660,5 @@ Before implementing any change:
 5. ✅ Document assumptions and verify them
 
 **Happy modding! -Dayshower**
+
+

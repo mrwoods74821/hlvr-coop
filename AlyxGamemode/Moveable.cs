@@ -52,7 +52,7 @@ namespace AlyxGamemode
         }
         private void Track(object? sender, System.Timers.ElapsedEventArgs e)
         {
-            Response response = new("command", "kcom_grace " + MovedObject.Name);
+            Response response = new("command", "hlvrcoop_grace " + MovedObject.Name);
             foreach (IndexedClient client in Connections)
             {
                 if (client.Session.ConnectionInfo.Id != ClientID)

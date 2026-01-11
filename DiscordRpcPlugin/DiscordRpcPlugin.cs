@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -43,7 +43,7 @@ namespace DiscordRpcPlugin
                     richPresence.State = "Inactive";
                     richPresence.Assets = new Assets()
                     {
-                        LargeImageKey = "kcom",
+                        LargeImageKey = "hlvrcoop",
                         LargeImageText = "Kiwi's Co-Op Mod",
                     };
                     discord.SetPresence(richPresence);
@@ -100,7 +100,7 @@ namespace DiscordRpcPlugin
                             richPresence3.State = "Running server with " + pluginTypes.Count + " plugin" + (pluginTypes.Count == 1 ? "" : "s");
                             richPresence3.Assets = new Assets()
                             {
-                                LargeImageKey = "kcom",
+                                LargeImageKey = "hlvrcoop",
                                 LargeImageText = "Kiwi's Co-Op Mod",
                             };
                             discord4.SetPresence(richPresence3);
@@ -130,7 +130,7 @@ namespace DiscordRpcPlugin
                         richPresence5.State = "Inactive";
                         richPresence5.Assets = new Assets()
                         {
-                            LargeImageKey = "kcom",
+                            LargeImageKey = "hlvrcoop",
                             LargeImageText = "Kiwi's Co-Op Mod",
                         };
                         discord6.SetPresence(richPresence5);

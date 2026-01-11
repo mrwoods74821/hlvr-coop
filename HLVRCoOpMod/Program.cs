@@ -24,8 +24,8 @@ namespace KiwisCoOpMod
     internal static class Program
     {
         public static readonly UserInterface userInterface = new(); // WORKAROUND SPECIFICALLY FOR LUA
-        const string UriScheme = "kcom";
-        const string FriendlyName = "Kiwi's Co-Op Mod";
+        const string UriScheme = "hlvrcoop";
+        const string FriendlyName = "Half-Life: VR Co-Op";
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>
