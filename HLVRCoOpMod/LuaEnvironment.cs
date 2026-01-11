@@ -106,7 +106,12 @@ namespace HLVRCoOpMod
                     Debug.WriteLine(e);
                     printerror.Call(e.Message);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    // Log error that occurred while trying to report the original error
+                    Debug.WriteLine($"LuaError: Failed to report error via printerr: {ex.Message}");
+                    Debug.WriteLine($"Original error was: {e.Message}");
+                }
             }
         }
         public static bool CheckForMainThread()
