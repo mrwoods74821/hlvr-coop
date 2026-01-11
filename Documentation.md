@@ -1502,15 +1502,14 @@ case PacketType.YourPacket:
 
 ### Useful Links
 
-- **Repository**: GitHub repository URL
-- **Discord**: Community Discord server
-- **Steam Workshop**: Workshop addon page
-- **Half-Life: Alyx**: Game on Steam
+- **Repository**: https://github.com/dayflaree/hlvr-coop
+- **Discord**: https://discord.gg/X6Dp95WRR4
+- **Half-Life: Alyx**: https://store.steampowered.com/app/546560/HalfLife_Alyx/
 
 ---
 
 ## Conclusion
 
-This guide covers the comprehensive architecture and operation of the Half-Life: Alyx Co-Op Mod. For development questions, refer to `FEATURE_DEVELOPMENT_GUIDE.md`. For usage instructions, see `README.md`.
+This guide covers the comprehensive architecture and operation of the Half-Life: Alyx Co-Op Mod. For usage instructions, see `README.md`.
 
 **Happy modding! -Dayshower**
