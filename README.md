@@ -6,6 +6,10 @@
 
 <a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/8ExaaRw.png"></a>
 
+[![Releases](https://img.shields.io/github/v/tag/teampopplio/kcom?label=release)](https://github.com/dayflaree/hlvr-coop/releases)
+
+[![Downloads](https://img.shields.io/github/downloads/teampopplio/kcom/total)](https://github.com/dayflaree/hlvr-coop/releases)
+
 [![Discord](https://img.shields.io/discord/738131767944282183?label=discord)](https://discord.gg/X6Dp95WRR4)
 
 
