@@ -92,13 +92,16 @@ namespace KiwisCoOpMod
                         switch (response.type)
                         {
                             case "authenticated":
-                                if (response.version > Response.internalVersion)
+                                if (response.version.HasValue)
                                 {
-                                    ui.Invoke(() => ui.LogToOutput(channel, "Client is running an older version! Please update your client."));
-                                }
-                                else if (response.version < Response.internalVersion)
-                                {
-                                    ui.Invoke(() => ui.LogToOutput(channel, "Server is running an older version! Please ask the owner to update their server."));
+                                    if (response.version > Response.internalVersion)
+                                    {
+                                        ui.Invoke(() => ui.LogToOutput(channel, "Client is running an older version! Please update your client."));
+                                    }
+                                    else if (response.version < Response.internalVersion)
+                                    {
+                                        ui.Invoke(() => ui.LogToOutput(channel, "Server is running an older version! Please ask the owner to update their server."));
+                                    }
                                 }
                                 if (vConsole != null && response.map != null)
                                 {
@@ -154,7 +157,7 @@ namespace KiwisCoOpMod
                     {
                         clientUsername = Settings.Default.ClientUsername,
                         password = Settings.Default.ClientPassword,
-                        timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds
+                        timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
                     };
                     ws.Send(JsonConvert.SerializeObject(input));
                     ui.Invoke(() => ui.LogToOutput(channel, "Client attempted connection to IP " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
