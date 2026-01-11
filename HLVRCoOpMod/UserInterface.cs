@@ -385,7 +385,7 @@ namespace HLVRCoOpMod
 
         private void DiscordToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Process.Start(new ProcessStartInfo("https://discord.gg/3X3teNecWs") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://discord.gg/X6Dp95WRR4") { UseShellExecute = true });
         }
 
         private void GitHubToolStripMenuItem_Click(object sender, EventArgs e)

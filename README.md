@@ -115,12 +115,12 @@
 ### Lua Documentation
 Coming soon!
 
-Check out the [Discord](https://discord.gg/3X3teNecWs) for Lua help if needed.
+Check out the [Discord](https://discord.gg/X6Dp95WRR4) for Lua help if needed.
 
 ### Script Redistribution
 You are free to modify and redistribute HLVRCoop's default ("base") Lua scripts without permission, however when it comes to others' scripts, please provide credit to the original author(s) and link to the original source.
 
-Feel free to provide scripts to the HLVRCoop community via the [Discord](https://discord.gg/3X3teNecWs) as there is a dedicated channel for Lua scripting.
+Feel free to provide scripts to the HLVRCoop community via the [Discord](https://discord.gg/X6Dp95WRR4) as there is a dedicated channel for Lua scripting.
 
 ## Debugging/Modding
 

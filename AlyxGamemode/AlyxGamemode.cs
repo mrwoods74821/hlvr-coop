@@ -28,7 +28,7 @@ namespace AlyxGamemode
     {
         public AlyxGamemode() : base()
         {
-            Author = "KiwifruitDev";
+            Author = "Dayshower";
             Name = "Half-Life: Alyx";
             Description = "Play Half-Life: Alyx with up to 16 players!";
         }

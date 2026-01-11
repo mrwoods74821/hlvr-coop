@@ -697,7 +697,7 @@ namespace HLVRCoOpMod
             this.Name = "UserInterface";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Kiwi\'s Co-Op Mod for Half-Life: Alyx";
+            this.Text = "Half-Life: Alyx Co-Op Mod";
             this.menuStrip.ResumeLayout(false);
             this.menuStrip.PerformLayout();
             this.statusStrip.ResumeLayout(false);
