@@ -126,29 +126,34 @@ namespace AlyxGamemode
                                                     switch (packet.type)
                                                     {
                                                         case PacketType.Spawn:
-                                                            Response spawn = new("command", "ent_create " + packet.args[0] + " {targetname \"" + packet.args[1] + "\" origin \"" + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + "\"}");
-                                                            foreach (IndexedClient broadcastClient2 in connections)
+                                                            if (packet.args.Length >= 5)
                                                             {
-                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                Response spawn = new("command", "ent_create " + packet.args[0] + " {targetname \"" + packet.args[1] + "\" origin \"" + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + "\"}");
+                                                                foreach (IndexedClient broadcastClient2 in connections)
                                                                 {
-                                                                    broadcastClient2.Session.Send(JsonConvert.SerializeObject(spawn));
+                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                    if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    {
+                                                                        broadcastClient2.Session.Send(JsonConvert.SerializeObject(spawn));
+                                                                    }
                                                                 }
                                                             }
                                                             break;
                                                         case PacketType.Teleport:
-                                                            Vector TeleOrigin = new(
-                                                                float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Angle TeleAngles = new(
-                                                                float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Response teleport = new("command", "kcom_teleportangles " + TeleOrigin.X + " " + TeleOrigin.Y + " " + TeleOrigin.Z + " " + TeleAngles.Pitch + " " + TeleAngles.Yaw + " " + TeleAngles.Roll);
-                                                            foreach (IndexedClient broadcastClient2 in connections)
+                                                            if (packet.args.Length >= 6)
+                                                            {
+                                                                Vector TeleOrigin = new(
+                                                                    float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Angle TeleAngles = new(
+                                                                    float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Response teleport = new("command", "kcom_teleportangles " + TeleOrigin.X + " " + TeleOrigin.Y + " " + TeleOrigin.Z + " " + TeleAngles.Pitch + " " + TeleAngles.Yaw + " " + TeleAngles.Roll);
+                                                                foreach (IndexedClient broadcastClient2 in connections)
                                                             {
                                                                 Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
                                                                 if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
@@ -156,32 +161,35 @@ namespace AlyxGamemode
                                                                     broadcastClient2.Session.Send(JsonConvert.SerializeObject(teleport));
                                                                 }
                                                             }
+                                                            }
                                                             break;
                                                         case PacketType.HeadPosAng:
-                                                            Vector HeadOrigin = new(
-                                                                float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Angle HeadAngles = new(
-                                                                float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Vector HatOrigin = new(
-                                                                HeadOrigin.X,
-                                                                HeadOrigin.Y,
-                                                                HeadOrigin.Z + 10
-                                                            );
-                                                            Vector HatAngles = new(
-                                                                0,
-                                                                HeadAngles.Yaw + 90,
-                                                                90
-                                                            );
-                                                            Response movement = new("command", "kcom_setlocation_nonuuid kcom_head_" + player.Index + " " + HeadOrigin + " " + HeadAngles);
-                                                            Response hatMovement = new("command", "kcom_setlocation_nonuuid kcom_text_" + player.Index + " " + HatOrigin + " " + HatAngles);
-                                                            Response headText = new("command", "ent_fire kcom_text_" + player.Index + " setmessage \"" + player.Client.Username + "\"");
-                                                            foreach (IndexedClient broadcastClient2 in connections)
+                                                            if (packet.args.Length >= 6)
+                                                            {
+                                                                Vector HeadOrigin = new(
+                                                                    float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Angle HeadAngles = new(
+                                                                    float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Vector HatOrigin = new(
+                                                                    HeadOrigin.X,
+                                                                    HeadOrigin.Y,
+                                                                    HeadOrigin.Z + 10
+                                                                );
+                                                                Vector HatAngles = new(
+                                                                    0,
+                                                                    HeadAngles.Yaw + 90,
+                                                                    90
+                                                                );
+                                                                Response movement = new("command", "kcom_setlocation_nonuuid kcom_head_" + player.Index + " " + HeadOrigin + " " + HeadAngles);
+                                                                Response hatMovement = new("command", "kcom_setlocation_nonuuid kcom_text_" + player.Index + " " + HatOrigin + " " + HatAngles);
+                                                                Response headText = new("command", "ent_fire kcom_text_" + player.Index + " setmessage \"" + player.Client.Username + "\"");
+                                                                foreach (IndexedClient broadcastClient2 in connections)
                                                             {
                                                                 Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
                                                                 if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
@@ -191,37 +199,41 @@ namespace AlyxGamemode
                                                                     broadcastClient2.Session.Send(JsonConvert.SerializeObject(headText));
                                                                 }
                                                             }
+                                                            }
                                                             break;
                                                         case PacketType.HandPosAng:
-                                                            Vector LeftHandOrigin = new(
-                                                                float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Angle LeftHandAngles = new(
-                                                                float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Vector RightHandOrigin = new(
-                                                                float.Parse(packet.args[6], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[7], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[8], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Angle RightHandAngles = new(
-                                                                float.Parse(packet.args[9], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[10], CultureInfo.InvariantCulture.NumberFormat),
-                                                                float.Parse(packet.args[11], CultureInfo.InvariantCulture.NumberFormat)
-                                                            );
-                                                            Response movementLeftHand = new("command", "kcom_setlocation_nonuuid kcom_lefthand_" + player.Index + " " + LeftHandOrigin + " " + LeftHandAngles);
-                                                            Response movementRightHand = new("command", "kcom_setlocation_nonuuid kcom_righthand_" + player.Index + " " + RightHandOrigin + " " + RightHandAngles);
-                                                            foreach (IndexedClient broadcastClient2 in connections)
+                                                            if (packet.args.Length >= 12)
                                                             {
-                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                Vector LeftHandOrigin = new(
+                                                                    float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Angle LeftHandAngles = new(
+                                                                    float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Vector RightHandOrigin = new(
+                                                                    float.Parse(packet.args[6], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[7], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[8], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Angle RightHandAngles = new(
+                                                                    float.Parse(packet.args[9], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[10], CultureInfo.InvariantCulture.NumberFormat),
+                                                                    float.Parse(packet.args[11], CultureInfo.InvariantCulture.NumberFormat)
+                                                                );
+                                                                Response movementLeftHand = new("command", "kcom_setlocation_nonuuid kcom_lefthand_" + player.Index + " " + LeftHandOrigin + " " + LeftHandAngles);
+                                                                Response movementRightHand = new("command", "kcom_setlocation_nonuuid kcom_righthand_" + player.Index + " " + RightHandOrigin + " " + RightHandAngles);
+                                                                foreach (IndexedClient broadcastClient2 in connections)
                                                                 {
-                                                                    broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementLeftHand));
-                                                                    broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementRightHand));
+                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                    if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    {
+                                                                        broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementLeftHand));
+                                                                        broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementRightHand));
+                                                                    }
                                                                 }
                                                             }
                                                             break;
@@ -271,33 +283,36 @@ namespace AlyxGamemode
                                                             }
                                                             break;
                                                         case PacketType.MapName:
-                                                            string suffix = "";
-                                                            /*
-                                                            if (packet.args[0] != player.Client.Map)
+                                                            if (packet.args.Length >= 2)
                                                             {
-                                                                Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
-                                                                foreach (IndexedClient broadcast in connections)
+                                                                string suffix = "";
+                                                                /*
+                                                                if (packet.args[0] != player.Client.Map)
                                                                 {
-                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                    if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
+                                                                    foreach (IndexedClient broadcast in connections)
                                                                     {
-                                                                        broadcast.Session.Send(JsonConvert.SerializeObject(mapOutput));
+                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        {
+                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(mapOutput));
+                                                                        }
                                                                     }
+                                                                    suffix = " - Telling all clients to switch...";
                                                                 }
-                                                                suffix = " - Telling all clients to switch...";
+                                                                */
+                                                                Response jingle = new("command", "play kcom/jingle_up2");
+                                                                Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
+                                                                socket.Send(JsonConvert.SerializeObject(jingle));
+                                                                socket.Send(JsonConvert.SerializeObject(output2));
+                                                                int gamemodeAPIVersion = int.Parse(packet.args[1]);
+                                                                if (gamemodeAPIVersion != APIVersion)
+                                                                {
+                                                                    Response versionOutput = new("status", "Version mismatch! This client reports API version " + APIVersion + ", gamemode reported API version " + gamemodeAPIVersion + ". Please update the client and respective Workshop addons.");
+                                                                    socket.Send(JsonConvert.SerializeObject(versionOutput));
+                                                                }
+                                                                Map.map = packet.args[0];
                                                             }
-                                                            */
-                                                            Response jingle = new("command", "play kcom/jingle_up2");
-                                                            Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
-                                                            socket.Send(JsonConvert.SerializeObject(jingle));
-                                                            socket.Send(JsonConvert.SerializeObject(output2));
-                                                            int gamemodeAPIVersion = int.Parse(packet.args[1]);
-                                                            if (gamemodeAPIVersion != APIVersion)
-                                                            {
-                                                                Response versionOutput = new("status", "Version mismatch! This client reports API version " + APIVersion + ", gamemode reported API version " + gamemodeAPIVersion + ". Please update the client and respective Workshop addons.");
-                                                                socket.Send(JsonConvert.SerializeObject(versionOutput));
-                                                            }
-                                                            Map.map = packet.args[0];
                                                             break;
                                                         case PacketType.ButtonIndexStartPos:
                                                         case PacketType.ButtonPressIndex:
@@ -306,43 +321,55 @@ namespace AlyxGamemode
                                                         case PacketType.TriggerActivateIndex:
                                                             break;
                                                         case PacketType.BrokenProp:
-                                                            Response removeBreak = new("command", "kcom_break " + packet.args[0]);
-                                                            foreach (IndexedClient broadcast in connections)
+                                                            if (packet.args.Length >= 1)
                                                             {
-                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                Response removeBreak = new("command", "kcom_break " + packet.args[0]);
+                                                                foreach (IndexedClient broadcast in connections)
                                                                 {
-                                                                    Response breakprop = new("status", "Broken prop: " + packet.args[0]);
-                                                                    broadcast.Session.Send(JsonConvert.SerializeObject(removeBreak));
+                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                    if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    {
+                                                                        Response breakprop = new("status", "Broken prop: " + packet.args[0]);
+                                                                        broadcast.Session.Send(JsonConvert.SerializeObject(removeBreak));
+                                                                    }
                                                                 }
                                                             }
                                                             break;
                                                         case PacketType.EntityRemoved:
-                                                            Response remove = new("command", "ent_remove " + packet.args[0]);
-                                                            foreach (IndexedClient broadcast in connections)
+                                                            if (packet.args.Length >= 1)
                                                             {
-                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                Response remove = new("command", "ent_remove " + packet.args[0]);
+                                                                foreach (IndexedClient broadcast in connections)
                                                                 {
-                                                                    broadcast.Session.Send(JsonConvert.SerializeObject(remove));
+                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                    if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    {
+                                                                        broadcast.Session.Send(JsonConvert.SerializeObject(remove));
+                                                                    }
                                                                 }
                                                             }
                                                             break;
                                                         case PacketType.EntityFired:
-                                                            Entity entityfired = new(packet.args[0]);
-                                                            Response fire = new("command", "kcom_fireoutput " + packet.args[0] + " " + packet.args[1]);
-                                                            foreach (IndexedClient broadcast in connections)
+                                                            if (packet.args.Length >= 2)
                                                             {
-                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                Entity entityfired = new(packet.args[0]);
+                                                                Response fire = new("command", "kcom_fireoutput " + packet.args[0] + " " + packet.args[1]);
+                                                                foreach (IndexedClient broadcast in connections)
                                                                 {
-                                                                    broadcast.Session.Send(JsonConvert.SerializeObject(fire));
+                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                    if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    {
+                                                                        broadcast.Session.Send(JsonConvert.SerializeObject(fire));
+                                                                    }
                                                                 }
                                                             }
                                                             break;
                                                         case PacketType.NPCHealth:
-                                                            Response p = new("command", "kcom_npc_sethealth " + packet.args[0] + " " + packet.args[1]);
-                                                            connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(p)));
+                                                            if (packet.args.Length >= 2)
+                                                            {
+                                                                Response p = new("command", "kcom_npc_sethealth " + packet.args[0] + " " + packet.args[1]);
+                                                                connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(p)));
+                                                            }
                                                             break;
                                                         case PacketType.KCOMCommand:
                                                             response.type = "chat";
@@ -351,13 +378,16 @@ namespace AlyxGamemode
                                                             overrideState = true;
                                                             break;
                                                         case PacketType.TemplateEntity:
-                                                            Response templateCache = new("command", "kcom_cache_entity " + packet.args[0]);
-                                                            foreach (IndexedClient broadcast in connections)
+                                                            if (packet.args.Length >= 1)
                                                             {
-                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                Response templateCache = new("command", "kcom_cache_entity " + packet.args[0]);
+                                                                foreach (IndexedClient broadcast in connections)
                                                                 {
-                                                                    broadcast.Session.Send(JsonConvert.SerializeObject(templateCache));
+                                                                    Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                    if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                    {
+                                                                        broadcast.Session.Send(JsonConvert.SerializeObject(templateCache));
+                                                                    }
                                                                 }
                                                             }
                                                             break;
