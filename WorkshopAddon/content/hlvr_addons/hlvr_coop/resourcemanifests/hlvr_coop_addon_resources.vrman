@@ -3,7 +3,6 @@
 	resourceManifest = 
 	[
 		[ 
-			"maps/mp_kiwitest.vmap",
             "models/hlvr_coop/alyx.vmdl",
             "models/props/choreo_office/headset_prop.vmdl",
             "models/hands/alyx_glove_left.vmdl",
