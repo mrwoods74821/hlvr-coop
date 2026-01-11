@@ -2,7 +2,7 @@
 
 **By Dayshower**
 
-> **Note:** This is a fork of [Kiwifruit's HLVRCoop (Kiwi's Co-Op Mod)](https://github.com/TeamPopplio/HLVRCoop).
+> **Note:** This is a fork of [Kiwifruit's HLVRCoop (Kiwi's Co-Op Mod)](https://github.com/KiwifruitDev/KCOM).
 
 <a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/8ExaaRw.png"></a>
 
@@ -15,9 +15,9 @@
 
 --------
 
-### Half-Life: Alyx Co-Op Mod
+### Half-Life: Alyx Co-Op Mod (HLVRCoop) is a cooperative experience for Half-Life: Alyx that brings multiplayer to the game.
 
-## Features
+### Features
 
 - Simultaneous gameplay with up to 16 players
 - VR hands are synced across clients
