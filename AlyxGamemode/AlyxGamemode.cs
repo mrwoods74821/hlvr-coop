@@ -237,6 +237,40 @@ namespace AlyxGamemode
                                                                 }
                                                             }
                                                             break;
+                                                        case PacketType.PlayerPosAng:
+                                                            if (packet.args.Length >= 7)
+                                                            {
+                                                                try
+                                                                {
+                                                                    // Parse player body position and angles
+                                                                    Vector playerOrigin = new(
+                                                                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                                                                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                                                                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                                                                    );
+                                                                    Angle playerAngles = new(
+                                                                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                                                                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                                                                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                                                                    );
+                                                                    int playerHealth = int.Parse(packet.args[6]);
+                                                                    
+                                                                    // Update player state
+                                                                    player.Origin = playerOrigin;
+                                                                    player.Angles = playerAngles;
+                                                                    
+                                                                    // Note: Body position is tracked for internal use (respawn, checkpoints, etc.)
+                                                                    // Body position is not broadcasted to other clients as head/hand positions
+                                                                    // are already synchronized and visible
+                                                                    // Health is tracked for potential use in respawn logic, checkpoints, etc.
+                                                                }
+                                                                catch (Exception ex)
+                                                                {
+                                                                    System.Diagnostics.Debug.WriteLine($"AlyxGamemode.PlayerPosAng parse error: {ex.Message}");
+                                                                    System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                                                                }
+                                                            }
+                                                            break;
                                                         case PacketType.Initialization:
                                                             Response vconsoleInput2 = new("command", "ent_create logic_script {targetname kcom_script vscripts kcom_interval};ent_create logic_timer {targetname kcom_timer refiretime 0.01};echo IENT KCOM");
                                                             Response output3 = new("status", "Initializing co-op...");

@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -154,7 +154,7 @@ namespace AlyxGamemode
                 PacketType.PhysicsObjectPosAng => "PHYS",
                 PacketType.MapName => "MAPN",
                 PacketType.ButtonIndexStartPos => "BUTN",
-                PacketType.ButtonPressIndex => "BUTN",
+                PacketType.ButtonPressIndex => "BPRS",
                 PacketType.DoorIndexStartPos => "DOOR",
                 PacketType.BrokenProp => "BRAK",
                 PacketType.TriggerIndexStartPos => "TRIG",
