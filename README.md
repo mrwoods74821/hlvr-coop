@@ -33,6 +33,10 @@
 
 - Download the [latest release](https://github.com/dayflaree/hlvr-coop/releases) from GitHub
 - Extract the contents of the zip file to a safe place (e.g. a new folder on your desktop)
+- **Install the Workshop addon first** (required):
+	- Copy the `WorkshopAddon/game/hlvr_addons/hlvr_coop` folder to your Half-Life: Alyx installation directory under `game/hlvr_addons/`
+	- Copy the `WorkshopAddon/content/hlvr_addons/hlvr_coop` folder to your Half-Life: Alyx installation directory under `content/hlvr_addons/`
+	- The Workshop addon is required for the mod to function properly
 - Set the following launch options for Half-Life: Alyx in Steam: `-console -vconsole -language english`
 - Launch the game
 - Open HLVRCoop using `HLVRCoOpMod.exe`
@@ -143,23 +147,23 @@ For addon development, you may want to "symlink" folders from this repository to
 - Copy Half-Life: Alyx's `game/hlvr_addons` directory path and paste it into the command prompt, then press enter
 	- Note: You can create these folders relative to the `Half-Life Alyx` folder if they don't exist
 	- Note: You may need to "wrap" the path in quotes if it contains spaces
-- Type `mkdir kiwimp_alyx` into the command prompt and press enter
-- Type `cd kiwimp_alyx` into the command prompt and press enter
+- Type `mkdir hlvr_coop` into the command prompt and press enter
+- Type `cd hlvr_coop` into the command prompt and press enter
 - Type `mklink /J scripts` and press space
 - Find the repository's directory, this is likely `C:\Users\{username}\source\repos\HLVRCoop`
 - Copy the HLVRCoop repository directory path and paste it into the command prompt
-- Type `\WorkshopAddon\game\hlvr_addons\kiwimp_alyx\scripts` at the end of the command prompt to complete the path and press enter
+- Type `\WorkshopAddon\game\hlvr_addons\hlvr_coop\scripts` at the end of the command prompt to complete the path and press enter
 - Type `cd` into the command prompt and press space
 - Copy Half-Life: Alyx's `content/hlvr_addons` directory path and paste it into the command prompt, then press enter
 	- Note: You can create these folders relative to the `Half-Life Alyx` folder if they don't exist
 	- Note: You may need to "wrap" the path in quotes if it contains spaces
-- Type `mklink /J kiwimp_alyx` and press space
+- Type `mklink /J hlvr_coop` and press space
 - Copy the HLVRCoop repository directory path and paste it into the command prompt
-- Type `\WorkshopAddon\content\hlvr_addons\kiwimp_alyx` at the end of the command prompt to complete the path and press enter
+- Type `\WorkshopAddon\content\hlvr_addons\hlvr_coop` at the end of the command prompt to complete the path and press enter
 - Launch Half-Life: Alyx with Workshop tools enabled 
 	- Type `-console -vconsole -language english` into the launch options for Half-Life: Alyx in Steam before launching
 - Open VConsole by pressing the tilde (`~`) key
-- Type `addon_enable kiwimp_alyx` into VConsole and press enter
+- Type `addon_enable hlvr_coop` into VConsole and press enter
 - Changes within the Workshop tools will now be reflected to the HLVRCoop repository and vice versa
 
 

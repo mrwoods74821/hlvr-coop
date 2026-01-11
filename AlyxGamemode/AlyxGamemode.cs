@@ -48,7 +48,7 @@ namespace AlyxGamemode
                             List<IndexedClient> openConnections = (List<IndexedClient>)vs[0];
                             IWebSocketConnection openSocket = (IWebSocketConnection)vs[1];
                             Player? player2 = AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id);
-                            Response enableAddon = new("command", "addon_enable 2739356543");
+                            Response enableAddon = new("command", "addon_enable hlvr_coop");
                             openSocket.Send(JsonConvert.SerializeObject(enableAddon));
                         }
                         break;

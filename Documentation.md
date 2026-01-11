@@ -68,7 +68,7 @@ The mod uses a **hybrid architecture**:
 ┌─────────────────────────────────────────────────────────────┐
 │                     Half-Life: Alyx                         │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │        Workshop Addon (kiwimp_alyx)                  │   │
+│  │        Workshop Addon (hlvr_coop)                    │   │
 │  │  ┌────────────────────────────────────────────────┐  │   │
 │  │  │  Lua Scripts (kcom_interval.lua)               │  │   │
 │  │  │  - Tracks player/entity positions              │  │   │
@@ -158,11 +158,11 @@ The mod uses a **hybrid architecture**:
 
 ### 3.2 Workshop Addon
 
-**Location**: `WorkshopAddon/game/hlvr_addons/kiwimp_alyx/`
+**Location**: `WorkshopAddon/game/hlvr_addons/hlvr_coop/`
 
 **Structure**:
 ```
-kiwimp_alyx/
+hlvr_coop/
 ├── addoninfo.txt          # Addon metadata
 ├── scripts/
 │   ├── vlua_globals.lua   # Global definitions
@@ -199,7 +199,7 @@ Server-side Lua scripts loaded automatically:
 2. **User starts Half-Life: Alyx**
    - Game launches with VConsole enabled (`-console -vconsole`)
    - VConsole listens on TCP port (default: 29000)
-   - Workshop addon `kiwimp_alyx` must be enabled
+   - Workshop addon `hlvr_coop` must be enabled
 
 3. **User connects client or starts server**
    - **Client**: Connects to WebSocket server, connects VConsole
@@ -207,7 +207,7 @@ Server-side Lua scripts loaded automatically:
 
 4. **Client connects to game**
    - VConsole connects via TCP to `localhost:29000`
-   - Sends `addon_enable 2739356543` to enable Workshop addon
+   - Sends `addon_enable hlvr_coop` to enable Workshop addon
    - Game-side Lua scripts initialize
 
 5. **Game-side initialization**
@@ -319,7 +319,7 @@ VConsole captures "PRNT" messages and extracts the data.
 The mod sends various commands to the game:
 
 #### Game Control
-- `addon_enable <workshop_id>` - Enable Workshop addon
+- `addon_enable <addon_name_or_workshop_id>` - Enable Workshop addon (use folder name for local addons, or Workshop ID for subscribed addons)
 - `addon_play <map_name>` - Load/addon map
 - `addon_tools_map <map_name>` - Load map in editor mode
 - `buddha 1` - Enable god mode (prevents death)
@@ -402,7 +402,7 @@ if (response.data.Contains("KCOM"))
 
 ### 6.1 What is a Workshop Addon?
 
-Half-Life: Alyx supports Steam Workshop addons that can add scripts, assets, and maps. The mod uses Workshop addon ID **2739356543** (`kiwimp_alyx`).
+Half-Life: Alyx supports Steam Workshop addons that can add scripts, assets, and maps. The mod uses Workshop addon ID **2739356543** (`hlvr_coop`).
 
 ### 6.2 Addon Structure
 
@@ -410,14 +410,14 @@ Half-Life: Alyx supports Steam Workshop addons that can add scripts, assets, and
 WorkshopAddon/
 ├── content/                           # Game assets
 │   └── hlvr_addons/
-│       └── kiwimp_alyx/
+│       └── hlvr_coop/
 │           ├── maps/                  # Custom maps
 │           ├── resourcemanifests/     # Resource definitions
 │           ├── soundevents/           # Sound definitions
 │           └── sounds/                # Audio files
 └── game/                              # Game scripts
     └── hlvr_addons/
-        └── kiwimp_alyx/
+        └── hlvr_coop/
             ├── addoninfo.txt          # Addon metadata
             └── scripts/
                 ├── vlua_globals.lua   # Global definitions
@@ -526,10 +526,10 @@ end
 
 ### 6.7 Development Workflow
 
-1. **Edit scripts** in `WorkshopAddon/game/hlvr_addons/kiwimp_alyx/scripts/`
+1. **Edit scripts** in `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/`
 2. **Use symlinks** (see README.md) to link to game directory, OR
-3. **Copy files** to game's `hlvr_addons/kiwimp_alyx/` folder
-4. **Enable addon** in game: `addon_enable kiwimp_alyx`
+3. **Copy files** to game's `hlvr_addons/hlvr_coop/` folder
+4. **Enable addon** in game: `addon_enable hlvr_coop`
 5. **Test changes** - scripts reload on map change
 
 ---
@@ -1254,7 +1254,7 @@ case PacketType.YourPacket:
 
 **Best for**: Syncing new entity types, game behavior, new commands
 
-**Location**: `WorkshopAddon/game/hlvr_addons/kiwimp_alyx/scripts/vscripts/`
+**Location**: `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/vscripts/`
 
 **Add entity tracking**:
 ```lua
@@ -1372,7 +1372,7 @@ case PacketType.YourPacket:
 **Symptoms**: "INIT KCOM" not received, entities not syncing
 **Solutions**:
 - Verify addon ID: 2739356543
-- Check addon enabled in game: `addon_enable kiwimp_alyx`
+- Check addon enabled in game: `addon_enable hlvr_coop`
 - Verify addon subscribed on Steam Workshop
 - Check addon files in game directory
 
