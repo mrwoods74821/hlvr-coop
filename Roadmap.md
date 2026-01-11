@@ -1532,7 +1532,7 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 
 ##### 1. Player Body - ALYX / GORDON
 
-**Steam Workshop:** [Player Body - ALYX / GORDON](https://steamcommunity.com/sharedfiles/filedetails/?id=3581426521)
+**Steam Workshop:** [Player Body](https://steamcommunity.com/sharedfiles/filedetails/?id=3581426521)
 
 **Description:**
 - Adds full player body (Alyx Vance or Gordon Freeman) visible in VR
