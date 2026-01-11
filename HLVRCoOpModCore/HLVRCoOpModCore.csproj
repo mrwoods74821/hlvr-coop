@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
@@ -7,10 +7,10 @@
 	  <Version>3.1.0.0</Version>
 	  <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-	  <Product>Kiwi's Co-Op Mod - Core</Product>
+	  <Product>Half-Life: Alyx Co-Op Mod - Core</Product>
 	  <Copyright>© 2022 KiwifruitDev</Copyright>
 	  <Description>Play Half-Life: Alyx cooperatively with up to 16 players!</Description>
-	  <Company>KiwifruitDev</Company>
+	  <Company>Dayshower</Company>
   </PropertyGroup>
   
   <ItemGroup>

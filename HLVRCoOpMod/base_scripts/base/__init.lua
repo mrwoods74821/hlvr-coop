@@ -16,8 +16,8 @@
 
 -- Internal functionality synonomous with C# code
 
-import('KiwisCoOpModCore')
-import('KiwisCoOpMod')
+import('HLVRCoOpModCore')
+import('HLVRCoOpMod')
 import('LuaInterpreterPlugin')
 import('System.Drawing, Version=4.0.0.0, Culture=neutral')
 import('System.Drawing')
