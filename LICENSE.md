@@ -3,7 +3,7 @@ This file contains all licenses utilized within HLVRCOOP.
 
 ## Project License
 
-### Kiwi's Co-Op Mod for Half-Life: Alyx
+### HLVR Co-Op Mod for Half-Life: Alyx
 
 ```
 The MIT License (MIT)
