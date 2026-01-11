@@ -17,8 +17,6 @@
 
 ### Half-Life: Alyx Co-Op Mod
 
---------
-
 ## Features
 
 - Simultaneous gameplay with up to 16 players
