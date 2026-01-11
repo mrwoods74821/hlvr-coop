@@ -13,9 +13,10 @@
 3. [Priority 2: Incomplete Core Features](#priority-2-incomplete-core-features)
 4. [Priority 3: Quality of Life Improvements](#priority-3-quality-of-life-improvements)
 5. [Priority 4: Code Quality & Technical Debt](#priority-4-code-quality--technical-debt)
-6. [Implementation Guidelines](#implementation-guidelines)
-7. [Testing Strategy](#testing-strategy)
-8. [Dependencies & Prerequisites](#dependencies--prerequisites)
+6. [Priority 5: Future Enhancements & Addon Support](#priority-5-future-enhancements--addon-support)
+7. [Implementation Guidelines](#implementation-guidelines)
+8. [Testing Strategy](#testing-strategy)
+9. [Dependencies & Prerequisites](#dependencies--prerequisites)
 
 ---
 
@@ -24,10 +25,9 @@
 **This roadmap is based on analysis of the EXISTING codebase, not official Half-Life: Alyx documentation.**
 
 **Before implementing anything:**
-1. ✅ Read [VERIFICATION_AND_RESOURCES.md](VERIFICATION_AND_RESOURCES.md) - Critical guide on how to verify code will work
-2. ✅ Check [Official Valve Developer Community documentation](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)
-3. ✅ Test incrementally - Small changes, verify, repeat
-4. ✅ Ask the community - Discord, forums, GitHub issues
+1. ✅ Check [Official Valve Developer Community documentation](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)
+2. ✅ Test incrementally - Small changes, verify, repeat
+3. ✅ Ask the community - Discord, forums, GitHub issues
 
 **What this roadmap is:**
 - Analysis of incomplete code in the mod
@@ -63,8 +63,10 @@
 - **Priority 2:** 4-6 weeks (core features)
 - **Priority 3:** 2-3 weeks (improvements)
 - **Priority 4:** 1-2 weeks (code quality)
+- **Priority 5:** TBD (future enhancements - addon support)
 
-**Total Estimated Time:** 9-14 weeks for complete implementation
+**Total Estimated Time:** 9-14 weeks for Priority 1-4 implementation
+**Future Enhancements:** Addon support timeline TBD after Priority 1-4 completion
 
 ---
 
@@ -1512,6 +1514,166 @@ Chat command handling uses a workaround (`lua_chat_handled` response type) inste
 
 ---
 
+## Priority 5: Future Enhancements & Addon Support
+
+### Task 5.1: Steam Workshop Addon Compatibility
+
+**Status:** Future enhancement  
+**Priority:** LOW - Quality of life improvements  
+**Estimated Effort:** TBD (requires investigation)  
+**Risk Level:** Medium  
+**Dependencies:** Priority 1-4 tasks should be completed first
+
+#### Overview
+
+Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the multiplayer experience. These addons provide additional features that players may want to use in cooperative gameplay.
+
+#### Target Addons for Support
+
+##### 1. Player Body - ALYX / GORDON
+
+**Steam Workshop:** [Player Body - ALYX / GORDON](https://steamcommunity.com/sharedfiles/filedetails/?id=3581426521)
+
+**Description:**
+- Adds full player body (Alyx Vance or Gordon Freeman) visible in VR
+- Includes H.E.V. suit callouts
+- Customized weapon attachment points
+- Additional health pen and grenade slots on belt
+- Leaves ragdoll upon death
+
+**Integration Requirements:**
+- Synchronize player body model selection across clients
+- Ensure body visibility is consistent for all players
+- Handle body ragdoll synchronization on death
+- Sync belt item positions if possible
+- May require additional packet types for body state
+
+**Investigation Needed:**
+- How the addon determines which body model to use
+- Whether body state can be queried via VScript
+- If body ragdolls can be synchronized
+- Compatibility with existing player synchronization
+
+**Estimated Effort:** 1-2 weeks (after investigation)
+
+---
+
+##### 2. Unpin Ragdolls [ALL MAPS UPDATE!]
+
+**Steam Workshop:** [Unpin Ragdolls](https://steamcommunity.com/sharedfiles/filedetails/?id=2173405711)
+
+**Description:**
+- Removes "pinning" effect that prevents picking up humanoid bodies
+- Allows players to pick up and throw corpses
+- Use corpses as shields or move them out of the way
+
+**Integration Requirements:**
+- Synchronize ragdoll physics state across clients
+- Ensure unpinned ragdolls are interactable for all players
+- Handle ragdoll position/rotation synchronization
+- May require new entity type tracking for ragdolls
+
+**Investigation Needed:**
+- How the addon modifies ragdoll physics properties
+- Whether ragdoll state can be queried/set via VScript
+- If ragdoll positions can be synchronized like physics objects
+- Compatibility with existing physics synchronization
+
+**Estimated Effort:** 1-2 weeks (after investigation)
+
+---
+
+##### 3. Scalable Init Support
+
+**Steam Workshop:** [Scalable Init Support](https://steamcommunity.com/sharedfiles/filedetails/?id=2182586257)
+
+**Description:**
+- Mod-loader that enables multiple init-based VScript mods to work simultaneously
+- Centralized code location for easy maintenance
+- Required dependency for many other addons
+
+**Integration Requirements:**
+- Ensure mod's Workshop addon is compatible with Scalable Init Support
+- Verify that mod's Lua scripts work alongside Scalable Init Support
+- Test compatibility when both are enabled
+- May require coordination with addon loading order
+
+**Investigation Needed:**
+- Current compatibility status (may already work)
+- Any conflicts with mod's initialization system
+- Whether mod needs to follow Scalable Init Support's file structure
+- Testing with other Scalable Init Support-dependent addons
+
+**Estimated Effort:** 1 week (testing and compatibility fixes)
+
+---
+
+#### Implementation Strategy
+
+**Phase 1: Investigation (Before Implementation)**
+1. Install and test each addon individually with the mod
+2. Identify what breaks or doesn't work
+3. Determine what needs to be synchronized
+4. Check if VScript APIs are available for required features
+5. Document compatibility issues
+
+**Phase 2: Compatibility Testing**
+1. Test each addon with multiplayer sessions
+2. Identify synchronization requirements
+3. Test with multiple players
+4. Document edge cases and issues
+
+**Phase 3: Implementation (If Feasible)**
+1. Add necessary packet types (if needed)
+2. Implement synchronization logic
+3. Add configuration options
+4. Test thoroughly
+5. Document usage
+
+**Phase 4: Integration**
+1. Ensure addons work together (if multiple enabled)
+2. Test with various combinations
+3. Handle conflicts gracefully
+4. Provide user documentation
+
+#### Considerations
+
+**Technical Challenges:**
+- Some addon features may not be synchronizable (e.g., client-side visual effects)
+- Addon APIs may not expose necessary state information
+- Performance impact of additional synchronization
+- Compatibility with existing mod features
+
+**User Experience:**
+- Addons should be optional (opt-in)
+- Clear documentation on what works and what doesn't
+- Graceful degradation if addon not available
+- Configuration options for addon features
+
+**Maintenance:**
+- Addons may update and break compatibility
+- Need to test after game/addon updates
+- May require ongoing maintenance
+
+#### Success Criteria
+
+- [ ] Each addon can be enabled alongside the mod
+- [ ] Core addon features work in multiplayer
+- [ ] Synchronization works correctly (where applicable)
+- [ ] No conflicts with existing mod functionality
+- [ ] Clear documentation for users
+- [ ] Graceful handling when addons are disabled
+
+#### Notes
+
+- **Priority:** This is a future enhancement, not critical for core functionality
+- **Dependencies:** Should complete Priority 1-4 tasks first
+- **Community Interest:** These are popular addons, so support would be valuable
+- **Complexity:** Varies by addon - some may be simple compatibility fixes, others may require significant work
+- **Official Documentation:** Check [Valve Developer Community](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools) for addon development guidelines
+
+---
+
 ## Quick Reference: Implementation Order
 
 1. **Fix automatic map switching** (CRITICAL - 2-3 days)
@@ -1524,6 +1686,7 @@ Chat command handling uses a workaround (`lua_chat_handled` response type) inste
 8. **Implement version system** (LOW - 1 day)
 9. **Complete Lua documentation** (LOW - 1 week)
 10. **Code cleanup** (LOW - 1 week)
+11. **Addon support** (FUTURE - TBD after Priority 1-4)
 
 ---
 
