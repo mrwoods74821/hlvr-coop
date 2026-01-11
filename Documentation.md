@@ -4,6 +4,22 @@
 
 ---
 
+## ⚠️ Important: Official Documentation & Verification
+
+**Before making changes to this mod, verify your code against official Half-Life: Alyx and Source 2 documentation:**
+
+### Essential Official Resources
+
+- **[Half-Life: Alyx Lua Scripting (VScript API)](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)** - Official VScript API documentation
+- **[Getting Started with Lua Scripting](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting/Getting_Started)** - Step-by-step guide
+- **[Half-Life: Alyx Workshop Tools Reference](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Reference)** - Complete API reference
+- **[Source 2 Engine Documentation](https://developer.valvesoftware.com/wiki/Source_2)** - General Source 2 information
+- **[Valve Console (VConsole)](https://developer.valvesoftware.com/wiki/Valve_Console)** - VConsole information
+
+**⚠️ Note:** This documentation describes how the mod currently works. Some implementation details may be reverse-engineered rather than officially documented. Always verify against official sources when making changes.
+
+---
+
 ## Table of Contents
 
 1. [Introduction](#1-introduction)
@@ -289,6 +305,12 @@ Server-side Lua scripts loaded automatically:
 
 VConsole is Half-Life: Alyx's developer console accessible via TCP. The mod uses it for bidirectional communication with the game.
 
+**Official Documentation:**
+- [Valve Console (VConsole)](https://developer.valvesoftware.com/wiki/Valve_Console) - General VConsole information
+- **Note:** The VConsole protocol format used by this mod may be reverse-engineered. There may not be official documentation for the TCP protocol format.
+
+**⚠️ Verification:** The protocol implementation in `VConsole.cs` was discovered through reverse engineering. When modifying VConsole communication, test thoroughly as the protocol may not be officially documented.
+
 ### 5.2 VConsole Protocol
 
 The mod implements a custom protocol over TCP:
@@ -318,13 +340,21 @@ VConsole captures "PRNT" messages and extracts the data.
 
 The mod sends various commands to the game:
 
+**⚠️ Verification:** These commands are used by the mod. Verify command availability and syntax in the game before relying on them. Some commands may be undocumented or game-specific.
+
 #### Game Control
 - `addon_enable <addon_name_or_workshop_id>` - Enable Workshop addon (use folder name for local addons, or Workshop ID for subscribed addons)
+  - **Verified:** Used successfully in `AlyxGamemode.cs` line 51
 - `addon_play <map_name>` - Load/addon map
+  - **Verified:** Used successfully in `ServerProgram.ChangeMap()` line 122
 - `addon_tools_map <map_name>` - Load map in editor mode
+  - **Verified:** Used successfully in `ServerProgram.ChangeMap()` line 122
 - `buddha 1` - Enable god mode (prevents death)
+  - **Verified:** Used in `AlyxGamemode.cs` line 250
 - `unpause` - Unpause game
+  - **Verified:** Used in `AlyxGamemode.cs` line 250
 - `sv_cheats 1` - Enable cheats
+  - **Verified:** Used in `AlyxGamemode.cs` line 81
 
 #### Entity Management
 - `ent_create <classname> {targetname "name" origin "x y z"}` - Create entity
@@ -403,6 +433,11 @@ if (response.data.Contains("KCOM"))
 ### 6.1 What is a Workshop Addon?
 
 Half-Life: Alyx supports Steam Workshop addons that can add scripts, assets, and maps. The mod uses Workshop addon ID **2739356543** (`hlvr_coop`).
+
+**Official Documentation:**
+- [Half-Life: Alyx Workshop Tools](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools) - Complete Workshop addon documentation
+- [Workshop Addon Structure](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Addon_Structure) - How to structure addons
+- [Workshop Tools Installation](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Installation) - Installing Workshop Tools DLC
 
 ### 6.2 Addon Structure
 
@@ -1083,49 +1118,101 @@ Half-Life: Alyx runs on **Source 2** engine, which supports:
 - **Workshop**: Steam Workshop addon support
 - **Entity I/O**: Input/output system for entities
 
+**Official Documentation:**
+- [Source 2 Engine](https://developer.valvesoftware.com/wiki/Source_2) - General Source 2 information
+- [Half-Life: Alyx Workshop Tools](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools) - HL:A specific tools and APIs
+
 ### 13.2 VScript API
 
-The Workshop addon uses Source 2 VScript functions:
+**⚠️ CRITICAL: Always verify VScript functions against official documentation before using them.**
 
-**Entity Functions**:
+**Official Documentation:**
+- **[Half-Life: Alyx Lua Scripting (VScript API)](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)** - Complete VScript API reference
+- **[Getting Started with Lua Scripting](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting/Getting_Started)** - Step-by-step guide
+- **[VScript API Reference](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Reference)** - Complete function reference
+
+**⚠️ Important Limitations:**
+- VScript in Half-Life: Alyx is **limited** compared to other Source 2 games
+- Many game systems may not be accessible
+- Not all Source 2 VScript functions work in HL:A
+- Always check official documentation for availability
+
+The Workshop addon uses Source 2 VScript functions. **Functions listed below are used by this mod, but verify availability in official documentation before using in new code:**
+
+**Entity Functions** (used in `kcom_interval.lua`):
 - `Entities:GetLocalPlayer()` - Get player entity
+  - **Verified:** Used in `kcom_interval.lua` line 3
+  - **Official Docs:** [Entities:GetLocalPlayer()](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)
 - `Entities:FindAllByClassname(classname)` - Find entities
+  - **Verified:** Used in mod (check `kcom_interval.lua` for entity finding patterns)
 - `entity:GetName()` - Get entity name
+  - **Verified:** Used in `kcom_interval.lua` line 127
 - `entity:GetOrigin()` - Get position
+  - **Verified:** Used in `kcom_interval.lua` lines 22, 65, 108
 - `entity:GetAnglesAsVector()` - Get angles
+  - **Verified:** Used in `kcom_interval.lua` lines 24, 38, 66, 109
 - `entity:GetClassname()` - Get entity class
+  - **Verified:** Used in `kcom_interval.lua` line 130
 - `entity:GetHealth()` - Get health
+  - **Verified:** Used in `kcom_interval.lua` lines 25, 77
 - `entity:SetHealth(value)` - Set health
+  - **Note:** Verify availability in official docs before using
 - `entity:FireOutput(output, activator, caller, params, delay)` - Fire output
+  - **Note:** Verify availability in official docs before using
 - `entity:RedirectOutput(output, targetInput, targetEntity)` - Redirect output
+  - **Verified:** Used in `kcom_interval.lua` lines 136, 145
 
-**VR Functions**:
+**VR Functions** (used in `kcom_interval.lua`):
 - `Player:GetHMDAvatar()` - Get VR avatar
+  - **Verified:** Used in `kcom_interval.lua` line 26
 - `avatar:GetVRHand(index)` - Get hand controller
+  - **Verified:** Used in `kcom_interval.lua` lines 29-30
 - `hand:GetAbsOrigin()` - Get hand position
+  - **Verified:** Used in `kcom_interval.lua` lines 36-37
 - `hand:GetAnglesAsVector()` - Get hand angles
+  - **Verified:** Used in `kcom_interval.lua` lines 38-39
 
-**Game Functions**:
+**Game Functions** (used in mod):
 - `GetMapName()` - Get current map
+  - **Verified:** Used in mod (check Lua scripts for map name retrieval)
 - `SpawnEntityFromTableSynchronous(table)` - Spawn entity
+  - **Note:** Verify availability in official docs before using
 - `DoEntFireByInstanceHandle(entity, input, value, delay, activator, caller)` - Fire input
+  - **Verified:** Used in `kcom_interval.lua` lines 140, 145
 - `ListenToGameEvent(eventName, callback, context)` - Listen to events
+  - **Note:** Verify availability in official docs before using
 - `Convars:RegisterCommand(name, callback, help, flags)` - Register command
+  - **Note:** Verify availability in official docs before using
 - `print(...)` - Print to console
+  - **Verified:** Used extensively throughout `kcom_interval.lua` (lines 41, 42, 47, 68, etc.)
 - `StartSoundEvent(event, entity)` - Play sound
+  - **Note:** Verify availability in official docs before using
+
+**⚠️ For functions marked "Note:", verify in [official VScript API documentation](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting) before using.**
 
 ### 13.3 Entity System
 
+**Official Documentation:**
+- [Entity System](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Entity_System) - Entity documentation
+- [Entity I/O System](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Entity_I/O) - Input/Output system
+
 **Entity Classes**:
 - Entities have classnames (e.g., `prop_physics`, `trigger_multiple`)
+  - **Verified:** Used in `kcom_interval.lua` for entity tracking
 - Entities have names (targetname)
+  - **Verified:** Used in `kcom_interval.lua` line 127
 - Entities can have inputs/outputs
+  - **Verified:** Used in `kcom_interval.lua` lines 135-137, 144-145
 - Entities can be spawned, modified, removed
+  - **Note:** Verify spawn/remove functions in official docs
 
 **Input/Output System**:
 - **Inputs**: Actions entities can receive (e.g., `Enable`, `Disable`, `SetHealth`)
+  - **Verified:** Used via `DoEntFireByInstanceHandle()` in `kcom_interval.lua`
 - **Outputs**: Events entities fire (e.g., `OnTrigger`, `OnStartTouch`)
+  - **Verified:** Outputs redirected in `kcom_interval.lua` lines 136, 145
 - **I/O connections**: Map-defined connections between entities
+  - **Note:** See official Entity I/O documentation for details
 
 ### 13.4 VR-Specific Features
 
@@ -1158,19 +1245,38 @@ end, nil)
 
 ### 13.6 Limitations
 
+**Official Documentation:**
+- [VScript Limitations](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting#Limitations) - Official limitations documentation
+
+**Known Limitations:**
 - **No direct C# access**: C# cannot directly call game functions
+  - **Workaround:** All communication via VConsole TCP protocol
 - **VConsole only**: Communication via TCP console protocol
+  - **Note:** Protocol format may be reverse-engineered, not officially documented
 - **Lua limitations**: VScript has restrictions (no file I/O from game, limited APIs)
+  - **Official:** See [official limitations documentation](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting#Limitations)
+  - **Verified:** File I/O not available (mod uses VConsole for external communication)
 - **Workshop dependency**: Requires Workshop addon to be enabled
+  - **Verified:** Addon must be enabled via `addon_enable hlvr_coop`
 - **Single-player engine**: Not designed for multiplayer (hacky workarounds)
+  - **Note:** This is a fundamental limitation - HL:A is single-player only
+  - **Workaround:** Mod synchronizes multiple single-player instances
 
 ---
 
 ## 14. Development Guide
 
+**⚠️ Before developing, read:**
+- [VERIFICATION_AND_RESOURCES.md](VERIFICATION_AND_RESOURCES.md) - How to verify code will work
+- [Official VScript API Documentation](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting) - Always check official docs first
+
 ### 14.1 Adding Features via Lua Scripts
 
 **Best for**: Chat commands, server logic, player tracking, custom rules
+
+**Official Documentation:**
+- [Getting Started with Lua Scripting](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting/Getting_Started)
+- [VScript API Reference](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Reference)
 
 **Step 1**: Create script file
 ```
@@ -1255,6 +1361,11 @@ case PacketType.YourPacket:
 **Best for**: Syncing new entity types, game behavior, new commands
 
 **Location**: `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/vscripts/`
+
+**Official Documentation:**
+- [Workshop Addon Structure](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Addon_Structure)
+- [VScript API Reference](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Reference)
+- **⚠️ Always verify VScript functions exist in HL:A before using them**
 
 **Add entity tracking**:
 ```lua
@@ -1357,6 +1468,10 @@ case PacketType.YourPacket:
 ---
 
 ## 15. Troubleshooting
+
+**Community Support:**
+- [HLVRCoop Discord](https://discord.gg/X6Dp95WRR4) - Active community support
+- [Valve Developer Community Forums](https://developer.valvesoftware.com/wiki/Main_Page) - Official support forums
 
 ### 15.1 Common Issues
 
@@ -1508,8 +1623,40 @@ case PacketType.YourPacket:
 
 ---
 
-## Conclusion
+## Conclusion 
 
-This guide covers the comprehensive architecture and operation of the Half-Life: Alyx Co-Op Mod. For usage instructions, see `README.md`.
+This guide covers the comprehensive architecture and operation of the Half-Life: Alyx Co-Op Mod. For usage instructions, see `README.md`. 
+
+---
+
+## Verification & Official Resources
+
+**Before making changes to this mod, always verify against official documentation:**
+
+### Essential Official Links
+
+- **[Half-Life: Alyx Lua Scripting (VScript API)](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting)** - Official VScript API documentation
+- **[Getting Started with Lua Scripting](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Lua_Scripting/Getting_Started)** - Step-by-step tutorial
+- **[Workshop Tools Reference](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools/Reference)** - Complete API reference
+- **[Source 2 Engine](https://developer.valvesoftware.com/wiki/Source_2)** - General Source 2 information
+- **[Valve Console (VConsole)](https://developer.valvesoftware.com/wiki/Valve_Console)** - VConsole documentation
+- **[VERIFICATION_AND_RESOURCES.md](VERIFICATION_AND_RESOURCES.md)** - Complete verification guide
+
+### Important Notes
+
+- ⚠️ **This documentation describes how the mod works, not official Source 2 specifications**
+- ⚠️ **Some implementation details may be reverse-engineered rather than officially documented**
+- ⚠️ **Always verify VScript functions against official documentation before using them**
+- ⚠️ **VScript in HL:A is limited compared to other Source 2 games - check limitations**
+- ⚠️ **VConsole protocol format may be reverse-engineered - test thoroughly when modifying**
+
+### Verification Checklist
+
+Before implementing any change:
+1. ✅ Check official documentation for API availability
+2. ✅ Verify function exists in HL:A (not just Source 2)
+3. ✅ Test incrementally (small changes, verify, repeat)
+4. ✅ Ask community if unsure ([Discord](https://discord.gg/X6Dp95WRR4))
+5. ✅ Document assumptions and verify them
 
 **Happy modding! -Dayshower**
