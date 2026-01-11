@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -13,7 +13,7 @@
     SOFTWARE.
     -----------------------------------------------------------------------------
 */
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Websocket.Client;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     public class VConsole
     {

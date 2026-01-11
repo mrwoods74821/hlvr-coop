@@ -1,5 +1,5 @@
-﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="KiwisCoOpMod" GeneratedClassName="Settings">
+<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="HLVRCoOpMod" GeneratedClassName="Settings">
   <Profiles />
   <Settings>
     <Setting Name="ServerEnabled" Type="System.Boolean" Scope="User">

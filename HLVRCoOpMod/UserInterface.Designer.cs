@@ -1,6 +1,6 @@
-﻿using System.Windows.Forms;
+using System.Windows.Forms;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     partial class UserInterface
     {
