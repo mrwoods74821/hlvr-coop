@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -398,8 +398,11 @@ namespace AlyxGamemode
                         break;
                 }
             }
-            catch
-            {}
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"AlyxGamemode error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+            }
         }
     }
 }

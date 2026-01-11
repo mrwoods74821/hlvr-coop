@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -96,7 +96,7 @@ namespace KiwisCoOpMod
                                 {
                                     ui.Invoke(() => ui.LogToOutput(channel, "Client is running an older version! Please update your client."));
                                 }
-                                else if (response.version > Response.internalVersion)
+                                else if (response.version < Response.internalVersion)
                                 {
                                     ui.Invoke(() => ui.LogToOutput(channel, "Server is running an older version! Please ask the owner to update their server."));
                                 }
@@ -157,7 +157,7 @@ namespace KiwisCoOpMod
                         timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds
                     };
                     ws.Send(JsonConvert.SerializeObject(input));
-                    ui.Invoke(() => ui.LogToOutput(channel, "Client attempted connection to IP " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ServerPort));
+                    ui.Invoke(() => ui.LogToOutput(channel, "Client attempted connection to IP " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
                 });
                 ConnectVConsole(ws);
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PostStart, ui, ws, error);

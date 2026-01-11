@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -80,7 +80,10 @@ namespace AlyxGamemode
         {
             Player? oldPlayer = players.Find(p => p.Index == index);
             if (oldPlayer != null)
+            {
                 players.Remove(oldPlayer);
+                return true;
+            }
             return false;
         }
     }
