@@ -308,7 +308,7 @@ namespace AlyxGamemode
                                                                 int gamemodeAPIVersion = int.Parse(packet.args[1]);
                                                                 if (gamemodeAPIVersion != APIVersion)
                                                                 {
-                                                                    Response versionOutput = new("status", "Version mismatch! This client reports API version " + APIVersion + ", gamemode reported API version " + gamemodeAPIVersion + ". Please update the client and respective Workshop addons.");
+                                                                    Response versionOutput = new("status", "Version mismatch! Client reports API version " + gamemodeAPIVersion + ", server expects API version " + APIVersion + ". Please update the client and respective Workshop addons.");
                                                                     socket.Send(JsonConvert.SerializeObject(versionOutput));
                                                                 }
                                                                 Map.map = packet.args[0];
@@ -373,7 +373,7 @@ namespace AlyxGamemode
                                                             break;
                                                         case PacketType.KCOMCommand:
                                                             response.type = "chat";
-                                                            response.data = "/" + string.Join(" ", packet.args.Take(packet.args.Count() - 1));
+                                                            response.data = "/" + string.Join(" ", packet.args.Take(packet.args.Length - 1));
                                                             State = HandleState.Continue;
                                                             overrideState = true;
                                                             break;
