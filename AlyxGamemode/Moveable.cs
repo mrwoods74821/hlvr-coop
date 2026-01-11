@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -22,13 +22,14 @@ using Newtonsoft.Json;
 
 namespace AlyxGamemode
 {
-    public class Moveable
+    public class Moveable : IDisposable
     {
         private List<IndexedClient> Connections;
         private Guid ClientID;
         private Entity MovedObject;
         private readonly System.Timers.Timer Tracker;
         private bool TimedOut;
+        private bool disposed = false;
         public Moveable(Entity MovedObject, Guid ClientID, List<IndexedClient> Connections)
         {
             this.MovedObject = MovedObject;
@@ -70,6 +71,28 @@ namespace AlyxGamemode
         public bool GetTimedOut()
         {
             return TimedOut;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    if (Tracker != null)
+                    {
+                        Tracker.Stop();
+                        Tracker.Dispose();
+                    }
+                }
+                disposed = true;
+            }
         }
     }
 }

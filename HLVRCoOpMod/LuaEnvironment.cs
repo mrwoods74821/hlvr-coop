@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -58,7 +58,14 @@ namespace KiwisCoOpMod
             foundFiles.Sort(); // Sort alphabetically
             foreach (string file in foundFiles)
             {
-                lua.DoFile(file);
+                try
+                {
+                    lua.DoFile(file);
+                }
+                catch (Exception e)
+                {
+                    LuaError(e);
+                }
             }
         }
         public void RunFile(string file)

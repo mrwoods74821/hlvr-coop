@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -81,7 +81,11 @@ namespace KiwisCoOpMod
                         await stream.ReadAsync(data.AsMemory(0, length));
                         OnMessageAvailable(new MessageAvailableEventArgs(commandType, data));
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"StreamWatcher error: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                    }
                 }
             }
         }
