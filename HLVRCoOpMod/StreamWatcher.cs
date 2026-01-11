@@ -71,14 +71,34 @@ namespace KiwisCoOpMod
                     try
                     {
                         byte[] headerBuffer = new byte[10];
-                        await stream.ReadAsync(headerBuffer);
+                        int bytesRead = 0;
+                        while (bytesRead < 10)
+                        {
+                            int read = await stream.ReadAsync(headerBuffer, bytesRead, 10 - bytesRead);
+                            if (read == 0)
+                                break; // End of stream
+                            bytesRead += read;
+                        }
+                        if (bytesRead < 10)
+                            break; // Incomplete header, exit loop
+                        
                         byte[] type = new byte[4] {
                             headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3]
                         };
                         string commandType = Encoding.ASCII.GetString(type);
                         byte length = (byte)(headerBuffer[9] - headerBuffer.Length);
                         byte[] data = new byte[length];
-                        await stream.ReadAsync(data.AsMemory(0, length));
+                        bytesRead = 0;
+                        while (bytesRead < length)
+                        {
+                            int read = await stream.ReadAsync(data, bytesRead, length - bytesRead);
+                            if (read == 0)
+                                break; // End of stream
+                            bytesRead += read;
+                        }
+                        if (bytesRead < length)
+                            break; // Incomplete data, exit loop
+                        
                         OnMessageAvailable(new MessageAvailableEventArgs(commandType, data));
                     }
                     catch (Exception ex)
