@@ -15,7 +15,7 @@
 
 --------
 
-### KCOM (Co-Op Mod) for Half-Life: Alyx is a cooperative experience for Half-Life: Alyx.
+### Half-Life: Alyx Co-Op Mod adds multiplayer support to Half-Life: Alyx
 
 ## Features
 
