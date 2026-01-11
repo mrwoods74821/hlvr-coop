@@ -1,22 +1,16 @@
-# Kiwi's Co-Op Mod for Half-Life: Alyx
+# Half-Life: Alyx Co-Op Mod
 
-<a href="https://github.com/TeamPopplio/KCOM"><img align="left" width="256" src="https://i.imgur.com/qIIjxCs.png"></a>
+**By Dayshower**
 
-[![Releases](https://img.shields.io/github/v/tag/teampopplio/kcom?label=release)](https://github.com/teampopplio/kcom/releases)
+> **Note:** This is a fork of [Kiwifruit's KCOM (Kiwi's Co-Op Mod)](https://github.com/TeamPopplio/KCOM).
 
-[![Downloads](https://img.shields.io/github/downloads/teampopplio/kcom/total)](https://github.com/teampopplio/kcom/releases)
+<a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/8ExaaRw.png"></a>
 
-[![Workshop Subscribers](https://img.shields.io/steam/subscriptions/2739356543?label=workshop%20subscribers)](https://steamcommunity.com/sharedfiles/filedetails/?id=2739356543)
-
-[![Discord](https://img.shields.io/discord/738131767944282183?label=discord)](https://discord.gg/3X3teNecWs)
-
-[![License](https://img.shields.io/badge/license-mit-green.svg)](https://github.com/TeamPopplio/KCOM/blob/main/LICENSE.md)
-
-[![Contributors](https://img.shields.io/github/contributors/teampopplio/kcom)](https://github.com/teampopplio/kcom/graphs/contributors)
+[![Discord](https://img.shields.io/discord/738131767944282183?label=discord)](https://discord.gg/X6Dp95WRR4)
 
 --------
 
-### Kiwi's Co-Op Mod for Half-Life: Alyx (KCOM) is a cooperative experience for Half-Life: Alyx.
+### KCOM (Co-Op Mod) for Half-Life: Alyx is a cooperative experience for Half-Life: Alyx.
 
 ## Features
 
@@ -32,12 +26,11 @@
 
 ## Installation
 
-- Subscribe to the [Workshop Addon](https://steamcommunity.com/sharedfiles/filedetails/?id=2739356543) on Steam
-- Download the [latest release](https://github.com/TeamPopplio/KCOM/releases) from GitHub
+- Download the [latest release](https://github.com/dayflaree/hlvr-coop/releases) from GitHub
 - Extract the contents of the zip file to a safe place (e.g. a new folder on your desktop)
 - Set the following launch options for Half-Life: Alyx in Steam: `-console -vconsole -language english`
 - Launch the game
-- Open KCOM using `KiwisCoOpMod.exe`
+- Open KCOM using `HLVRCoOpMod.exe`
 - Follow instructions within the KCOM application
 - KCOM is ready!
 
@@ -133,8 +126,8 @@ Feel free to provide scripts to the KCOM community via the [Discord](https://dis
 ### Instructions
 - Clone the repository within Visual Studio
 - Build all projects for KCOM (x64) by pressing `Ctrl+Shift+B` or by clicking "Build" > "Build Solution"
-	- Note: You may need to build the `KiwisCoOpModCore` project first, this can be done by right-clicking the project and selecting "Build"
-- In Visual Studio, set `KiwisCoOpMod` as the startup project by right-clicking the project and selecting "Set as Startup Project"
+	- Note: You may need to build the `HLVRCoOpModCore` project first, this can be done by right-clicking the project and selecting "Build"
+- In Visual Studio, set `HLVRCoOpMod` as the startup project by right-clicking the project and selecting "Set as Startup Project"
 - Click on the green "Start" button to start debugging
 - Visual Studio will automatically launch KCOM with debugging enabled
 
@@ -167,4 +160,4 @@ For addon development, you may want to "symlink" folders from this repository to
 
 ## Help & Support
 
-Join the [Discord](https://discord.gg/3X3teNecWs) for support between users and developers.
+Join the [Discord](https://discord.gg/X6Dp95WRR4) for support between users and developers.
