@@ -39,7 +39,7 @@
       <Value Profile="(Default)">211</Value>
     </Setting>
     <Setting Name="ServerMap" Type="System.String" Scope="User">
-      <Value Profile="(Default)">a3_hotel_lobby_basement</Value>
+      <Value Profile="(Default)">a2_pistol</Value>
     </Setting>
     <Setting Name="ClientAutomaticallyReconnect" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
