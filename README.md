@@ -17,7 +17,7 @@
 
 ### Half-Life: Alyx Co-Op Mod (HLVRCoop) is a cooperative experience for Half-Life: Alyx that brings multiplayer to the game.
 
-### Features
+## Features
 
 - Simultaneous gameplay with up to 16 players
 - VR hands are synced across clients
