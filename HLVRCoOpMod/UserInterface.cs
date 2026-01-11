@@ -13,7 +13,7 @@
     SOFTWARE.
     -----------------------------------------------------------------------------
 */
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using System.Reflection;
 using Open.Nat;
 using System.Diagnostics;
@@ -25,14 +25,14 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     public partial class UserInterface : Form
     {
         public ClientProgram clientProgram;
         private bool started = false;
         private DateTime startTime;
-        private readonly Channel channel = new("HLVRCOOP", "Half-Life: VR Co-Op", Color.Purple);
+        private readonly Channel channel = new("HLVRCOOP", "HLVR Co-Op", Color.Purple);
         private readonly Random random = new();
         private Type gamemodeType = typeof(CoreGamemode);
         private readonly List<AddonInitializer> addons = new();
@@ -390,7 +390,7 @@ namespace KiwisCoOpMod
 
         private void GitHubToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Process.Start(new ProcessStartInfo("https://github.com/TeamPopplio/kcom") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://github.com/dayflaree/hlvr-coop") { UseShellExecute = true });
         }
 
         private void CheckBoxClientEnabled_CheckedChanged(object sender, EventArgs e)
@@ -510,7 +510,7 @@ namespace KiwisCoOpMod
             string suffix = "";
             if (firstTime)
             {
-                prefix = "Welcome to Kiwi's Co-Op Mod!\n\nThis software requires an open port in order to run a server. Using the UPnP protocol, this step can be done automatically.\n\n";
+                prefix = "Welcome to HLVR Co-Op Mod!\n\nThis software requires an open port in order to run a server. Using the UPnP protocol, this step can be done automatically.\n\n";
                 suffix = "You may access this dialog box at any time via 'File' > 'Forward Port via UPnP'.";
             }
             DialogResult res = MessageBox.Show(prefix+ "The Universal Plug and Play protocol, also known as UPnP, is a feature available on most routers designed to allow software to set port forwarding rules seamlessly.\n\n" +
@@ -524,7 +524,7 @@ namespace KiwisCoOpMod
                     {
                         NatDiscoverer discoverer = new();
                         NatDevice device = await discoverer.DiscoverDeviceAsync();
-                        await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, Settings.Default.ServerPort, Settings.Default.ServerPort, "Kiwi's Co-Op Mod"));
+                        await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, Settings.Default.ServerPort, Settings.Default.ServerPort, "HLVR Co-Op Mod"));
                         MessageBox.Show("Successfully forwarded port '" + Settings.Default.ServerPort + "'!", "Forward Port via UPnP", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)

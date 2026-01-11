@@ -13,7 +13,7 @@
     SOFTWARE.
     -----------------------------------------------------------------------------
 */
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

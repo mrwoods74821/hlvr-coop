@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -19,7 +19,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KiwisCoOpModCore
+namespace HLVRCoOpModCore
 {
     public class Angle
     {

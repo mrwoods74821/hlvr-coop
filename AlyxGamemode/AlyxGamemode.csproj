@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0-windows</TargetFramework>
@@ -7,7 +7,7 @@
 	  <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 	  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 	  <Version>3.1.0.0</Version>
-	  <Product>Kiwi's Co-Op Mod - Half-Life: Alyx Gamemode</Product>
+	  <Product>HLVR Co-Op Mod - Half-Life: Alyx Gamemode</Product>
 	  <Copyright>© 2022 KiwifruitDev</Copyright>
 	  <Description>Play Half-Life: Alyx cooperatively with up to 16 players!</Description>
 	  <Company>KiwifruitDev</Company>

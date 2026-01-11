@@ -14,13 +14,13 @@
     -----------------------------------------------------------------------------
 */
 using NLua;
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Fleck;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Reflection;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     public sealed class LuaEnvironment
     {

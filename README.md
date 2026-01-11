@@ -2,7 +2,7 @@
 
 **By Dayshower**
 
-> **Note:** This is a fork of [Kiwifruit's KCOM (Kiwi's Co-Op Mod)](https://github.com/KiwifruitDev/KCOM).
+> **Note:** This is a fork of [Kiwifruit's HLVRCOOP (Half-Life: Alyx Co-Op Mod)](https://github.com/KiwifruitDev/KCOM).
 
 <a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/8ExaaRw.png"></a>
 

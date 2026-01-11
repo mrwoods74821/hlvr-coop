@@ -1,5 +1,5 @@
 # Licenses
-This file contains all licenses utilized within KCOM.
+This file contains all licenses utilized within HLVRCOOP.
 
 ## Project License
 

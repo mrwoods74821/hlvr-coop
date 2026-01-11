@@ -14,7 +14,7 @@
     -----------------------------------------------------------------------------
 */
 using Fleck;
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -281,7 +281,7 @@ namespace AlyxGamemode
                                                             Thread thr = new(new ThreadStart(() =>
                                                             {
                                                                 Thread.Sleep(2500);
-                                                                Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>KiwisCoOpMod>0>-1");
+                                                                Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>HLVRCoOpMod>0>-1");
                                                                 Response output4 = new("status", "Co-op initialized!");
                                                                 socket.Send(JsonConvert.SerializeObject(output4));
                                                                 socket.Send(JsonConvert.SerializeObject(vconsoleInput5));

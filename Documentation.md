@@ -1377,7 +1377,7 @@ hlvrcoop_trackers["your_entity_class"] = true
 Convars:RegisterCommand("hlvrcoop_yourcommand", function(command, arg1)
     -- Command logic
     print("YOUR " .. arg1 .. " HLVRCOOP")
-end, "Half-Life: VR Co-Op", 0)
+end, "HLVR Co-Op", 0)
 ```
 
 ### 14.5 Adding New Packet Types

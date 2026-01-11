@@ -13,7 +13,7 @@
     SOFTWARE.
     -----------------------------------------------------------------------------
 */
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using DiscordRPC;
 using System;
 using System.Collections.Generic;
@@ -44,7 +44,7 @@ namespace DiscordRpcPlugin
                     richPresence.Assets = new Assets()
                     {
                         LargeImageKey = "hlvrcoop",
-                        LargeImageText = "Kiwi's Co-Op Mod",
+                        LargeImageText = "HLVR Co-Op Mod",
                     };
                     discord.SetPresence(richPresence);
                     break;
@@ -101,7 +101,7 @@ namespace DiscordRpcPlugin
                             richPresence3.Assets = new Assets()
                             {
                                 LargeImageKey = "hlvrcoop",
-                                LargeImageText = "Kiwi's Co-Op Mod",
+                                LargeImageText = "HLVR Co-Op Mod",
                             };
                             discord4.SetPresence(richPresence3);
                         }
@@ -131,7 +131,7 @@ namespace DiscordRpcPlugin
                         richPresence5.Assets = new Assets()
                         {
                             LargeImageKey = "hlvrcoop",
-                            LargeImageText = "Kiwi's Co-Op Mod",
+                            LargeImageText = "HLVR Co-Op Mod",
                         };
                         discord6.SetPresence(richPresence5);
                     }

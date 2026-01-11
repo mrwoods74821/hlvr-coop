@@ -13,7 +13,7 @@
     SOFTWARE.
     -----------------------------------------------------------------------------
 */
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using System;
 using System.Collections.Generic;
 using System.Timers;

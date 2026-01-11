@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 
 // https://stackoverflow.com/a/2784979
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     public delegate void MessageAvailableEventHandler(object sender,
     MessageAvailableEventArgs e);

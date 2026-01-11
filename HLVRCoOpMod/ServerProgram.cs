@@ -19,7 +19,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Fleck;
 using System.Reflection;
 using System.Diagnostics;
@@ -27,7 +27,7 @@ using System.Text.RegularExpressions;
 using System.Drawing;
 using System.IO;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     public class ServerProgram
     {

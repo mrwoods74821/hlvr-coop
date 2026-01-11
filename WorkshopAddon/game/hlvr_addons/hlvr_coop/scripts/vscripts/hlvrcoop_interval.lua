@@ -15,7 +15,7 @@ function Precache(context)
     PrecacheModel("models/hands/alyx_glove_right.vmdl", context)
 end
 
-function KiwisCoOpMod()
+function HLVRCoOpMod()
     if HLVRCOOP_ACTIVE then
         if hlvrcoop_inbetween >= 5 then
             hlvrcoop_inbetween = 0;
@@ -621,7 +621,7 @@ function KiwisCoOpMod()
                     Player:SetAbsOrigin(Vector(tonumber(x), tonumber(y), tonumber(z)));
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_teleportangles", function(command, x, y, z, pitch, yaw, roll)
             if Player then
@@ -634,7 +634,7 @@ function KiwisCoOpMod()
                     Player:SetAbsAngles(tonumber(pitch), tonumber(yaw), tonumber(roll));
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_setlocation", function(command, name, x, y, z, pitch, yaw, roll)
             if not HLVRCOOP_USE_UUIDS then
@@ -660,7 +660,7 @@ function KiwisCoOpMod()
                 entity:SetAbsOrigin(Vector(tonumber(x), tonumber(y), tonumber(z)));
                 entity:SetAbsAngles(tonumber(pitch), tonumber(yaw), tonumber(roll));
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_setlocation_nonuuid", function(command, name, x, y, z, pitch, yaw, roll)
             local entities = Entities:FindAllByName(name);
@@ -674,7 +674,7 @@ function KiwisCoOpMod()
                     entity:SetAbsAngles(tonumber(pitch), tonumber(yaw), tonumber(roll));
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_fireoutput", function(command, name, type)
             if not HLVRCOOP_USE_UUIDS then
@@ -700,7 +700,7 @@ function KiwisCoOpMod()
                     DoEntFireByInstanceHandle(entity, "Disable", "", 0, nil, nil);
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_grace", function(command, name, type)
             if not HLVRCOOP_USE_UUIDS then
@@ -722,7 +722,7 @@ function KiwisCoOpMod()
                     DoEntFireByInstanceHandle(entity, hlvrcoop_toggletypes[object.class][2], "", 0, nil, nil);
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_npc_sethealth", function(command, name, health)
             if not HLVRCOOP_USE_UUIDS then
@@ -762,7 +762,7 @@ function KiwisCoOpMod()
                     DoEntFireByInstanceHandle(entity, "BecomeRagdoll", "", 0, nil, nil);
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_break", function(command, name)
             if not HLVRCOOP_USE_UUIDS then
@@ -779,17 +779,17 @@ function KiwisCoOpMod()
                 if not IsValidEntity(entity) then return end
                 DoEntFireByInstanceHandle(entity, "Break", "", 0, nil, nil);
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_sethealth", function(command, health)
             if Player then
                 Player:SetHealth(tonumber(health));
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_command", function(command, hlvrcoopcommand)
             print("CMND "..hlvrcoopcommand.." HLVRCOOP");
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_cache_entity", function(command, cacheent)
             if not HLVRCOOP_USE_UUIDS then
@@ -808,7 +808,7 @@ function KiwisCoOpMod()
                 if not IsValidEntity(entity) then return end
                 HLVRCOOP_EntitySyncSpecific(entity);
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_cache_entity_nonuuid", function(command, cacheent)
             print("Templated: "..cacheent);
@@ -820,11 +820,11 @@ function KiwisCoOpMod()
                     end
                 end
             end
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_cache_all_entities", function(command)
             HLVRCOOP_EntitySync(false)
-        end, "Kiwi's Co-Op Mod", 0);
+        end, "HLVR Co-Op Mod", 0);
 
         print("MAPN "..GetMapName().." "..HLVRCOOP_API_VERSION.." HLVRCOOP");
         HLVRCOOP_EntitySync(true);

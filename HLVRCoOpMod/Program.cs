@@ -13,19 +13,19 @@
     SOFTWARE.
     -----------------------------------------------------------------------------
 */
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Microsoft.Win32;
 using System;
 using System.Windows.Forms;
 using System.Configuration;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     internal static class Program
     {
         public static readonly UserInterface userInterface = new(); // WORKAROUND SPECIFICALLY FOR LUA
         const string UriScheme = "hlvrcoop";
-        const string FriendlyName = "Half-Life: VR Co-Op";
+        const string FriendlyName = "HLVR Co-Op";
         /// <summary>
         ///  The main entry point for the application.
         /// </summary>

@@ -1,4 +1,4 @@
-﻿/*
+/*
     Kiwi's Co-Op Mod for Half-Life: Alyx
     Copyright (c) 2022 KiwifruitDev
     All rights reserved.
@@ -22,7 +22,7 @@ using System.Reflection;
 using System.Threading;
 using System.Diagnostics;
 
-namespace KiwisCoOpModCore
+namespace HLVRCoOpModCore
 {
     public enum PluginHandleType
     {

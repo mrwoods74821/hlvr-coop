@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HLVRCoOpModCore", "HLVRCoOp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WorkshopAddon", "WorkshopAddon", "{6CD514E6-EFCE-44C9-AF9D-E994ADDDE3DA}"
 	ProjectSection(SolutionItems) = preProject
-		WorkshopAddon\game\hlvr_addons\hlvr_coop\scripts\vscripts\kcom_interval.lua = WorkshopAddon\game\hlvr_addons\hlvr_coop\scripts\vscripts\kcom_interval.lua
+		WorkshopAddon\game\hlvr_addons\hlvr_coop\scripts\vscripts\hlvrcoop_interval.lua = WorkshopAddon\game\hlvr_addons\hlvr_coop\scripts\vscripts\hlvrcoop_interval.lua
 	EndProjectSection
 EndProject
 Global

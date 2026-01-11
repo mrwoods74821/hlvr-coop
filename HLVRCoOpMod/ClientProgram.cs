@@ -20,12 +20,12 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.ComponentModel;
-using KiwisCoOpModCore;
+using HLVRCoOpModCore;
 using Websocket.Client;
 using System.Diagnostics;
 using System.Drawing;
 
-namespace KiwisCoOpMod
+namespace HLVRCoOpMod
 {
     public class ClientProgram
     {
