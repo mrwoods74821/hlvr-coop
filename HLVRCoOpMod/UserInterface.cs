@@ -15,7 +15,6 @@
 */
 using HLVRCoOpModCore;
 using System.Reflection;
-using Open.Nat;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.Windows.Forms;
@@ -172,8 +171,6 @@ namespace HLVRCoOpMod
             }
             // Programs
             clientProgram = new ClientProgram(this);
-            if(!Settings.Default.ClickedUPnP)
-                AskUPnP(true);
             // Lua version of initializing
             LuaEnvironment.instance.Handle(PluginHandleType.UserInterface_Initialized);
         }
@@ -409,11 +406,6 @@ namespace HLVRCoOpMod
             };
         }
 
-        private void SteamWorkshopToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Process.Start(new ProcessStartInfo("https://steamcommunity.com/sharedfiles/filedetails/?id=2739356543") { UseShellExecute = true });
-        }
-
         private void ClientPrintVConsoleToolStripMenuItem_CheckedChanged(object sender, EventArgs e)
         {
             Settings.Default.ClientPrintVconsole = clientPrintVConsoleToolStripMenuItem.Checked;
@@ -498,43 +490,6 @@ namespace HLVRCoOpMod
             LogToOutput(channel, "Options saved");
         }
 
-        private void UPnPToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            AskUPnP(false);
-        }
-
-        private static async void AskUPnP(bool firstTime)
-        {
-            Settings.Default.ClickedUPnP = true;
-            string prefix = "";
-            string suffix = "";
-            if (firstTime)
-            {
-                prefix = "Welcome to HLVR Co-Op Mod!\n\nThis software requires an open port in order to run a server. Using the UPnP protocol, this step can be done automatically.\n\n";
-                suffix = "You may access this dialog box at any time via 'File' > 'Forward Port via UPnP'.";
-            }
-            DialogResult res = MessageBox.Show(prefix+ "The Universal Plug and Play protocol, also known as UPnP, is a feature available on most routers designed to allow software to set port forwarding rules seamlessly.\n\n" +
-                "If you would like to host a server, click 'Yes' to open the TCP port '"+Settings.Default.ServerPort+"' via UPnP.\n\n" +
-                "If you are connecting to a remote server, click 'No' to proceed.\n\n" +
-                suffix, "Forward Port via UPnP", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            switch(res)
-            {
-                case DialogResult.Yes:
-                    try
-                    {
-                        NatDiscoverer discoverer = new();
-                        NatDevice device = await discoverer.DiscoverDeviceAsync();
-                        await device.CreatePortMapAsync(new Mapping(Protocol.Tcp, Settings.Default.ServerPort, Settings.Default.ServerPort, "HLVR Co-Op Mod"));
-                        MessageBox.Show("Successfully forwarded port '" + Settings.Default.ServerPort + "'!", "Forward Port via UPnP", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("An error has occured while attempting to forward port '" + Settings.Default.ServerPort + "':\n\n"+ex.Message+
-                            "\n\nYour router may not support UPnP. If the mapping does not already exist, please forward the port manually.", "Forward Port via UPnP", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    break;
-            }
-        }
 
         private void ButtonServerChangeMap_Click(object sender, EventArgs e)
         {
@@ -579,7 +534,7 @@ namespace HLVRCoOpMod
 
         private void koFiToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Process.Start(new ProcessStartInfo("https://ko-fi.com/kiwifruitdev") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://www.paypal.com/paypalme/EStaley944") { UseShellExecute = true });
         }
     }
 }

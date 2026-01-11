@@ -50,9 +50,6 @@
     <Setting Name="ServerDisableUserVconsoleInput" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="ClickedUPnP" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
-    </Setting>
     <Setting Name="CurrentAddons" Type="System.String" Scope="User">
       <Value Profile="(Default)">["Half-Life: Alyx","Discord Rich Presence"]</Value>
     </Setting>

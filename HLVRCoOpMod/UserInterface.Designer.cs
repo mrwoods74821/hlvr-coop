@@ -35,7 +35,6 @@ namespace HLVRCoOpMod
             this.richTextBoxOutput = new System.Windows.Forms.RichTextBox();
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.uPnPToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveOptionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -50,7 +49,6 @@ namespace HLVRCoOpMod
             this.discordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gitHubToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.steamWorkshopToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.koFiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip = new System.Windows.Forms.ToolTip(this.components);
             this.checkBoxServerEnabled = new System.Windows.Forms.CheckBox();
@@ -133,19 +131,11 @@ namespace HLVRCoOpMod
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.uPnPToolStripMenuItem,
             this.saveOptionsToolStripMenuItem,
             this.closeToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
-            // 
-            // uPnPToolStripMenuItem
-            // 
-            this.uPnPToolStripMenuItem.Name = "uPnPToolStripMenuItem";
-            this.uPnPToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.uPnPToolStripMenuItem.Text = "Forward Port via UPnP";
-            this.uPnPToolStripMenuItem.Click += new System.EventHandler(this.UPnPToolStripMenuItem_Click);
             // 
             // saveOptionsToolStripMenuItem
             // 
@@ -245,7 +235,6 @@ namespace HLVRCoOpMod
             // 
             this.aboutToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.gitHubToolStripMenuItem,
-            this.steamWorkshopToolStripMenuItem,
             this.koFiToolStripMenuItem});
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
             this.aboutToolStripMenuItem.Size = new System.Drawing.Size(52, 20);
@@ -258,18 +247,11 @@ namespace HLVRCoOpMod
             this.gitHubToolStripMenuItem.Text = "GitHub";
             this.gitHubToolStripMenuItem.Click += new System.EventHandler(this.GitHubToolStripMenuItem_Click);
             // 
-            // steamWorkshopToolStripMenuItem
-            // 
-            this.steamWorkshopToolStripMenuItem.Name = "steamWorkshopToolStripMenuItem";
-            this.steamWorkshopToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
-            this.steamWorkshopToolStripMenuItem.Text = "Steam Workshop";
-            this.steamWorkshopToolStripMenuItem.Click += new System.EventHandler(this.SteamWorkshopToolStripMenuItem_Click);
-            // 
             // koFiToolStripMenuItem
             // 
             this.koFiToolStripMenuItem.Name = "koFiToolStripMenuItem";
             this.koFiToolStripMenuItem.Size = new System.Drawing.Size(164, 22);
-            this.koFiToolStripMenuItem.Text = "Donate via Ko-fi";
+            this.koFiToolStripMenuItem.Text = "Donate via PayPal";
             this.koFiToolStripMenuItem.Click += new System.EventHandler(this.koFiToolStripMenuItem_Click);
             // 
             // checkBoxServerEnabled
@@ -448,8 +430,7 @@ namespace HLVRCoOpMod
             this.labelHelpServerPort.Name = "labelHelpServerPort";
             this.labelHelpServerPort.Size = new System.Drawing.Size(484, 15);
             this.labelHelpServerPort.TabIndex = 36;
-            this.labelHelpServerPort.Text = "Set this to an available port number. Make sure to try UPnP port mapping in the F" +
-    "ile menu.";
+            this.labelHelpServerPort.Text = "Set this to an available port number. You must manually forward this port on your router if hosting a server for external players.";
             // 
             // buttonServerVconsoleSend
             // 
@@ -739,7 +720,6 @@ namespace HLVRCoOpMod
         private ToolStripMenuItem gamemodeToolStripMenuItem;
         private ToolStripMenuItem pluginsToolStripMenuItem;
         private ToolStripStatusLabel toolStripStatusLabelLibraries;
-        private ToolStripMenuItem uPnPToolStripMenuItem;
         private TabControl tabControlBottom;
         private TabPage tabPageOutput;
         private TabPage tabPageServer;
@@ -776,7 +756,6 @@ namespace HLVRCoOpMod
         private ToolStripMenuItem alwaysOnTopToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
         private ToolStripMenuItem koFiToolStripMenuItem;
-        private ToolStripMenuItem steamWorkshopToolStripMenuItem;
         private ToolStripMenuItem serverDisableUserVConsoleInputToolStripMenuItem;
         private ToolStripMenuItem clientPrintVConsoleToolStripMenuItem;
         private ToolStripMenuItem gitHubToolStripMenuItem;

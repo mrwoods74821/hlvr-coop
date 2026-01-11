@@ -58,7 +58,6 @@
     <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="NLua" Version="1.6.0" />
-    <PackageReference Include="Open.Nat" Version="2.1.0" />
     <PackageReference Include="Websocket.Client" Version="4.4.43" />
   </ItemGroup>
 

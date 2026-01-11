@@ -189,8 +189,6 @@ hlvr_coop/
 └── maps/                  # Custom maps
 ```
 
-**Steam Workshop ID**: 2739356543
-
 ### 3.3 Base Scripts
 
 **Location**: `HLVRCoOpMod/base_scripts/`
@@ -432,7 +430,7 @@ if (response.data.Contains("HLVRCOOP"))
 
 ### 6.1 What is a Workshop Addon?
 
-Half-Life: Alyx supports Steam Workshop addons that can add scripts, assets, and maps. The mod uses Workshop addon ID **2739356543** (`hlvr_coop`).
+Half-Life: Alyx supports Steam Workshop addons that can add scripts, assets, and maps. The mod uses the Workshop addon `hlvr_coop`.
 
 **Official Documentation:**
 - [Half-Life: Alyx Workshop Tools](https://developer.valvesoftware.com/wiki/Half-Life%3A_Alyx_Workshop_Tools) - Complete Workshop addon documentation
@@ -1486,9 +1484,8 @@ case PacketType.YourPacket:
 #### Workshop Addon Not Loading
 **Symptoms**: "INIT HLVRCOOP" not received, entities not syncing
 **Solutions**:
-- Verify addon ID: 2739356543
 - Check addon enabled in game: `addon_enable hlvr_coop`
-- Verify addon subscribed on Steam Workshop
+- Verify addon files are installed in game directory (`game/hlvr_addons/hlvr_coop/` and `content/hlvr_addons/hlvr_coop/`)
 - Check addon files in game directory
 
 #### Players Not Visible
