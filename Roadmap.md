@@ -47,19 +47,20 @@
 
 ### Current State
 - **Functional:** Core multiplayer synchronization works
-- **Broken:** Automatic level transitions desynchronize players
+- **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions
 - **Incomplete:** 14 packet types defined but not implemented
 - **Disabled:** VConsole reconnection, automatic map switching
 - **Missing:** Dedicated server mode, comprehensive error handling
 
 ### Critical Path
 1. **Fix automatic map switching** - Breaks cooperative gameplay
-2. **Implement VConsole reconnection** - Prevents connection loss issues
-3. **Add proper error handling** - Makes debugging possible
-4. **Complete packet handlers** - Enables full feature set
+2. **Fix audio system during level transitions** - Breaks immersion and gameplay
+3. **Implement VConsole reconnection** - Prevents connection loss issues
+4. **Add proper error handling** - Makes debugging possible
+5. **Complete packet handlers** - Enables full feature set
 
 ### Estimated Effort
-- **Priority 1:** 2-3 weeks (critical fixes)
+- **Priority 1:** 2.5-4 weeks (critical fixes, including audio fix)
 - **Priority 2:** 4-6 weeks (core features)
 - **Priority 3:** 2-3 weeks (improvements)
 - **Priority 4:** 1-2 weeks (code quality)
@@ -803,6 +804,152 @@ public static void LogError(string source, Exception ex, ErrorSeverity severity 
 - [ ] Network error → Logged to UI
 - [ ] Release build → Errors visible
 - [ ] Multiple errors → All logged
+
+---
+
+### Task 1.5: Fix Audio System During Level Transitions (CRITICAL)
+
+**Status:** Reported issue - Audio system not resetting properly  
+**Priority:** CRITICAL - Breaks immersion and gameplay  
+**Estimated Effort:** 2-4 days  
+**Risk Level:** Medium  
+**Dependencies:** Task 1.1 (Fix Automatic Map Switching) - Should be fixed together
+
+#### Problem Statement
+
+When transitioning to a new level/map, the audio system does not properly reset, causing:
+- Sounds from the previous level continue playing in the new level
+- New level sounds (footsteps, NPCs, ambient sounds) do not play
+- Menu/UI sounds continue to work (indicating audio system is functional, but game audio is not reset)
+
+**Observed Behavior:**
+- Single player (host) level transition works visually
+- Audio from previous level persists in new level
+- No game audio (footsteps, NPCs, ambient) in new level
+- UI/menu sounds function normally
+
+#### Technical Details
+
+**Location:** Likely in map transition code - `AlyxGamemode/AlyxGamemode.cs` (Task 1.1) and/or game-side Lua scripts
+
+**Current Map Transition Flow:**
+1. Player triggers level transition → Game loads new map
+2. Lua script detects map change → Sends `MAPN` packet
+3. Server receives `MAPN` packet → Updates map tracking
+4. Audio system is NOT reset/cleared
+5. New level loads but audio system still references old level's audio
+
+**Potential Causes:**
+- Audio system not being cleared/reset during map transition
+- Sound events from previous level not being stopped
+- Audio context not being reinitialized for new level
+- Source 2 engine may require explicit audio reset commands
+
+#### Implementation Steps
+
+**Step 1: Research Source 2 Audio Reset Commands**
+- Check VConsole commands for audio/sound management
+- Research Source 2 engine audio reset functionality
+- Check if `snd_restart` or similar commands exist
+- Check Half-Life: Alyx Workshop Tools documentation for audio commands
+- **Action:** Test VConsole commands like `snd_restart`, `soundflush`, or similar
+
+**Step 2: Investigate Game-Side Audio Reset**
+- Check if Lua scripts need to stop/clear audio on map change
+- Look for audio-related VScript functions (e.g., `StopSoundOn`, `StopSoundEvent`)
+- Check `hlvrcoop_interval.lua` for audio-related code
+- **Location:** `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/vscripts/hlvrcoop_interval.lua`
+
+**Step 3: Add Audio Reset to Map Transition (C# Side)**
+- Send audio reset command when map changes
+- Integrate with Task 1.1 map switching code
+- **Location:** `AlyxGamemode/AlyxGamemode.cs` (map transition handling)
+- **Implementation:**
+```csharp
+// When map changes (in Task 1.1 code)
+Response audioReset = new("command", "snd_restart"); // Or appropriate command
+socket.Send(JsonConvert.SerializeObject(audioReset));
+// Then send map change commands
+Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
+```
+
+**Step 4: Add Audio Reset to Game-Side Lua (If Needed)**
+- Stop all active sounds before map transition
+- Clear audio state in Lua scripts
+- **Location:** Workshop addon Lua scripts
+- **Implementation (if needed):**
+```lua
+-- In hlvrcoop_interval.lua or map transition handler
+-- Stop all active sounds before transition
+-- May need to track active sounds and stop them
+```
+
+**Step 5: Test Audio Reset Commands**
+- Test `snd_restart` or equivalent VConsole command
+- Verify it clears audio without crashing
+- Test timing (before/after map load)
+- **Commands to test:**
+  - `snd_restart` (if available)
+  - `soundflush` (if available)
+  - `snd_rebuildaudiocache` (if available)
+  - Other audio-related VConsole commands
+
+**Step 6: Coordinate with Map Transition**
+- Ensure audio reset happens at correct time
+- Audio reset → Map change → Audio reinitialization
+- Avoid race conditions
+- **Order:**
+  1. Stop/reset audio
+  2. Transition to new map
+  3. Allow new map to initialize audio
+
+**Step 7: Handle Edge Cases**
+- Rapid map transitions (don't reset multiple times unnecessarily)
+- Map transition failures (audio should still reset)
+- Client disconnection during transition
+- Network delays
+
+#### Success Criteria
+
+- [ ] Audio from previous level stops when transitioning to new level
+- [ ] New level audio (footsteps, NPCs, ambient) plays correctly
+- [ ] No audio artifacts or hanging sounds from previous level
+- [ ] UI/menu sounds continue to work
+- [ ] Audio reset works with single player transitions
+- [ ] Audio reset works with multiplayer map transitions (when Task 1.1 is fixed)
+- [ ] No crashes or performance issues from audio reset
+
+#### Potential Issues & Solutions
+
+**Issue:** `snd_restart` command doesn't exist or doesn't work
+- **Solution:** Research alternative commands, or implement Lua-side audio clearing
+
+**Issue:** Audio reset timing (too early/too late)
+- **Solution:** Test different timings, may need to reset after map load completes
+
+**Issue:** Audio reset affects UI sounds
+- **Solution:** Use more specific commands that only affect game audio, not UI audio
+
+**Issue:** Audio reset causes performance issues
+- **Solution:** Only reset when map actually changes, not on every MAPN packet
+
+**Issue:** Multiplayer synchronization (each client needs to reset)
+- **Solution:** Broadcast audio reset command to all clients during map transition
+
+#### Testing Checklist
+
+- [ ] Single player level transition → Audio resets correctly
+- [ ] New level audio plays (footsteps, NPCs, ambient)
+- [ ] Previous level audio stops
+- [ ] UI/menu sounds still work
+- [ ] Rapid transitions → No audio issues
+- [ ] Multiple level transitions → Audio works correctly each time
+- [ ] Multiplayer transitions → All clients have correct audio (when Task 1.1 is fixed)
+
+#### Related Tasks
+
+- **Task 1.1:** Fix Automatic Map Switching - Audio reset should be integrated with map switching code
+- This task should be implemented alongside or after Task 1.1
 
 ---
 
@@ -1677,16 +1824,17 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 ## Quick Reference: Implementation Order
 
 1. **Fix automatic map switching** (CRITICAL - 2-3 days)
-2. **Implement VConsole reconnection** (HIGH - 3-4 days)
-3. **Fix error handling** (HIGH - 2-3 days)
-4. **Fix command buffer handling** (MEDIUM - 2-3 days)
-5. **Implement PLYR packet handler** (MEDIUM - 1-2 days)
-6. **Investigate unimplemented packets** (MEDIUM - 1-2 weeks)
-7. **Enable WebSocket reconnection** (MEDIUM - 1-2 days)
-8. **Implement version system** (LOW - 1 day)
-9. **Complete Lua documentation** (LOW - 1 week)
-10. **Code cleanup** (LOW - 1 week)
-11. **Addon support** (FUTURE - TBD after Priority 1-4)
+2. **Fix audio system during level transitions** (CRITICAL - 2-4 days, should be done with Task 1)
+3. **Implement VConsole reconnection** (HIGH - 3-4 days)
+4. **Fix error handling** (HIGH - 2-3 days)
+5. **Fix command buffer handling** (MEDIUM - 2-3 days)
+6. **Implement PLYR packet handler** (MEDIUM - 1-2 days)
+7. **Investigate unimplemented packets** (MEDIUM - 1-2 weeks)
+8. **Enable WebSocket reconnection** (MEDIUM - 1-2 days)
+9. **Implement version system** (LOW - 1 day)
+10. **Complete Lua documentation** (LOW - 1 week)
+11. **Code cleanup** (LOW - 1 week)
+12. **Addon support** (FUTURE - TBD after Priority 1-4)
 
 ---
 
