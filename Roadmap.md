@@ -59,16 +59,6 @@
 4. **Add proper error handling** - Makes debugging possible
 5. **Complete packet handlers** - Enables full feature set
 
-### Estimated Effort
-- **Priority 1:** 2.5-4 weeks (critical fixes, including audio fix)
-- **Priority 2:** 4-6 weeks (core features)
-- **Priority 3:** 2-3 weeks (improvements)
-- **Priority 4:** 1-2 weeks (code quality)
-- **Priority 5:** TBD (future enhancements - addon support)
-
-**Total Estimated Time:** 9-14 weeks for Priority 1-4 implementation
-**Future Enhancements:** Addon support timeline TBD after Priority 1-4 completion
-
 ---
 
 ## Priority 1: Critical Functionality (Game-Breaking Issues)
@@ -77,7 +67,6 @@
 
 **Status:** Code exists but commented out  
 **Priority:** CRITICAL - Breaks cooperative gameplay  
-**Estimated Effort:** 2-3 days  
 **Risk Level:** Medium  
 **Dependencies:** None
 
@@ -242,7 +231,6 @@ if (!mapExists)
 
 **Status:** Method commented out  
 **Priority:** HIGH - Connection loss requires manual intervention  
-**Estimated Effort:** 3-4 days  
 **Risk Level:** Medium  
 **Dependencies:** None
 
@@ -438,7 +426,6 @@ watcher.ConnectionLost += async (sender, e) =>
 
 **Status:** Code commented out, messages filtered  
 **Priority:** MEDIUM - May cause command loss  
-**Estimated Effort:** 2-3 days  
 **Risk Level:** Low  
 **Dependencies:** Task 1.2 (VConsole Reconnection)
 
@@ -633,7 +620,6 @@ if (bufferFullCount >= 10)
 
 **Status:** Errors silently swallowed or logged to Debug only  
 **Priority:** HIGH - Makes debugging impossible  
-**Estimated Effort:** 2-3 days  
 **Risk Level:** Low  
 **Dependencies:** None
 
@@ -811,7 +797,6 @@ public static void LogError(string source, Exception ex, ErrorSeverity severity 
 
 **Status:** Reported issue - Audio system not resetting properly  
 **Priority:** CRITICAL - Breaks immersion and gameplay  
-**Estimated Effort:** 2-4 days  
 **Risk Level:** Medium  
 **Dependencies:** Task 1.1 (Fix Automatic Map Switching) - Should be fixed together
 
@@ -996,7 +981,6 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 
 **Status:** Sound file cannot be loaded  
 **Priority:** LOW - Cosmetic issue (jingle sound doesn't play)  
-**Estimated Effort:** 1-2 hours  
 **Risk Level:** Low  
 **Dependencies:** None
 
@@ -1068,7 +1052,6 @@ Response jingle = new("command", "play hlvrcoop/jingle_up2");
 
 **Status:** ✅ IMPLEMENTED - Handler exists and works correctly  
 **Priority:** N/A - Already implemented  
-**Estimated Effort:** N/A  
 **Risk Level:** N/A  
 **Dependencies:** None
 
@@ -1106,7 +1089,6 @@ Response jingle = new("command", "play hlvrcoop/jingle_up2");
 
 **Status:** 13 packet types defined but not implemented (14 originally, PLYR is implemented)  
 **Priority:** MEDIUM - May be needed for full functionality  
-**Estimated Effort:** 1-2 weeks (depending on requirements)  
 **Risk Level:** Low  
 **Dependencies:** None
 
@@ -1220,7 +1202,6 @@ case PacketType.YourPacketType:
 
 **Status:** Explicitly documented as "not fully developed"  
 **Priority:** MEDIUM - Useful for server hosting  
-**Estimated Effort:** 2-3 weeks  
 **Risk Level:** Medium  
 **Dependencies:** None
 
@@ -1405,7 +1386,6 @@ public class UILogger : ILogger
 
 **Status:** Explicitly disabled  
 **Priority:** MEDIUM - Improves user experience  
-**Estimated Effort:** 1-2 days  
 **Risk Level:** Low  
 **Dependencies:** None
 
@@ -1477,7 +1457,6 @@ ws.ReconnectionHappened.Subscribe(recinfo =>
 
 **Status:** Hardcoded to 0  
 **Priority:** LOW - Prevents version mismatches  
-**Estimated Effort:** 1 day  
 **Risk Level:** Low  
 **Dependencies:** None
 
@@ -1526,7 +1505,6 @@ Version fields are hardcoded to 0, so version checking doesn't work. This could 
 
 **Status:** "Coming soon!" in README  
 **Priority:** LOW - Documentation  
-**Estimated Effort:** 1 week  
 **Risk Level:** None  
 **Dependencies:** None
 
@@ -1568,7 +1546,6 @@ Version fields are hardcoded to 0, so version checking doesn't work. This could 
 
 **Status:** Chat command workaround exists  
 **Priority:** LOW - Code quality  
-**Estimated Effort:** 2-3 days  
 **Risk Level:** Low  
 **Dependencies:** None
 
@@ -1599,7 +1576,6 @@ Chat command handling uses a workaround (`lua_chat_handled` response type) inste
 
 **Status:** Commented code, empty implementations  
 **Priority:** LOW - Code quality  
-**Estimated Effort:** 1 week  
 **Risk Level:** Low  
 **Dependencies:** Complete other tasks first
 
@@ -1712,7 +1688,6 @@ Chat command handling uses a workaround (`lua_chat_handled` response type) inste
 
 **Status:** Future enhancement  
 **Priority:** LOW - Quality of life improvements  
-**Estimated Effort:** TBD (requires investigation)  
 **Risk Level:** Medium  
 **Dependencies:** Priority 1-4 tasks should be completed first
 
@@ -1746,8 +1721,6 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 - If body ragdolls can be synchronized
 - Compatibility with existing player synchronization
 
-**Estimated Effort:** 1-2 weeks (after investigation)
-
 ---
 
 ##### 2. Unpin Ragdolls [ALL MAPS UPDATE!]
@@ -1771,8 +1744,6 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 - If ragdoll positions can be synchronized like physics objects
 - Compatibility with existing physics synchronization
 
-**Estimated Effort:** 1-2 weeks (after investigation)
-
 ---
 
 ##### 3. Scalable Init Support
@@ -1795,8 +1766,6 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 - Any conflicts with mod's initialization system
 - Whether mod needs to follow Scalable Init Support's file structure
 - Testing with other Scalable Init Support-dependent addons
-
-**Estimated Effort:** 1 week (testing and compatibility fixes)
 
 ---
 
@@ -1868,18 +1837,18 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 
 ## Quick Reference: Implementation Order
 
-1. **Fix automatic map switching** (CRITICAL - 2-3 days)
-2. **Fix audio system during level transitions** (CRITICAL - 2-4 days, should be done with Task 1)
-3. **Implement VConsole reconnection** (HIGH - 3-4 days)
-4. **Fix error handling** (HIGH - 2-3 days)
-5. **Fix command buffer handling** (MEDIUM - 2-3 days)
+1. **Fix automatic map switching** (CRITICAL)
+2. **Fix audio system during level transitions** (CRITICAL, should be done with Task 1)
+3. **Implement VConsole reconnection** (HIGH)
+4. **Fix error handling** (HIGH)
+5. **Fix command buffer handling** (MEDIUM)
 6. ~~**Implement PLYR packet handler**~~ (COMPLETED - Already implemented)
-7. **Fix sound file path format** (LOW - 1-2 hours)
-8. **Investigate unimplemented packets** (MEDIUM - 1-2 weeks)
-9. **Enable WebSocket reconnection** (MEDIUM - 1-2 days)
-10. **Implement version system** (LOW - 1 day)
-11. **Complete Lua documentation** (LOW - 1 week)
-12. **Code cleanup** (LOW - 1 week)
+7. **Fix sound file path format** (LOW)
+8. **Investigate unimplemented packets** (MEDIUM)
+9. **Enable WebSocket reconnection** (MEDIUM)
+10. **Implement version system** (LOW)
+11. **Complete Lua documentation** (LOW)
+12. **Code cleanup** (LOW)
 13. **Addon support** (FUTURE - TBD after Priority 1-4)
 
 ---
