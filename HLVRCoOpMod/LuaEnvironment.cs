@@ -136,10 +136,7 @@ namespace HLVRCoOpMod
             }
             catch (Exception e)
             {
-                // Log error properly - previously all errors were silently swallowed
-                System.Diagnostics.Debug.WriteLine($"LuaEnvironment.Handle error: {e.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack trace: {e.StackTrace}");
-                // TODO: Integrate with ErrorLogger when implemented (see Roadmap Task 1.4)
+                ErrorLogger.LogError("LuaEnvironment.Handle", e);
             }
         }
         public void HandleInternal(PluginHandleType handleType, params object[] vs)

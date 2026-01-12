@@ -88,8 +88,7 @@ namespace HLVRCoOpMod
                     }
                     catch (Exception ex)
                     {
-                        System.Diagnostics.Debug.WriteLine($"StreamWatcher error: {ex.Message}");
-                        System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                        ErrorLogger.LogError("StreamWatcher", ex);
                     }
                 }
             }
