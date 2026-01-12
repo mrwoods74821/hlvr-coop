@@ -46,9 +46,9 @@
 ## Executive Summary
 
 ### Current State
-- **Functional:** Core multiplayer synchronization works
-- **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions
-- **Incomplete:** 14 packet types defined but not implemented
+- **Functional:** Core multiplayer synchronization works, PLYR packet handler implemented
+- **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions, sound file path format issues
+- **Incomplete:** 14 packet types defined but not implemented (13 after PLYR correction)
 - **Disabled:** VConsole reconnection, automatic map switching
 - **Missing:** Dedicated server mode, comprehensive error handling
 
@@ -992,111 +992,119 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 
 ## Priority 2: Incomplete Core Features
 
-### Task 2.1: Implement Player Body Position (PLYR Packet)
+### Task 2.1: Fix Sound File Path Format (MINOR)
 
-**Status:** Packet type defined, not handled  
-**Priority:** MEDIUM - Player body position not synchronized  
-**Estimated Effort:** 1-2 days  
+**Status:** Sound file cannot be loaded  
+**Priority:** LOW - Cosmetic issue (jingle sound doesn't play)  
+**Estimated Effort:** 1-2 hours  
 **Risk Level:** Low  
 **Dependencies:** None
 
 #### Problem Statement
 
-The `PLYR` packet is sent by the game (line 47 in `hlvrcoop_interval.lua`) but not handled in `AlyxGamemode.cs`. This means player body position and health are not synchronized.
+The jingle sound (`hlvrcoop/jingle_up2`) fails to load during map transitions. The error shows:
+```
+[VC] File hlvrcoop/jingle_up2.vsnd missing sounds dir. Fixing for now.
+[VC] File hlvrcoop/jingle_up2.vsnd did not have sounds directory in path, appending path and loading, but path needs to be fixed in resource file.
+[VC] Error loading resource file "sounds/hlvrcoop/jingle_up2.vsnd_c" (Error: ERROR_FILEOPEN)
+```
 
 **Current Behavior:**
-- Lua sends: `print("PLYR x y z pitch yaw roll health HLVRCOOP")`
-- Server receives packet but doesn't process it
-- Player body position not synchronized
-- Player health not synchronized
+- Code uses: `"play hlvrcoop/jingle_up2"`
+- Engine expects full path format
+- Sound file fails to load
+- No jingle plays on map transition
 
 #### Technical Details
 
-**Packet Format (from hlvrcoop_interval.lua line 47):**
-```
-PLYR <origin_x> <origin_y> <origin_z> <pitch> <yaw> <roll> <health> HLVRCOOP
+**Location:** `AlyxGamemode/AlyxGamemode.cs` line 323
+
+**Current Code:**
+```csharp
+Response jingle = new("command", "play hlvrcoop/jingle_up2");
 ```
 
-**Packet Type:** `PacketType.PlayerPosAng` (defined in `Packet.cs`)
+**Comparison with Working Sounds:**
+- Working: `"play sounds/ui/hint.vsnd"` (uses full path with `.vsnd` extension)
+- Broken: `"play hlvrcoop/jingle_up2"` (uses short path without extension)
 
-**Missing Handler:** No case statement in `AlyxGamemode.cs`
+**Sound Event Definition:**
+- Sound event is defined as `"Addon.HLVRCOOP_JingleUp2"` in `WorkshopAddon/content/hlvr_addons/hlvr_coop/soundevents/hlvr_coop_soundevents.vsndevts`
+- References file: `"sounds/hlvrcoop/jingle_up2.vsnd"`
 
 #### Implementation Steps
 
-**Step 1: Add Case Statement**
-**Location:** `AlyxGamemode/AlyxGamemode.cs` (add after line 239, before other cases)
+**Step 1: Test Sound Event Name Format**
+- Try using sound event name: `"play Addon.HLVRCOOP_JingleUp2"`
+- Test if sound events can be referenced by name
 
-```csharp
-case PacketType.PlayerPosAng:
-    if (packet.args.Length >= 7)
-    {
-        // Parse position and angles
-        Vector playerOrigin = new(
-            float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-            float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-            float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-        );
-        Angle playerAngles = new(
-            float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-            float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-            float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-        );
-        int playerHealth = int.Parse(packet.args[6]);
-        
-        // Update player state
-        player.X = playerOrigin.X;
-        player.Y = playerOrigin.Y;
-        player.Z = playerOrigin.Z;
-        player.Pitch = playerAngles.Pitch;
-        player.Yaw = playerAngles.Yaw;
-        player.Roll = playerAngles.Roll;
-        
-        // Store health (may be used by Lua scripts)
-        // Health is already in PLYR packet, could be used for respawn logic
-        
-        // Note: Body position may not need to be broadcasted to other clients
-        // as head/hand positions are already synchronized
-        // But health might be useful for other systems
-        
-        // If body position needs to be visible, create body entity like head/hands
-        // Otherwise, just update internal state
-    }
-    break;
-```
+**Step 2: Test Full Path Format**
+- Try using full path: `"play sounds/hlvrcoop/jingle_up2.vsnd"`
+- Match the format used by working sounds
 
-**Step 2: Determine Synchronization Requirements**
-- Does body position need to be visible to other players?
-- Currently only head and hands are visible
-- Body position might only be needed for internal state (health, respawn, etc.)
+**Step 3: Verify File Exists**
+- Check if `jingle_up2.vsnd` file actually exists in the soundevents directory
+- Verify file structure matches other working sounds
 
-**Step 3: Add Health Tracking (if needed)**
-- Store health in player state
-- Use for respawn logic
-- Sync to Lua scripts if needed
-- **Implementation:**
-```csharp
-// Add to Player class or track separately
-// Could be used by checkpoint system, respawn logic, etc.
-```
-
-**Step 4: Test**
-- Verify PLYR packets are received
-- Verify parsing works correctly
-- Verify health is tracked
-- Test with multiple players
+**Step 4: Check Sound Event Configuration**
+- Verify sound event is properly registered
+- Check if addon resources are loaded correctly
 
 #### Success Criteria
 
-- [ ] PLYR packets are parsed correctly
-- [ ] Player body position is tracked
-- [ ] Player health is tracked
-- [ ] Data available for other systems (respawn, checkpoints, etc.)
+- [ ] Jingle sound plays on map transition
+- [ ] No VConsole errors about missing sound files
+- [ ] Sound path format is consistent with other sounds
+
+#### Notes
+
+- This is a minor cosmetic issue - map transitions work without the jingle
+- May be related to addon resource loading or sound event registration
+- Could also be that the sound file doesn't exist in the installed addon
 
 ---
 
-### Task 2.2: Investigate and Implement Unimplemented Packet Types
+### Task 2.2: ~~Implement Player Body Position (PLYR Packet)~~ - COMPLETED
 
-**Status:** 14 packet types defined but not implemented  
+**Status:** ✅ IMPLEMENTED - Handler exists and works correctly  
+**Priority:** N/A - Already implemented  
+**Estimated Effort:** N/A  
+**Risk Level:** N/A  
+**Dependencies:** None
+
+#### Status Update
+
+**UPDATE:** The PLYR packet handler **IS implemented** in `AlyxGamemode.cs` lines 225-258. The roadmap was incorrect - the handler exists and processes the packet correctly.
+
+**Current Implementation:**
+- Lua sends: `print("PLYR x y z pitch yaw roll health HLVRCOOP")`
+- Server receives and parses the packet
+- Player body position and angles are tracked internally (stored in `player.Origin` and `player.Angles`)
+- Player health is parsed (but not currently stored - could be added to Player class)
+- Body position is NOT broadcasted to other clients (intentional - only head/hand positions are visible)
+
+**Implementation Details:**
+- **Location:** `AlyxGamemode/AlyxGamemode.cs` lines 225-258
+- Packet is parsed correctly with error handling
+- Data is stored in player state for internal use (respawn, checkpoints, etc.)
+- Health parsing exists but health value is not stored (only parsed)
+
+**Potential Enhancement (Optional):**
+- Store player health in Player class for use in respawn/checkpoint logic
+- This is not critical as the data is parsed but simply not persisted
+
+#### Success Criteria (Already Met)
+
+- [x] PLYR packets are parsed correctly
+- [x] Player body position is tracked
+- [ ] Player health is stored (parsed but not stored in Player class - minor enhancement)
+- [x] Data available for other systems (respawn, checkpoints, etc.)
+
+---
+
+### Task 2.3: Investigate and Implement Unimplemented Packet Types
+
+**Status:** 13 packet types defined but not implemented (14 originally, PLYR is implemented)  
 **Priority:** MEDIUM - May be needed for full functionality  
 **Estimated Effort:** 1-2 weeks (depending on requirements)  
 **Risk Level:** Low  
@@ -1104,7 +1112,7 @@ case PacketType.PlayerPosAng:
 
 #### Problem Statement
 
-14 packet types are defined in the enum but have empty case statements. These may be needed for full functionality, or they may be legacy/unused code.
+13 packet types are defined in the enum but have empty case statements. These may be needed for full functionality, or they may be legacy/unused code. (Note: PLYR packet handler is implemented - see Task 2.2)
 
 #### Investigation Steps
 
@@ -1208,7 +1216,7 @@ case PacketType.YourPacketType:
 
 ---
 
-### Task 2.3: Implement Dedicated Server Mode
+### Task 2.4: Implement Dedicated Server Mode
 
 **Status:** Explicitly documented as "not fully developed"  
 **Priority:** MEDIUM - Useful for server hosting  
@@ -1865,13 +1873,14 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 3. **Implement VConsole reconnection** (HIGH - 3-4 days)
 4. **Fix error handling** (HIGH - 2-3 days)
 5. **Fix command buffer handling** (MEDIUM - 2-3 days)
-6. **Implement PLYR packet handler** (MEDIUM - 1-2 days)
-7. **Investigate unimplemented packets** (MEDIUM - 1-2 weeks)
-8. **Enable WebSocket reconnection** (MEDIUM - 1-2 days)
-9. **Implement version system** (LOW - 1 day)
-10. **Complete Lua documentation** (LOW - 1 week)
-11. **Code cleanup** (LOW - 1 week)
-12. **Addon support** (FUTURE - TBD after Priority 1-4)
+6. ~~**Implement PLYR packet handler**~~ (COMPLETED - Already implemented)
+7. **Fix sound file path format** (LOW - 1-2 hours)
+8. **Investigate unimplemented packets** (MEDIUM - 1-2 weeks)
+9. **Enable WebSocket reconnection** (MEDIUM - 1-2 days)
+10. **Implement version system** (LOW - 1 day)
+11. **Complete Lua documentation** (LOW - 1 week)
+12. **Code cleanup** (LOW - 1 week)
+13. **Addon support** (FUTURE - TBD after Priority 1-4)
 
 ---
 

@@ -321,12 +321,8 @@ namespace AlyxGamemode
                                                                 }
                                                                 */
                                                                 Response jingle = new("command", "play hlvrcoop/jingle_up2");
-                                                                // Reset audio system to prevent intermittent audio issues during level transitions
-                                                                // This ensures audio from previous level is cleared and new level audio initializes correctly
-                                                                Response audioReset = new("command", "snd_restart");
                                                                 Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
                                                                 socket.Send(JsonConvert.SerializeObject(jingle));
-                                                                socket.Send(JsonConvert.SerializeObject(audioReset));
                                                                 socket.Send(JsonConvert.SerializeObject(output2));
                                                                 int gamemodeAPIVersion = int.Parse(packet.args[1]);
                                                                 if (gamemodeAPIVersion != APIVersion)
