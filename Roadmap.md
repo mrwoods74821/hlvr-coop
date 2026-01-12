@@ -47,6 +47,31 @@
 
 ### Project Status: Version 3.2.0
 
+### Version Comparison
+
+**Version 3.1.0 (Previous Release)**
+- Core multiplayer synchronization
+- PLYR packet handler (player body position tracking)
+- Basic WebSocket client/server communication
+- VConsole TCP communication
+- Lua scripting system
+- Error logging to Debug output only
+- Version checking system (but version hardcoded to 0, non-functional)
+- Manual reconnection required for both WebSocket and VConsole
+
+**Version 3.2.0 (Current Release) - New Features**
+- ✅ **VConsole Automatic Reconnection** - Automatic reconnection with exponential backoff (1s, 2s, 4s, 8s, 16s delays, max 5 attempts) when game connection is lost
+- ✅ **WebSocket Client Automatic Reconnection** - Automatic reconnection enabled with re-authentication when server connection is lost
+- ✅ **Centralized Error Handling System** - ErrorLogger class with UI error channel (ERR) for visible error reporting in production
+- ✅ **Version System Implementation** - Version set to 1, version checking now functional to prevent compatibility issues
+- ✅ **Server Disconnect Feature** - Players automatically disconnected and returned to main menu when server stops
+
+**Key Improvements in 3.2.0**
+- Improved reliability: No more manual reconnection required for connection losses
+- Better debugging: Errors now visible in UI instead of Debug output only
+- Better user experience: Automatic recovery from connection issues
+- Version compatibility checking enabled
+
 ### Completed Features ✅
 - **VConsole Reconnection** (Task 1.2) - Automatic reconnection with exponential backoff when game connection is lost
 - **Error Handling System** (Task 1.4) - Centralized ErrorLogger with UI error channel for debugging

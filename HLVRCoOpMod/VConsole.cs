@@ -20,8 +20,8 @@ namespace HLVRCoOpMod
         private List<byte[]> commandQueue = new();
         private StreamWatcher? watcher;
         private int reconnectAttempts = 0;
-        private const int MAX_RECONNECT_ATTEMPTS = 5;
         private const int INITIAL_RETRY_DELAY = 1000; // 1 second
+        private const int MAX_RETRY_DELAY = 30000; // 30 seconds maximum delay
         private bool isReconnecting = false;
         
         public VConsole()
@@ -144,10 +144,16 @@ namespace HLVRCoOpMod
             System.Diagnostics.Debug.WriteLine("VConsole: Connection lost, attempting to reconnect...");
 
             reconnectAttempts = 0;
-            while (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !killed)
+            while (!killed)
             {
+                // Calculate delay with exponential backoff, capped at MAX_RETRY_DELAY
                 int delay = INITIAL_RETRY_DELAY * (int)Math.Pow(2, reconnectAttempts);
+                if (delay > MAX_RETRY_DELAY)
+                    delay = MAX_RETRY_DELAY;
                 await Task.Delay(delay);
+
+                if (killed)
+                    break;
 
                 if (Reconnect())
                 {
@@ -157,13 +163,15 @@ namespace HLVRCoOpMod
                     return;
                 }
 
+                // Reset killed flag after failed reconnection attempt so loop can continue
+                // (Reconnect() calls Disconnect() which sets killed=true, but we want to keep retrying)
+                killed = false;
+
                 reconnectAttempts++;
-                System.Diagnostics.Debug.WriteLine($"VConsole: Reconnection attempt {reconnectAttempts}/{MAX_RECONNECT_ATTEMPTS} failed");
+                System.Diagnostics.Debug.WriteLine($"VConsole: Reconnection attempt {reconnectAttempts} failed, will retry...");
             }
 
-            // Failed after all attempts
-            System.Diagnostics.Debug.WriteLine("VConsole: Failed to reconnect after all attempts");
-            ErrorLogger.LogError("VConsole", $"Failed to reconnect after {MAX_RECONNECT_ATTEMPTS} attempts");
+            // Only reached if killed is set to true
             reconnectAttempts = 0;
             isReconnecting = false;
         }
