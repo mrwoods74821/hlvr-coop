@@ -60,11 +60,11 @@
 - Manual reconnection required for both WebSocket and VConsole
 
 **Version 3.2.0 (Current Release) - New Features**
-- ✅ **VConsole Automatic Reconnection** - Automatic reconnection with exponential backoff (1s, 2s, 4s, 8s, 16s delays, max 5 attempts) when game connection is lost
-- ✅ **WebSocket Client Automatic Reconnection** - Automatic reconnection enabled with re-authentication when server connection is lost
-- ✅ **Centralized Error Handling System** - ErrorLogger class with UI error channel (ERR) for visible error reporting in production
-- ✅ **Version System Implementation** - Version set to 1, version checking now functional to prevent compatibility issues
-- ✅ **Server Disconnect Feature** - Players automatically disconnected and returned to main menu when server stops
+- **VConsole Automatic Reconnection** - Automatic reconnection with exponential backoff (1s, 2s, 4s, 8s, 16s delays, max 5 attempts) when game connection is lost
+- **WebSocket Client Automatic Reconnection** - Automatic reconnection enabled with re-authentication when server connection is lost
+- **Centralized Error Handling System** - ErrorLogger class with UI error channel (ERR) for visible error reporting in production
+- **Version System Implementation** - Version set to 1, version checking now functional to prevent compatibility issues
+- **Server Disconnect Feature** - Players automatically disconnected and returned to main menu when server stops
 
 **Key Improvements in 3.2.0**
 - Improved reliability: No more manual reconnection required for connection losses
