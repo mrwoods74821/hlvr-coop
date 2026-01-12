@@ -23,13 +23,19 @@ namespace HLVRCoOpMod
         private const int INITIAL_RETRY_DELAY = 1000; // 1 second
         private const int MAX_RETRY_DELAY = 30000; // 30 seconds maximum delay
         private bool isReconnecting = false;
+        private UserInterface? ui;
+        private Channel? channel;
+        
+        public event EventHandler? Reconnected;
         
         public VConsole()
         {
         }
-        public bool Connect(WebsocketClient ws)
+        public bool Connect(WebsocketClient ws, UserInterface? ui = null, Channel? channel = null)
         {
             this.ws = ws;
+            this.ui = ui;
+            this.channel = channel;
             return Connect();
         }
         public bool Connect()
@@ -140,10 +146,30 @@ namespace HLVRCoOpMod
             if (isReconnecting || killed)
                 return;
 
-            isReconnecting = true;
             System.Diagnostics.Debug.WriteLine("VConsole: Connection lost, attempting to reconnect...");
+            
+            // Notify UI that connection was lost
+            if (ui != null && channel != null)
+            {
+                ui.Invoke(() => ui.LogToOutput(channel, "VConsole connection lost. Attempting to reconnect..."));
+            }
 
+            await StartReconnectionLoop();
+        }
+
+        /// <summary>
+        /// Starts a background reconnection loop that will keep trying to connect until successful or killed.
+        /// Can be called from initial connection failure or from connection lost event.
+        /// </summary>
+        public async Task StartReconnectionLoop()
+        {
+            // Prevent multiple simultaneous reconnection attempts
+            if (isReconnecting || killed)
+                return;
+
+            isReconnecting = true;
             reconnectAttempts = 0;
+
             while (!killed)
             {
                 // Calculate delay with exponential backoff, capped at MAX_RETRY_DELAY
@@ -158,8 +184,17 @@ namespace HLVRCoOpMod
                 if (Reconnect())
                 {
                     System.Diagnostics.Debug.WriteLine($"VConsole: Successfully reconnected after {reconnectAttempts + 1} attempt(s)");
+                    
+                    // Notify UI that reconnection succeeded
+                    if (ui != null && channel != null)
+                    {
+                        ui.Invoke(() => ui.LogToOutput(channel, $"VConsole reconnected successfully after {reconnectAttempts + 1} attempt(s)"));
+                    }
+                    
                     reconnectAttempts = 0;
                     isReconnecting = false;
+                    // Notify that reconnection succeeded
+                    Reconnected?.Invoke(this, EventArgs.Empty);
                     return;
                 }
 
@@ -169,11 +204,23 @@ namespace HLVRCoOpMod
 
                 reconnectAttempts++;
                 System.Diagnostics.Debug.WriteLine($"VConsole: Reconnection attempt {reconnectAttempts} failed, will retry...");
+                
+                // Notify UI of reconnection attempt (every 5 attempts to avoid spam)
+                if (ui != null && channel != null && reconnectAttempts % 5 == 0)
+                {
+                    ui.Invoke(() => ui.LogToOutput(channel, $"VConsole reconnection attempt {reconnectAttempts}... (waiting for game to start)"));
+                }
             }
 
             // Only reached if killed is set to true
             reconnectAttempts = 0;
             isReconnecting = false;
+            
+            // Notify UI that reconnection was stopped
+            if (ui != null && channel != null)
+            {
+                ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnection stopped."));
+            }
         }
 
         public void Disconnect()

@@ -34,17 +34,15 @@ namespace HLVRCoOpMod
             if (ws != null && vConsole != null)
             {
                 ui.Invoke(() => ui.LogToOutput(channel, "Connecting to VConsole using port " + Settings.Default.VconsolePort));
-                if (!vConsole.Connect(ws))
+                if (!vConsole.Connect(ws, ui, channel))
                 {
                     ui.Invoke(() =>
                     {
-                        ui.LogToOutput(channel, "Failed to connect to VConsole");
-                        DialogResult res = MessageBox.Show("An error occured while connecting to VConsole.\nMake sure that Half-Life: Alyx is open.\nWould you like to re-connect?", "Error", MessageBoxButtons.YesNo);
-                        if (res == DialogResult.Yes)
-                            ConnectVConsole(ws);
-                        else
-                            ui.Invoke(() => ui.LogToOutput(channel, "Disconnected from VConsole"));
+                        ui.LogToOutput(channel, "Failed to connect to VConsole. Starting automatic reconnection...");
+                        ui.LogToOutput(channel, "Make sure Half-Life: Alyx is running with launch options: -console -vconsole -language english");
                     });
+                    // Start background reconnection loop for initial connection failure
+                    _ = vConsole.StartReconnectionLoop();
                 }
             }
         }
@@ -157,6 +155,27 @@ namespace HLVRCoOpMod
                     ui.Invoke(() => ui.LogToOutput(channel, "Reconnected to server at " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
                 });
                 ConnectVConsole(ws);
+                // Subscribe to VConsole reconnection event to re-authenticate with server
+                if (vConsole != null)
+                {
+                    vConsole.Reconnected += (sender, e) =>
+                    {
+                        // Re-authenticate with server when VConsole reconnects
+                        if (ws != null && ws.IsStarted)
+                        {
+                            // Reset map so it will always reload (game quit/resumed scenario)
+                            map = "";
+                            Response input = new("client")
+                            {
+                                clientUsername = Settings.Default.ClientUsername,
+                                password = Settings.Default.ClientPassword,
+                                timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
+                            };
+                            ws.Send(JsonConvert.SerializeObject(input));
+                            ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, re-authenticating with server..."));
+                        }
+                    };
+                }
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PostStart, ui, ws, error);
                 LuaEnvironment.instance.Handle(PluginHandleType.Client_PostStart, ui, ws, error);
             }
