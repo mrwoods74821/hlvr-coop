@@ -60,7 +60,7 @@ namespace HLVRCoOpMod
                 ws = new WebsocketClient(new Uri("ws://" + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort))
                 {
                     ReconnectTimeout = TimeSpan.FromSeconds(60),
-                    IsReconnectionEnabled = false
+                    IsReconnectionEnabled = true
                 };
                 ws.Start();
                 ws.DisconnectionHappened.Subscribe(info =>
@@ -145,7 +145,7 @@ namespace HLVRCoOpMod
                         timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
                     };
                     ws.Send(JsonConvert.SerializeObject(input));
-                    ui.Invoke(() => ui.LogToOutput(channel, "Client attempted connection to IP " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
+                    ui.Invoke(() => ui.LogToOutput(channel, "Reconnected to server at " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
                 });
                 ConnectVConsole(ws);
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PostStart, ui, ws, error);
