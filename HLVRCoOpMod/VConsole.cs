@@ -50,7 +50,6 @@ namespace HLVRCoOpMod
                 try { client.Close(); } catch { }
             }
 
-            WriteCommand("disconnect");
             // Check if the port is listening before attempting to connect
             System.Net.IPEndPoint[] endPoints = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
             bool listening = false;
