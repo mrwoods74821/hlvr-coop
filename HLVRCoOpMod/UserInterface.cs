@@ -67,16 +67,6 @@ namespace HLVRCoOpMod
             alwaysOnTopToolStripMenuItem.Checked = Settings.Default.AlwaysOnTop;
             TopMost = Settings.Default.AlwaysOnTop;
             Application.ApplicationExit += new EventHandler(closeToolStripMenuItem_Click);
-            // Base gamemode
-            CoreGamemode gamemode = new();
-            ToolStripMenuItem baseItem = new(gamemode.Name)
-            {
-                ToolTipText = gamemode.Author + "\n" + gamemode.Description
-            };
-            baseItem.Click += SelectAddon;
-            gamemodeToolStripMenuItem.DropDownItems.Add(baseItem);
-            if(gamemode.Name != null)
-                addons.Add(new AddonInitializer(gamemode.Name, typeof(CoreGamemode), AddonType.Gamemode));
             // Load extensions
             string? appDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             if (appDir != null)
@@ -91,7 +81,6 @@ namespace HLVRCoOpMod
                 }
                 toolStripStatusLabelLibraries.Text = "Libraries Loaded: " + libraryFiles.Length;
                 // Populate gamemode menu
-                bool first = true;
                 string gamemodesFolderPath = Path.Combine(appDir, "gamemodes");
                 Directory.CreateDirectory(gamemodesFolderPath);
                 string[] files = Directory.GetFiles(gamemodesFolderPath, "*.dll", SearchOption.TopDirectoryOnly);
@@ -159,14 +148,7 @@ namespace HLVRCoOpMod
                     if (currentAddons.Contains(gamemodeItem.Text))
                     {
                         SelectAddon(gamemodeItem, new EventArgs());
-                        first = false;
                     }
-                }
-                // Regression to core gamemode
-                if (first)
-                {
-                    SelectAddon(baseItem, new EventArgs());
-                    first = false;
                 }
             }
             // Programs
