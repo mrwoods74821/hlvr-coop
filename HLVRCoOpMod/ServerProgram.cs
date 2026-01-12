@@ -96,6 +96,16 @@ namespace HLVRCoOpMod
                         LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PostClose, gamemodeType, plugins, Map.map);
                     }
                 }
+                // Send disconnect command to all clients before closing
+                Response disconnectCommand = new("command", "disconnect");
+                foreach (IndexedClient con in connections.ToList())
+                {
+                    try
+                    {
+                        con.Session.Send(JsonConvert.SerializeObject(disconnectCommand));
+                    }
+                    catch { } // Ignore errors if connection already closed
+                }
                 Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, "Closing server on port " + Settings.Default.ServerPort));
                 wss.Dispose();
                 wss = null;

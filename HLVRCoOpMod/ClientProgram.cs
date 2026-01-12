@@ -66,6 +66,15 @@ namespace HLVRCoOpMod
                 ws.DisconnectionHappened.Subscribe(info =>
                 {
                     ui.Invoke(() => ui.LogToOutput(channel, "Disconnected: " + info.Type.ToString()));
+                    // Send disconnect command to game to return to main menu
+                    if (vConsole != null)
+                    {
+                        try
+                        {
+                            vConsole.WriteCommand("disconnect", true);
+                        }
+                        catch { } // Ignore errors if VConsole already disconnected
+                    }
                 });
                 ws.MessageReceived.Subscribe(msg =>
                 {
