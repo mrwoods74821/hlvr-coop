@@ -817,16 +817,24 @@ public static void LogError(string source, Exception ex, ErrorSeverity severity 
 
 #### Problem Statement
 
-When transitioning to a new level/map, the audio system does not properly reset, causing:
+When transitioning to a new level/map, the audio system **intermittently** fails to reset properly, causing:
 - Sounds from the previous level continue playing in the new level
 - New level sounds (footsteps, NPCs, ambient sounds) do not play
 - Menu/UI sounds continue to work (indicating audio system is functional, but game audio is not reset)
 
 **Observed Behavior:**
 - Single player (host) level transition works visually
-- Audio from previous level persists in new level
-- No game audio (footsteps, NPCs, ambient) in new level
-- UI/menu sounds function normally
+- Audio issue is **intermittent** - sometimes works correctly, sometimes doesn't
+- When broken: Audio from previous level persists in new level, no game audio (footsteps, NPCs, ambient) in new level
+- When working: All audio functions correctly after transition
+- UI/menu sounds function normally in both cases
+
+**Root Cause Hypothesis:**
+The intermittent nature suggests a **race condition or timing issue** rather than a missing reset command. Possible causes:
+- Audio system reset timing relative to map load
+- Resource initialization order inconsistencies
+- State not being cleared consistently
+- Threading/timing dependencies in Source 2 audio system
 
 #### Technical Details
 
@@ -847,12 +855,20 @@ When transitioning to a new level/map, the audio system does not properly reset,
 
 #### Implementation Steps
 
-**Step 1: Research Source 2 Audio Reset Commands**
+**Step 1: Understand the Intermittent Nature**
+- Test multiple level transitions to reproduce the issue
+- Document conditions when it fails vs. when it works
+- Check if timing affects the issue (fast transitions vs. slow)
+- Look for patterns (specific maps, transition types, etc.)
+- **Action:** Create a test scenario to reliably reproduce the issue
+
+**Step 2: Research Source 2 Audio Reset Commands**
 - Check VConsole commands for audio/sound management
 - Research Source 2 engine audio reset functionality
 - Check if `snd_restart` or similar commands exist
 - Check Half-Life: Alyx Workshop Tools documentation for audio commands
 - **Action:** Test VConsole commands like `snd_restart`, `soundflush`, or similar
+- **Important:** Since issue is intermittent, we need to **force** audio reset every time to ensure consistency
 
 **Step 2: Investigate Game-Side Audio Reset**
 - Check if Lua scripts need to stop/clear audio on map change
@@ -862,16 +878,20 @@ When transitioning to a new level/map, the audio system does not properly reset,
 
 **Step 3: Add Audio Reset to Map Transition (C# Side)**
 - Send audio reset command when map changes
+- **Force reset every time** to prevent intermittent failures
 - Integrate with Task 1.1 map switching code
 - **Location:** `AlyxGamemode/AlyxGamemode.cs` (map transition handling)
 - **Implementation:**
 ```csharp
 // When map changes (in Task 1.1 code)
+// Force audio reset to prevent intermittent failures
 Response audioReset = new("command", "snd_restart"); // Or appropriate command
 socket.Send(JsonConvert.SerializeObject(audioReset));
 // Then send map change commands
 Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
 ```
+
+**Note:** Since the issue is intermittent, we should **always** send the audio reset command, even when audio appears to work. This ensures consistency.
 
 **Step 4: Add Audio Reset to Game-Side Lua (If Needed)**
 - Stop all active sounds before map transition
@@ -897,11 +917,19 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 **Step 6: Coordinate with Map Transition**
 - Ensure audio reset happens at correct time
 - Audio reset → Map change → Audio reinitialization
-- Avoid race conditions
+- **Ensure deterministic timing** to prevent intermittent failures
+- Consider adding a small delay or wait mechanism
 - **Order:**
-  1. Stop/reset audio
+  1. Stop/reset audio (force reset every time)
   2. Transition to new map
   3. Allow new map to initialize audio
+  4. Optionally: Verify audio is working (if possible)
+
+**Timing Considerations:**
+- May need to reset audio **before** map transition
+- May need to reset audio **after** map loads (or both)
+- Test different timing scenarios to find most reliable approach
+- Consider if delay is needed between reset and map load
 
 **Step 7: Handle Edge Cases**
 - Rapid map transitions (don't reset multiple times unnecessarily)
@@ -924,8 +952,11 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 **Issue:** `snd_restart` command doesn't exist or doesn't work
 - **Solution:** Research alternative commands, or implement Lua-side audio clearing
 
+**Issue:** Intermittent failures due to race conditions
+- **Solution:** Always force audio reset (never rely on automatic reset), ensure deterministic timing
+
 **Issue:** Audio reset timing (too early/too late)
-- **Solution:** Test different timings, may need to reset after map load completes
+- **Solution:** Test different timings, may need to reset both before AND after map load, add delays if needed
 
 **Issue:** Audio reset affects UI sounds
 - **Solution:** Use more specific commands that only affect game audio, not UI audio
@@ -936,15 +967,21 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 **Issue:** Multiplayer synchronization (each client needs to reset)
 - **Solution:** Broadcast audio reset command to all clients during map transition
 
+**Issue:** Timing race condition between audio system and map load
+- **Solution:** Add explicit delays, reset at multiple points in transition, or wait for map load confirmation before resetting
+
 #### Testing Checklist
 
-- [ ] Single player level transition → Audio resets correctly
+- [ ] Reproduce the intermittent issue (test multiple transitions)
+- [ ] Identify pattern of when it fails vs. when it works
+- [ ] Single player level transition → Audio resets correctly **every time** (test 10+ transitions)
 - [ ] New level audio plays (footsteps, NPCs, ambient)
 - [ ] Previous level audio stops
 - [ ] UI/menu sounds still work
-- [ ] Rapid transitions → No audio issues
-- [ ] Multiple level transitions → Audio works correctly each time
+- [ ] Rapid transitions → No audio issues (test edge case timing)
+- [ ] Multiple level transitions → Audio works correctly **consistently** (no intermittent failures)
 - [ ] Multiplayer transitions → All clients have correct audio (when Task 1.1 is fixed)
+- [ ] Verify fix prevents intermittent failures (stress test with many transitions)
 
 #### Related Tasks
 

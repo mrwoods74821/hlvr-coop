@@ -1,19 +1,3 @@
---[[
-    Kiwi's Co-Op Mod for Half-Life: Alyx
-    Copyright (c) 2022 KiwifruitDev
-    All rights reserved.
-    This software is licensed under the MIT License.
-    -----------------------------------------------------------------------------
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-    -----------------------------------------------------------------------------
-]]--
-
 lua_env.persistence["checkpoint_using_hud"] = lua_env.persistence["checkpoint_using_hud"] or false
 lua_env.persistence["checkpoints"] = lua_env.persistence["checkpoints"] or {}
 lua_env.persistence["checkpoint_map"] = ""
