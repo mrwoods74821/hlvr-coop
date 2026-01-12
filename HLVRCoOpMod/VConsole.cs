@@ -19,6 +19,11 @@ namespace HLVRCoOpMod
         private bool killed = false;
         private List<byte[]> commandQueue = new();
         private StreamWatcher? watcher;
+        private int reconnectAttempts = 0;
+        private const int MAX_RECONNECT_ATTEMPTS = 5;
+        private const int INITIAL_RETRY_DELAY = 1000; // 1 second
+        private bool isReconnecting = false;
+        
         public VConsole()
         {
         }
@@ -29,6 +34,22 @@ namespace HLVRCoOpMod
         }
         public bool Connect()
         {
+            // Clean up old connection before creating new one
+            if (watcher != null)
+            {
+                watcher.MessageAvailable -= MessageAvailable;
+                watcher.ConnectionLost -= OnConnectionLost;
+                watcher.SetWorking(false);
+            }
+            if (stream != null)
+            {
+                try { stream.Close(); } catch { }
+            }
+            if (client != null)
+            {
+                try { client.Close(); } catch { }
+            }
+
             WriteCommand("disconnect");
             // Check if the port is listening before attempting to connect
             System.Net.IPEndPoint[] endPoints = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
@@ -47,6 +68,7 @@ namespace HLVRCoOpMod
             stream = client.GetStream();
             watcher = new StreamWatcher(stream);
             watcher.MessageAvailable += MessageAvailable;
+            watcher.ConnectionLost += OnConnectionLost;
             if (watcher != null)
                 watcher.SetWorking(true);
             killed = false;
@@ -59,6 +81,7 @@ namespace HLVRCoOpMod
                 }
                 commandQueue.Clear();
             }
+            reconnectAttempts = 0; // Reset reconnection attempts on successful connect
             return true;
         }
 
@@ -97,33 +120,70 @@ namespace HLVRCoOpMod
             }
         }
 
-        /*
-        public void Reconnect()
+        public bool Reconnect()
         {
-            killed = true;
-            if (stream != null)
-                stream.Close();
-            if (client != null)
-                client.Close();
-            if (watcher != null)
-                watcher.SetWorking(false);
-            client = new TcpClient("127.0.0.1", Settings.Default.VconsolePort);
-            stream = client.GetStream();
-            Connect();
+            try
+            {
+                Disconnect(); // Clean up old connection
+                System.Threading.Thread.Sleep(1000); // Wait a moment before reconnecting
+                return Connect(); // Attempt to reconnect
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("VConsole.Reconnect", ex);
+                return false;
+            }
         }
-        */
+
+        private async void OnConnectionLost(object? sender, EventArgs e)
+        {
+            // Prevent multiple simultaneous reconnection attempts
+            if (isReconnecting || killed)
+                return;
+
+            isReconnecting = true;
+            System.Diagnostics.Debug.WriteLine("VConsole: Connection lost, attempting to reconnect...");
+
+            reconnectAttempts = 0;
+            while (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !killed)
+            {
+                int delay = INITIAL_RETRY_DELAY * (int)Math.Pow(2, reconnectAttempts);
+                await Task.Delay(delay);
+
+                if (Reconnect())
+                {
+                    System.Diagnostics.Debug.WriteLine($"VConsole: Successfully reconnected after {reconnectAttempts + 1} attempt(s)");
+                    reconnectAttempts = 0;
+                    isReconnecting = false;
+                    return;
+                }
+
+                reconnectAttempts++;
+                System.Diagnostics.Debug.WriteLine($"VConsole: Reconnection attempt {reconnectAttempts}/{MAX_RECONNECT_ATTEMPTS} failed");
+            }
+
+            // Failed after all attempts
+            System.Diagnostics.Debug.WriteLine("VConsole: Failed to reconnect after all attempts");
+            ErrorLogger.LogError("VConsole", $"Failed to reconnect after {MAX_RECONNECT_ATTEMPTS} attempts");
+            reconnectAttempts = 0;
+            isReconnecting = false;
+        }
 
         public void Disconnect()
         {
             if(!killed)
             {
                 killed = true;
+                if (watcher != null)
+                {
+                    watcher.MessageAvailable -= MessageAvailable;
+                    watcher.ConnectionLost -= OnConnectionLost;
+                    watcher.SetWorking(false);
+                }
                 if (stream != null)
                     stream.Close();
                 if (client != null)
                     client.Close();
-                if (watcher != null)
-                    watcher.SetWorking(false);
             }
         }
 

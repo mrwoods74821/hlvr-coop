@@ -61,11 +61,19 @@ namespace HLVRCoOpMod
                         {
                             int read = await stream.ReadAsync(headerBuffer, bytesRead, 10 - bytesRead);
                             if (read == 0)
+                            {
+                                // Stream ended - connection lost
+                                OnConnectionLost();
                                 break; // End of stream
+                            }
                             bytesRead += read;
                         }
                         if (bytesRead < 10)
-                            break; // Incomplete header, exit loop
+                        {
+                            // Incomplete header, connection lost
+                            OnConnectionLost();
+                            break;
+                        }
                         
                         byte[] type = new byte[4] {
                             headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3]
@@ -78,22 +86,38 @@ namespace HLVRCoOpMod
                         {
                             int read = await stream.ReadAsync(data, bytesRead, length - bytesRead);
                             if (read == 0)
+                            {
+                                // Stream ended - connection lost
+                                OnConnectionLost();
                                 break; // End of stream
+                            }
                             bytesRead += read;
                         }
                         if (bytesRead < length)
-                            break; // Incomplete data, exit loop
+                        {
+                            // Incomplete data, connection lost
+                            OnConnectionLost();
+                            break;
+                        }
                         
                         OnMessageAvailable(new MessageAvailableEventArgs(commandType, data));
                     }
                     catch (Exception ex)
                     {
                         ErrorLogger.LogError("StreamWatcher", ex);
+                        // Connection error - trigger connection lost
+                        OnConnectionLost();
                     }
                 }
             }
         }
 
+        protected void OnConnectionLost()
+        {
+            ConnectionLost?.Invoke(this, EventArgs.Empty);
+        }
+
         public event MessageAvailableEventHandler? MessageAvailable;
+        public event EventHandler? ConnectionLost;
     }
 }
