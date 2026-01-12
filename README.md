@@ -61,8 +61,12 @@
 - Click on the "Server" tab in the HLVRCoop application
 - Check the "Enabled" box to host a server
 - *(Optional)* Set a password for the server, make sure to provide it to peers
-- Type in a map name to load initially (use `mp_kiwitest` for testing)
-- Ensure that the port is forwarded, try UPnP mapping via "File" > "Forward Port via UPnP"
+- Type in a map name to load initially
+- **You need to manually port forward the server port** (typically in your router's settings)
+	- Access your router's admin panel
+	- Navigate to Port Forwarding/Virtual Server settings
+	- Forward the port you're using for the server (default is shown in the application) to your computer's local IP address
+	- Ensure the port is open for both TCP and UDP protocols
 - Click on the "Start" button to start the server
 - HLVRCoop is now hosting a server! You can now provide your *public* IP address to peers
 
