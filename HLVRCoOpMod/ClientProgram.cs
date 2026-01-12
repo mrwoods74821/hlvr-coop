@@ -22,7 +22,7 @@ namespace HLVRCoOpMod
         private readonly Channel vConsoleChannel = new("VC", "VConsole", Color.Maroon);
         private readonly VConsole? vConsole = new();
         private List<Type> plugins = new();
-        public int version = 0; // Update version if netcode changes.
+        public int version = 1; // Update version if netcode changes.
         public string map = "";
         public ClientProgram(UserInterface ui)
         {
