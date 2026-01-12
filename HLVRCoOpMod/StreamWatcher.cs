@@ -104,9 +104,16 @@ namespace HLVRCoOpMod
                     }
                     catch (Exception ex)
                     {
-                        ErrorLogger.LogError("StreamWatcher", ex);
-                        // Connection error - trigger connection lost
-                        OnConnectionLost();
+                        // Don't log errors if we're intentionally stopping (working == false)
+                        // This happens when stream is closed during intentional disconnect
+                        if (working)
+                        {
+                            ErrorLogger.LogError("StreamWatcher", ex);
+                            // Connection error - trigger connection lost
+                            OnConnectionLost();
+                        }
+                        // If working == false, we're intentionally stopping, so just exit
+                        break;
                     }
                 }
             }
