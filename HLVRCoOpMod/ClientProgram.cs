@@ -33,67 +33,18 @@ namespace HLVRCoOpMod
         {
             if (ws != null && vConsole != null)
             {
-                ui.Invoke(() =>
-                {
-                    ui.LogToOutput(channel, "Connecting to VConsole using port " + Settings.Default.VconsolePort);
-                    UpdateConnectionStatus();
-                });
+                ui.Invoke(() => ui.LogToOutput(channel, "Connecting to VConsole using port " + Settings.Default.VconsolePort));
                 if (!vConsole.Connect(ws, ui, channel))
                 {
                     ui.Invoke(() =>
                     {
                         ui.LogToOutput(channel, "Failed to connect to VConsole. Starting automatic reconnection...");
                         ui.LogToOutput(channel, "Make sure Half-Life: Alyx is running with launch options: -console -vconsole -language english");
-                        UpdateConnectionStatus();
                     });
                     // Start background reconnection loop for initial connection failure
                     _ = vConsole.StartReconnectionLoop();
                 }
-                else
-                {
-                    ui.Invoke(() => UpdateConnectionStatus());
-                }
             }
-        }
-
-        public void UpdateConnectionStatus()
-        {
-            string wsStatus = "Disconnected";
-            string vcStatus = "Disconnected";
-            Color statusColor = Color.Red;
-            
-            // Check WebSocket status
-            if (ws != null && ws.IsStarted && ws.IsRunning)
-            {
-                wsStatus = "Connected";
-                statusColor = Color.Green;
-            }
-            else if (ws != null && ws.IsStarted)
-            {
-                wsStatus = "Reconnecting";
-                statusColor = Color.Orange;
-            }
-
-            // Check VConsole status
-            if (vConsole != null)
-            {
-                if (vConsole.IsConnected)
-                {
-                    vcStatus = "Connected";
-                    if (statusColor == Color.Red)
-                        statusColor = Color.Green;
-                }
-                else if (vConsole.IsReconnecting)
-                {
-                    vcStatus = "Reconnecting";
-                    if (statusColor == Color.Green)
-                        statusColor = Color.Orange;
-                    else
-                        statusColor = Color.Orange;
-                }
-            }
-
-            ui.SetConnectionStatus(wsStatus, vcStatus, statusColor);
         }
         public void Start(List<Type> pluginTypes)
         {
@@ -112,11 +63,7 @@ namespace HLVRCoOpMod
                 ws.Start();
                 ws.DisconnectionHappened.Subscribe(info =>
                 {
-                    ui.Invoke(() =>
-                    {
-                        ui.LogToOutput(channel, "Disconnected: " + info.Type.ToString());
-                        UpdateConnectionStatus();
-                    });
+                    ui.Invoke(() => ui.LogToOutput(channel, "Disconnected: " + info.Type.ToString()));
                     // Send disconnect command to game to return to main menu
                     if (vConsole != null)
                     {
@@ -124,13 +71,7 @@ namespace HLVRCoOpMod
                         {
                             vConsole.WriteCommand("disconnect", true);
                         }
-                        catch (ObjectDisposedException) { } // VConsole already disposed, ignore
-                        catch (InvalidOperationException) { } // VConsole not available, ignore
-                        catch (Exception ex)
-                        {
-                            // Log unexpected errors during disconnect
-                            ErrorLogger.LogError("ClientProgram.OnClose.WriteDisconnect", ex);
-                        }
+                        catch { } // Ignore errors if VConsole already disconnected
                     }
                 });
                 ws.MessageReceived.Subscribe(msg =>
@@ -154,7 +95,6 @@ namespace HLVRCoOpMod
                                         ui.Invoke(() => ui.LogToOutput(channel, "Server is running an older version! Please ask the owner to update their server."));
                                     }
                                 }
-                                ui.Invoke(() => UpdateConnectionStatus());
                                 if (vConsole != null && response.map != null)
                                 {
                                     if (map != response.map)
@@ -211,12 +151,8 @@ namespace HLVRCoOpMod
                         password = Settings.Default.ClientPassword,
                         timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
                     };
-                    try { ws.Send(JsonConvert.SerializeObject(input)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ClientProgram.ReconnectionHappened.Send", ex); }
-                    ui.Invoke(() =>
-                    {
-                        ui.LogToOutput(channel, "Reconnected to server at " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort);
-                        UpdateConnectionStatus();
-                    });
+                    ws.Send(JsonConvert.SerializeObject(input));
+                    ui.Invoke(() => ui.LogToOutput(channel, "Reconnected to server at " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
                 });
                 ConnectVConsole(ws);
                 // Subscribe to VConsole reconnection event to re-authenticate with server
@@ -235,17 +171,11 @@ namespace HLVRCoOpMod
                                 password = Settings.Default.ClientPassword,
                                 timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
                             };
-                            try { ws.Send(JsonConvert.SerializeObject(input)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ClientProgram.VConsoleReconnected.Send", ex); }
-                            ui.Invoke(() =>
-                            {
-                                ui.LogToOutput(channel, "VConsole reconnected, re-authenticating with server...");
-                                UpdateConnectionStatus();
-                            });
+                            ws.Send(JsonConvert.SerializeObject(input));
+                            ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, re-authenticating with server..."));
                         }
                     };
                 }
-                // Update status after initial connection attempt
-                ui.Invoke(() => UpdateConnectionStatus());
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PostStart, ui, ws, error);
                 LuaEnvironment.instance.Handle(PluginHandleType.Client_PostStart, ui, ws, error);
             }
@@ -259,11 +189,7 @@ namespace HLVRCoOpMod
                 ws.Stop(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "Closed by HLVRCOOP.");
                 ws.Dispose();
                 ws = null;
-                ui.Invoke(() =>
-                {
-                    ui.LogToOutput(channel, "Client closed");
-                    UpdateConnectionStatus();
-                });
+                ui.Invoke(() => ui.LogToOutput(channel, "Client closed"));
             }
             if (vConsole != null)
             {
@@ -276,7 +202,7 @@ namespace HLVRCoOpMod
             {
                 Response chatResponse = new("chat", text);
                 chatResponse.timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds;
-                try { ws.Send(chatResponse.ToString()); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ClientProgram.SendChat.Send", ex); }
+                ws.Send(chatResponse.ToString());
             }
         }
     }

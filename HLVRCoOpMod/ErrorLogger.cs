@@ -10,45 +10,34 @@ namespace HLVRCoOpMod
 
         public static void LogError(string source, Exception ex)
         {
-            string technicalMessage = $"[{source}] {ex.Message}\n{ex.StackTrace}";
-            string userFriendlyMessage = ErrorMessageHelper.GetUserFriendlyMessage(ex, source);
+            string message = $"[{source}] {ex.Message}\n{ex.StackTrace}";
 
-            // Log technical details to UI
+            // Log to UI
             if (Program.userInterface != null)
             {
                 Program.userInterface.Invoke(() =>
                 {
-                    // Show user-friendly message first
-                    Program.userInterface.LogToOutput(errorChannel, userFriendlyMessage);
-                    // Show technical details for debugging
-                    Program.userInterface.LogToOutput(errorChannel, "\nTechnical details: " + technicalMessage);
+                    Program.userInterface.LogToOutput(errorChannel, message);
                 });
             }
 
             // Log to Debug (for development)
-            System.Diagnostics.Debug.WriteLine(technicalMessage);
+            System.Diagnostics.Debug.WriteLine(message);
         }
 
         public static void LogError(string source, string message)
         {
-            string technicalMessage = $"[{source}] {message}";
-            string userFriendlyMessage = ErrorMessageHelper.GetUserFriendlyMessage(message, source);
+            string fullMessage = $"[{source}] {message}";
 
             if (Program.userInterface != null)
             {
                 Program.userInterface.Invoke(() =>
                 {
-                    // Show user-friendly message
-                    Program.userInterface.LogToOutput(errorChannel, userFriendlyMessage);
-                    // If messages differ, show technical details
-                    if (userFriendlyMessage != message)
-                    {
-                        Program.userInterface.LogToOutput(errorChannel, "\nTechnical details: " + technicalMessage);
-                    }
+                    Program.userInterface.LogToOutput(errorChannel, fullMessage);
                 });
             }
 
-            System.Diagnostics.Debug.WriteLine(technicalMessage);
+            System.Diagnostics.Debug.WriteLine(fullMessage);
         }
     }
 }

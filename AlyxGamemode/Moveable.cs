@@ -1,7 +1,6 @@
 using HLVRCoOpModCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Timers;
 using System.Text;
 using Newtonsoft.Json;
@@ -39,21 +38,11 @@ namespace AlyxGamemode
         private void Track(object? sender, System.Timers.ElapsedEventArgs e)
         {
             Response response = new("command", "hlvrcoop_grace " + MovedObject.Name);
-            // Use ToList() to avoid modification during iteration
-            if (Connections != null)
+            foreach (IndexedClient client in Connections)
             {
-                foreach (IndexedClient client in Connections.ToList())
+                if (client.Session.ConnectionInfo.Id != ClientID)
                 {
-                    try
-                    {
-                        if (client.Session.ConnectionInfo.Id != ClientID)
-                        {
-                            client.Session.Send(JsonConvert.SerializeObject(response));
-                        }
-                    }
-                    catch (ObjectDisposedException) { } // Connection already closed
-                    catch (InvalidOperationException) { } // Connection not available
-                    catch (Exception) { } // Ignore other errors in timer callback
+                    client.Session.Send(JsonConvert.SerializeObject(response));
                 }
             }
             TimedOut = true;
