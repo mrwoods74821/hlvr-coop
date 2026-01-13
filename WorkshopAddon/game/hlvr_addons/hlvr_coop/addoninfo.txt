@@ -3,9 +3,5 @@
 	HideInTools = false
 	IsPlayable = true
 	IsTemplate = false
-	maps = 
-	[
-		"mp_kiwitest",
-	]
 	map_extensions = [  ]
 }
