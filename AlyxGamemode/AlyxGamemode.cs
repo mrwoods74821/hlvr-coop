@@ -417,6 +417,7 @@ namespace AlyxGamemode
                                                                         {
                                                                             Response breakprop = new("status", "Broken prop: " + packet.args[0]);
                                                                             broadcast.Session.Send(JsonConvert.SerializeObject(removeBreak));
+                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(breakprop));
                                                                         }
                                                                     }
                                                                 }

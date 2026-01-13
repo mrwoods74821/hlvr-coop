@@ -56,7 +56,7 @@ namespace AlyxGamemode
         }
         public bool RemovePlayer(Guid id)
         {
-            Player? oldPlayer = players.Find(p => p.Client.Session.ConnectionInfo.Id == id);
+            Player? oldPlayer = players.Find(p => p != null && p.Client.Session.ConnectionInfo.Id == id);
             if (oldPlayer != null)
                 return players.Remove(oldPlayer);
             return false;

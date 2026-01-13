@@ -79,7 +79,9 @@ namespace HLVRCoOpMod
                             headerBuffer[0], headerBuffer[1], headerBuffer[2], headerBuffer[3]
                         };
                         string commandType = Encoding.ASCII.GetString(type);
-                        byte length = (byte)(headerBuffer[9] - headerBuffer.Length);
+                        // headerBuffer[9] contains (dataLength + 13), so subtract 13 to get actual data length
+                        // (13 = header overhead: 4 bytes command + 8 bytes header info + 1 byte terminator)
+                        byte length = (byte)(headerBuffer[9] - 13);
                         byte[] data = new byte[length];
                         bytesRead = 0;
                         while (bytesRead < length)
