@@ -45,6 +45,8 @@ namespace AlyxGamemode
         TemplateEntity,
         /// <summary>Entity spawn notification. Sent when item is picked up. Code: SPWN</summary>
         Spawn,
+        /// <summary>Player respawn notification. Sent when player respawns after death. Code: RESP</summary>
+        Respawn,
         
         // ===== UNUSED/LEGACY PACKETS (Not sent from Lua) =====
         // These packet types are defined but never sent by the game-side Lua scripts.
@@ -156,6 +158,7 @@ namespace AlyxGamemode
                 "TELE" => PacketType.Teleport,
                 "TENT" => PacketType.TemplateEntity,
                 "SPWN" => PacketType.Spawn,
+                "RESP" => PacketType.Respawn,
                 _ => PacketType.None,
             };
         }
@@ -192,6 +195,7 @@ namespace AlyxGamemode
                 PacketType.Teleport => "TELE",
                 PacketType.TemplateEntity => "TENT",
                 PacketType.Spawn => "SPWN",
+                PacketType.Respawn => "RESP",
                 _ => "NONE",
             };
         }

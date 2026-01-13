@@ -137,6 +137,31 @@ namespace AlyxGamemode
                                                                 }
                                                             }
                                                             break;
+                                                        case PacketType.Respawn:
+                                                            // Player respawn notification
+                                                            // Format: RESP <x> <y> <z> HLVRCOOP
+                                                            // This is informational - the respawn has already happened client-side
+                                                            // Server can log this for tracking purposes
+                                                            if (packet.args.Length >= 3)
+                                                            {
+                                                                try
+                                                                {
+                                                                    // Optional: Log respawn event or notify other players
+                                                                    // For now, just acknowledge the respawn
+                                                                    // The respawn is handled entirely client-side
+                                                                    Player? respawnedPlayer = AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id);
+                                                                    if (respawnedPlayer != null)
+                                                                    {
+                                                                        // Reset player health tracking
+                                                                        respawnedPlayer.Health = 100;
+                                                                    }
+                                                                }
+                                                                catch (Exception ex)
+                                                                {
+                                                                    ErrorLogger.LogError("AlyxGamemode.Respawn", ex);
+                                                                }
+                                                            }
+                                                            break;
                                                         case PacketType.Teleport:
                                                             // Teleport command (trigger_teleport output)
                                                             // Format: TELE <x> <y> <z> <pitch> <yaw> <roll> HLVRCOOP

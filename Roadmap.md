@@ -99,9 +99,10 @@
 - **Remove Workarounds** (Task 4.1) - ✅ COMPLETED - Refactored `lua_chat_handled` workaround in ServerProgram.cs to improve code structure while maintaining compatibility. Added proper null checking and improved error handling.
 - **Implement Proper HandleState Mechanism for Chat Commands** (Task 4.3) - ✅ COMPLETED - Replaced workaround with proper `handled` property on Response class. Lua scripts now use `arg1.handled = true` instead of mutating response type. Full backward compatibility maintained with legacy `lua_chat_handled` type checking.
 - **Code Cleanup** (Task 4.2) - ✅ COMPLETED - Removed unused commented code from basic.lua, added XML documentation to ServerProgram.cs methods (ChangeMap, GlobalVConsole), added clarifying comments, and added XML documentation to Map.cs. Preserved commented-out map transition code as requested.
+- **Respawn/Death System** (Task 1.6) - ✅ COMPLETED - Implemented automatic respawn system. When players die, they are immediately respawned at the start of the current level instead of seeing the "Load Save File" screen. Death detection runs every frame, health is restored immediately to prevent death screen, and players are teleported to `info_player_start` position. Includes cooldown to prevent respawn spam and proper error handling.
 
 ### Current State
-- **Functional:** Core multiplayer synchronization works, all reconnection systems implemented, comprehensive error handling, version checking enabled, sound file path format fixed, packet types fully investigated and documented, comprehensive Lua API documentation complete, code cleanup and workaround refactoring completed, proper HandleState mechanism for chat commands implemented, Workshop addon compatibility plugin implemented
+- **Functional:** Core multiplayer synchronization works, all reconnection systems implemented, comprehensive error handling, version checking enabled, sound file path format fixed, packet types fully investigated and documented, comprehensive Lua API documentation complete, code cleanup and workaround refactoring completed, proper HandleState mechanism for chat commands implemented, Workshop addon compatibility plugin implemented, respawn/death system implemented
 - **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions
 - **Incomplete:** None (all packet types investigated - 14 implemented, 13 confirmed as unused/legacy and properly documented)
 - **Disabled:** Automatic map switching (code exists but commented out)
@@ -111,7 +112,8 @@
 **Priority 1: Critical Functionality (Game-Breaking Issues)**
 1. **Fix Automatic Map Switching** (CRITICAL) - Enable commented code to synchronize all players during level transitions
 2. **Fix Audio System During Level Transitions** (CRITICAL) - Fix intermittent audio issues when transitioning between levels
-3. ~~**Fix Command Buffer Full Handling**~~ ✅ (COMPLETED - Task 1.3) - Command queue, rate limiting, and automatic recovery implemented
+3. ~~**Implement Respawn/Death System**~~ ✅ (COMPLETED - Task 1.6) - Players respawn at level start instead of seeing death screen
+4. ~~**Fix Command Buffer Full Handling**~~ ✅ (COMPLETED - Task 1.3) - Command queue, rate limiting, and automatic recovery implemented
 
 **Priority 2: Incomplete Core Features**
 4. ~~**Fix Sound File Path Format**~~ ✅ (COMPLETED - Task 2.1) - Fixed jingle sound file path format and resource manifest
@@ -132,9 +134,10 @@
 ### Critical Path
 1. **Fix automatic map switching** - Breaks cooperative gameplay ⚠️ **REMAINING CRITICAL ISSUE**
 2. **Fix audio system during level transitions** - Breaks immersion and gameplay ⚠️ **REMAINING CRITICAL ISSUE**
-3. ~~**Implement VConsole reconnection**~~ ✅ COMPLETED - Prevents connection loss issues
-4. ~~**Fix error handling**~~ ✅ COMPLETED - Makes debugging possible
-5. ~~**Complete packet handlers**~~ ✅ COMPLETED - All packet types investigated and documented (Task 2.3)
+3. ~~**Implement respawn/death system**~~ ✅ COMPLETED - Players now respawn at level start instead of seeing death screen
+4. ~~**Implement VConsole reconnection**~~ ✅ COMPLETED - Prevents connection loss issues
+5. ~~**Fix error handling**~~ ✅ COMPLETED - Makes debugging possible
+6. ~~**Complete packet handlers**~~ ✅ COMPLETED - All packet types investigated and documented (Task 2.3)
 
 ### What's Really Left To Do
 
@@ -142,6 +145,8 @@
 1. **Task 1.1: Fix Automatic Map Switching** - Uncomment and fix map transition code in `AlyxGamemode.cs` lines 366-380. This is the #1 priority as it completely breaks cooperative gameplay when players reach level transitions.
 
 2. **Task 1.5: Fix Audio System During Level Transitions** - Fix intermittent audio issues. Research Source 2 audio reset commands and coordinate with map transitions. Should be done together with Task 1.1.
+
+3. ~~**Task 1.6: Implement Respawn/Death System**~~ ✅ COMPLETED - Players now respawn at the start of the current level instead of seeing the "Load Save File" screen. Death detection runs every frame, health is restored immediately, and players are teleported to spawn position.
 
 **Everything else is complete!** ✅
 
@@ -1071,6 +1076,232 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 
 - **Task 1.1:** Fix Automatic Map Switching - Audio reset should be integrated with map switching code
 - This task should be implemented alongside or after Task 1.1
+
+---
+
+### Task 1.6: Implement Respawn/Death System (CRITICAL)
+
+**Status:** Not implemented  
+**Priority:** CRITICAL - Breaks cooperative gameplay when players die  
+**Risk Level:** Medium  
+**Dependencies:** None
+
+#### Problem Statement
+
+When a player dies in Half-Life: Alyx during cooperative gameplay, they are shown the "Load Save File" screen instead of respawning. This breaks the multiplayer experience as players cannot continue playing together after death.
+
+**Current Behavior:**
+1. Player takes damage → Health reaches 0
+2. Game shows "Load Save File" screen
+3. Player must manually load a save or restart
+4. Other players continue without the dead player
+
+**Desired Behavior:**
+1. Player takes damage → Health reaches 0
+2. Player is immediately respawned at the start of the current level
+3. Player health is restored to 100
+4. Player can continue playing with the team
+
+#### Technical Details
+
+**Source 2 Engine Death Mechanics:**
+- Half-Life: Alyx does not have a direct `player_death` game event in VScript
+- Death is detected by monitoring player health (`Player:GetHealth() <= 0`)
+- The death screen appears automatically when health reaches 0
+- To prevent the death screen, health must be restored quickly before the screen appears
+
+**Available Commands:**
+- `hlvrcoop_teleportangles x y z pitch yaw roll` - Teleports player to position with angles
+- `hlvrcoop_sethealth <health>` - Sets player health (e.g., `hlvrcoop_sethealth 100`)
+- `Entities.FindByName(nil, "info_player_start")` - Finds spawn point entity
+- `Player:GetAbsOrigin()` - Gets current player position
+- `Player:SetAbsOrigin(Vector(x, y, z))` - Sets player position
+- `Player:SetHealth(health)` - Sets player health
+
+**Spawn Position Detection:**
+- `info_player_start` entity marks the player spawn position
+- Can be found by name (if targetname is set) or by classname
+- Use `GetAbsOrigin()` to get spawn position
+- Use `GetAbsAngles()` to get spawn angles
+
+#### Implementation Steps
+
+**Step 1: Add Death Detection in Game-Side Lua Script**
+**Location:** `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/vscripts/hlvrcoop_interval.lua`
+
+**Implementation:**
+```lua
+-- Track previous health to detect death
+local previousHealth = 100
+local respawnPosition = nil
+local respawnAngles = nil
+
+-- Find spawn position on map load
+function HLVRCOOP_FindSpawnPosition()
+    -- Try to find info_player_start by name first
+    local spawnEntity = Entities:FindByName(nil, "info_player_start")
+    if not spawnEntity then
+        -- Try to find by classname
+        spawnEntity = Entities:FindByClassname(nil, "info_player_start")
+    end
+    
+    if spawnEntity then
+        respawnPosition = spawnEntity:GetAbsOrigin()
+        respawnAngles = spawnEntity:GetAbsAnglesAsVector()
+    else
+        -- Fallback to origin (0, 0, 0) if no spawn point found
+        respawnPosition = Vector(0, 0, 0)
+        respawnAngles = Vector(0, 0, 0)
+    end
+end
+
+-- Check for death and respawn
+function HLVRCOOP_CheckDeath()
+    if Player then
+        local currentHealth = Player:GetHealth()
+        
+        -- Detect death (health dropped to 0 or below)
+        if previousHealth > 0 and currentHealth <= 0 then
+            -- Player just died - respawn immediately
+            HLVRCOOP_RespawnPlayer()
+        end
+        
+        previousHealth = currentHealth
+    end
+end
+
+-- Respawn player at start of level
+function HLVRCOOP_RespawnPlayer()
+    if not respawnPosition then
+        HLVRCOOP_FindSpawnPosition()
+    end
+    
+    if respawnPosition and Player then
+        -- Immediately restore health to prevent death screen
+        Player:SetHealth(100)
+        
+        -- Teleport to spawn position
+        local anchor = Player:GetHMDAnchor()
+        if Player:GetHMDAvatar() then
+            anchor:SetAbsOrigin(respawnPosition)
+            if respawnAngles then
+                anchor:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3])
+            end
+        else
+            Player:SetAbsOrigin(respawnPosition)
+            if respawnAngles then
+                Player:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3])
+            end
+        end
+        
+        -- Send respawn notification to server
+        print("RESP " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3] .. " HLVRCOOP")
+    end
+end
+
+-- Call death check in the main loop (where PLYR packet is sent)
+-- Add this check in the interval function where player health is already being read
+```
+
+**Step 2: Add RESP Packet Type (Optional - for server tracking)**
+**Location:** `AlyxGamemode/Packet.cs`
+
+**Implementation:**
+```csharp
+/// <summary>Player respawn notification. Sent when player respawns. Code: RESP</summary>
+Respawn,
+```
+
+**Step 3: Update Main Loop to Check for Death**
+**Location:** `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/vscripts/hlvrcoop_interval.lua`
+
+**Modify the interval function** where `playerHealth` is read (around line 25-47) to add death detection:
+```lua
+-- In the interval function, after reading playerHealth:
+HLVRCOOP_CheckDeath() -- Check for death and respawn if needed
+```
+
+**Step 4: Initialize Spawn Position on Map Load**
+**Location:** `WorkshopAddon/game/hlvr_addons/hlvr_coop/scripts/vscripts/hlvrcoop_interval.lua`
+
+**Add spawn position detection when map loads:**
+```lua
+-- In the initialization code (where map is detected):
+HLVRCOOP_FindSpawnPosition()
+```
+
+**Step 5: Handle Edge Cases**
+- **No spawn point found:** Fallback to origin (0, 0, 0) or use first checkpoint
+- **Rapid death/respawn:** Add cooldown to prevent respawn spam
+- **Death during teleport:** Ensure respawn works even during teleport
+- **Multiple players dying simultaneously:** Each client handles their own respawn
+
+**Step 6: Test Scenarios**
+- Single player death → Respawns correctly
+- Multiple players die → All respawn correctly
+- Death at different locations → All respawn at start
+- Death during combat → Respawn works immediately
+- Death screen does not appear → Health restored before screen shows
+
+#### Success Criteria
+
+- [ ] Player respawns at start of level when health reaches 0
+- [ ] Death screen does not appear (health restored before screen shows)
+- [ ] Respawn position is correctly detected from `info_player_start`
+- [ ] Player health is restored to 100 on respawn
+- [ ] Works for single player and multiplayer
+- [ ] No performance issues from death checking
+- [ ] Respawn works on all maps (including custom maps)
+
+#### Potential Issues & Solutions
+
+**Issue:** Death screen appears before health can be restored
+- **Solution:** Check health more frequently (every frame or every tick), restore health immediately when detected
+
+**Issue:** `info_player_start` entity not found on some maps
+- **Solution:** Fallback to map origin, or use first checkpoint position, or allow manual spawn point configuration
+
+**Issue:** Player respawns in invalid location (inside geometry, out of bounds)
+- **Solution:** Validate spawn position, add offset if needed, or find nearest valid spawn point
+
+**Issue:** Respawn interferes with other systems (checkpoints, teleports)
+- **Solution:** Coordinate with checkpoint system, ensure respawn doesn't conflict with manual teleports
+
+**Issue:** Performance impact from frequent health checking
+- **Solution:** Only check when health changes, or check every N ticks instead of every tick
+
+#### Testing Checklist
+
+- [ ] Player dies from damage → Respawns at start of level
+- [ ] Death screen does not appear
+- [ ] Health is restored to 100
+- [ ] Respawn position is correct (start of level)
+- [ ] Works with 2+ players (each respawns independently)
+- [ ] Works on different maps (official and custom)
+- [ ] No crashes or errors
+- [ ] Performance is acceptable (no lag from death checking)
+
+#### Related Tasks
+
+- **Task 1.1:** Fix Automatic Map Switching - Respawn system should work with map transitions
+- **Campaign Checkpoints:** Existing checkpoint system has respawn logic that can be referenced
+
+#### Research Notes
+
+**Source 2 Engine Limitations:**
+- Half-Life: Alyx VScript does not have `player_death` game event
+- Must monitor health manually to detect death
+- Death screen appears automatically - must prevent it by restoring health quickly
+
+**Alternative Approaches:**
+- Use `ListenToGameEvent` for other death-related events (if available)
+- Hook into damage system to prevent death before it happens
+- Use entity outputs if player entity has death outputs
+
+**References:**
+- Existing checkpoint respawn code in `base_scripts/gamemodes/campaign/checkpoints.lua`
+- Teleport command implementation in `hlvrcoop_interval.lua` (lines 615-624)
+- Health setting command: `hlvrcoop_sethealth` (line 784)
 
 ---
 
