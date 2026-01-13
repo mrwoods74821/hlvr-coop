@@ -99,9 +99,21 @@ namespace HLVRCoOpMod
                                 {
                                     if (map != response.map)
                                     {
-                                        ui.Invoke(() => ui.LogToOutput(channel, "Changing map to " + response.map));
-                                        vConsole.WriteCommand("addon_play " + response.map + ";addon_tools_map " + response.map);
-                                        map = response.map;
+                                        // Capture map value before async delay
+                                        string targetMap = response.map;
+                                        ui.Invoke(() => ui.LogToOutput(channel, "Changing map to " + targetMap));
+                                        // Delay map change command to allow game to fully load/initialize
+                                        // This prevents the command from being sent before the game is ready
+                                        // (e.g., when game is starting up or reconnecting after exit)
+                                        Task.Run(async () =>
+                                        {
+                                            await Task.Delay(2000); // 2 second delay for game to be ready
+                                            if (vConsole != null)
+                                            {
+                                                vConsole.WriteCommand("addon_play " + targetMap + ";addon_tools_map " + targetMap);
+                                                map = targetMap;
+                                            }
+                                        });
                                     }
                                 }
                                 break;
