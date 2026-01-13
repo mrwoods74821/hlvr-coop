@@ -37,6 +37,25 @@ The plugin currently supports the following Workshop addons:
    - Script library dependency
    - No synchronization required
 
+8. **Charger Melee Charge** (Workshop ID: 3616305735)
+   - Adds melee charge behavior to Combine Charger NPCs
+   - No synchronization required (NPC behavior handled by existing sync system)
+   - Requires: Scalable Init Support
+
+9. **Fast Headcrab Restored** (Workshop ID: 3308356996)
+   - Restores fast headcrab NPCs to campaign maps
+   - No synchronization required (map extensions only)
+
+10. **Brutal Blood** (Workshop ID: 2857095424)
+    - Enhanced blood effects with animated drips and pools
+    - No synchronization required (visual effects only)
+    - Requires: Scalable Init Support
+
+11. **Bullet Penetration Mod** (Workshop ID: 3008209128)
+    - Adds bullet penetration mechanics to weapons
+    - No synchronization required (client-side visual effect)
+    - Requires: Scalable Init Support
+
 ## How It Works
 
 ### Important: The Plugin Does NOT Download Addons

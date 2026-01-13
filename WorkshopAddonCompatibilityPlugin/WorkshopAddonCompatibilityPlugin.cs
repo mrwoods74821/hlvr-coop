@@ -12,7 +12,8 @@ namespace WorkshopAddonCompatibilityPlugin
 {
     /// <summary>
     /// Plugin that enables and synchronizes Steam Workshop addons for cooperative gameplay.
-    /// Supports: Player Body, More Resin, Unpin Ragdolls, Removable Health Vials, Partial Clip Storage, Scalable Init Support, AlyxLib
+    /// Supports: Player Body, More Resin, Unpin Ragdolls, Removable Health Vials, Partial Clip Storage, Scalable Init Support, AlyxLib,
+    /// Charger Melee Charge, Fast Headcrab Restored, Brutal Blood, Bullet Penetration Mod
     /// </summary>
     public class WorkshopAddonCompatibilityPlugin : BasePlugin
     {
@@ -78,6 +79,41 @@ namespace WorkshopAddonCompatibilityPlugin
                 AddonName = "alyxlib",
                 DisplayName = "AlyxLib",
                 RequiresSync = false // Library, no sync needed
+            }},
+            // Charger Melee Charge
+            { "3616305735", new WorkshopAddonInfo
+            {
+                WorkshopId = "3616305735",
+                AddonName = "charger_melee_charge",
+                DisplayName = "Charger Melee Charge",
+                RequiresSync = false, // NPC behavior is handled by existing NPC sync system
+                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
+            }},
+            // Fast Headcrab Restored
+            { "3308356996", new WorkshopAddonInfo
+            {
+                WorkshopId = "3308356996",
+                AddonName = "3308356996", // Workshop ID (map extensions only, no scripts)
+                DisplayName = "Fast Headcrab Restored",
+                RequiresSync = false // Map extensions only, no sync needed
+            }},
+            // Brutal Blood
+            { "2857095424", new WorkshopAddonInfo
+            {
+                WorkshopId = "2857095424",
+                AddonName = "brutal_blood",
+                DisplayName = "Brutal Blood",
+                RequiresSync = false, // Blood effects are visual only, no sync needed
+                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
+            }},
+            // Bullet Penetration Mod
+            { "3008209128", new WorkshopAddonInfo
+            {
+                WorkshopId = "3008209128",
+                AddonName = "bullet_penetration_mod",
+                DisplayName = "Bullet Penetration Mod",
+                RequiresSync = false, // Bullet penetration is client-side visual effect, no sync needed
+                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
             }}
         };
 
