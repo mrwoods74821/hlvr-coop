@@ -63,6 +63,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HLVRCoOpModCore\HLVRCoOpModCore.csproj" />
+    <ProjectReference Include="..\WorkshopAddonCompatibilityPlugin\WorkshopAddonCompatibilityPlugin.csproj" />
   </ItemGroup>
 
   <ItemGroup>

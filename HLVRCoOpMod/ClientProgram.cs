@@ -9,6 +9,7 @@ using HLVRCoOpModCore;
 using Websocket.Client;
 using System.Diagnostics;
 using System.Drawing;
+using WorkshopAddonCompatibilityPlugin;
 
 namespace HLVRCoOpMod
 {
@@ -192,6 +193,18 @@ namespace HLVRCoOpMod
                             {
                                 SendVConsoleCommand($"convar_set player_body_preference {preference}");
                             }
+                            
+                            // Enable Workshop addons when VConsole reconnects (with delay for game to be ready)
+                            ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, enabling Workshop addons..."));
+                            
+                            // Create addon channel for logging
+                            Channel addonChannel = new("ADDON", "Workshop Addons", Color.Orange);
+                            
+                            WorkshopAddonCompatibilityPlugin.WorkshopAddonCompatibilityPlugin.EnableAddonsForLocalClient(
+                                SendVConsoleCommand, 
+                                delayMs: 2000, // 2 second delay to allow game to be ready
+                                logMessage: (message) => ui.Invoke(() => ui.LogToOutput(addonChannel, message))
+                            );
                         }
                     };
                 }
@@ -207,6 +220,26 @@ namespace HLVRCoOpMod
                         SendVConsoleCommand($"convar_set player_body_preference {savedPreference}");
                     });
                 }
+                
+                // Enable Workshop addons when client starts (with delay for game to be ready)
+                // This ensures addons are enabled even if client hasn't connected to server yet
+                Task.Run(async () =>
+                {
+                    await Task.Delay(2500); // Wait 2.5 seconds for VConsole to connect and game to be ready
+                    if (vConsole != null)
+                    {
+                        ui.Invoke(() => ui.LogToOutput(channel, "Enabling Workshop addons on client startup..."));
+                        
+                        // Create addon channel for logging
+                        Channel addonChannel = new("ADDON", "Workshop Addons", Color.Orange);
+                        
+                        WorkshopAddonCompatibilityPlugin.WorkshopAddonCompatibilityPlugin.EnableAddonsForLocalClient(
+                            SendVConsoleCommand,
+                            delayMs: 0, // Already delayed above, no additional delay needed
+                            logMessage: (message) => ui.Invoke(() => ui.LogToOutput(addonChannel, message))
+                        );
+                    }
+                });
                 
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PostStart, ui, ws, error);
                 LuaEnvironment.instance.Handle(PluginHandleType.Client_PostStart, ui, ws, error);

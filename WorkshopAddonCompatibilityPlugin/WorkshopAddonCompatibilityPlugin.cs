@@ -2,6 +2,9 @@ using HLVRCoOpModCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Drawing;
+using System.Threading;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Fleck;
 
@@ -78,8 +81,9 @@ namespace WorkshopAddonCompatibilityPlugin
             }}
         };
 
+        private static readonly object enabledAddonsLock = new object();
         private static List<string> enabledAddons = new();
-        private static bool pluginInitialized = false;
+        private static volatile bool pluginInitialized = false;
 
         public WorkshopAddonCompatibilityPlugin() : base()
         {
@@ -125,7 +129,10 @@ namespace WorkshopAddonCompatibilityPlugin
         {
             // Default: Enable all supported addons
             // In the future, this could load from user settings
-            enabledAddons = SupportedAddons.Keys.ToList();
+            lock (enabledAddonsLock)
+            {
+                enabledAddons = SupportedAddons.Keys.ToList();
+            }
         }
 
         /// <summary>
@@ -149,8 +156,14 @@ namespace WorkshopAddonCompatibilityPlugin
         {
             if (!pluginInitialized || socket == null) return;
 
+            List<string> localEnabledAddons;
+            lock (enabledAddonsLock)
+            {
+                localEnabledAddons = new List<string>(enabledAddons);
+            }
+
             // Enable dependencies first (Scalable Init Support, AlyxLib)
-            var dependencyAddons = enabledAddons
+            var dependencyAddons = localEnabledAddons
                 .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count == 0)
                 .ToList();
 
@@ -159,11 +172,13 @@ namespace WorkshopAddonCompatibilityPlugin
                 // Enable by Workshop ID (this is what the game expects)
                 Response enableCommand = new("command", $"addon_enable {addonId}");
                 socket.Send(JsonConvert.SerializeObject(enableCommand));
+                // Small delay to avoid command buffer overflow
+                Thread.Sleep(100);
             }
 
             // Enable dependent addons (after dependencies are loaded)
             // Only enable if their dependency requirements are met
-            var dependentAddons = enabledAddons
+            var dependentAddons = localEnabledAddons
                 .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count > 0)
                 .Where(id =>
                 {
@@ -171,12 +186,12 @@ namespace WorkshopAddonCompatibilityPlugin
                     if (addon.RequiresAnyDependency)
                     {
                         // For "or" dependencies: at least one dependency must be enabled
-                        return addon.Dependencies.Any(depId => enabledAddons.Contains(depId));
+                        return addon.Dependencies.Any(depId => localEnabledAddons.Contains(depId));
                     }
                     else
                     {
                         // For "and" dependencies: all dependencies must be enabled
-                        return addon.Dependencies.All(depId => enabledAddons.Contains(depId));
+                        return addon.Dependencies.All(depId => localEnabledAddons.Contains(depId));
                     }
                 })
                 .OrderBy(id => SupportedAddons[id].Dependencies.Count) // Enable in dependency order
@@ -186,6 +201,8 @@ namespace WorkshopAddonCompatibilityPlugin
             {
                 Response enableCommand = new("command", $"addon_enable {addonId}");
                 socket.Send(JsonConvert.SerializeObject(enableCommand));
+                // Small delay to avoid command buffer overflow
+                Thread.Sleep(100);
             }
         }
 
@@ -195,7 +212,10 @@ namespace WorkshopAddonCompatibilityPlugin
         /// </summary>
         public static List<string> GetEnabledAddons()
         {
-            return new List<string>(enabledAddons);
+            lock (enabledAddonsLock)
+            {
+                return new List<string>(enabledAddons);
+            }
         }
 
         /// <summary>
@@ -203,7 +223,10 @@ namespace WorkshopAddonCompatibilityPlugin
         /// </summary>
         public static void SetEnabledAddons(List<string> addonIds)
         {
-            enabledAddons = addonIds.Where(id => SupportedAddons.ContainsKey(id)).ToList();
+            lock (enabledAddonsLock)
+            {
+                enabledAddons = addonIds.Where(id => SupportedAddons.ContainsKey(id)).ToList();
+            }
         }
 
         /// <summary>
@@ -220,6 +243,98 @@ namespace WorkshopAddonCompatibilityPlugin
         public static Dictionary<string, WorkshopAddonInfo> GetSupportedAddons()
         {
             return new Dictionary<string, WorkshopAddonInfo>(SupportedAddons);
+        }
+
+        /// <summary>
+        /// Enables addons for the local client (listen server host).
+        /// This is called when VConsole connects/reconnects to ensure addons are enabled
+        /// even if the client hasn't connected to the server yet.
+        /// </summary>
+        /// <param name="sendCommand">Function to send VConsole commands (e.g., ClientProgram.SendVConsoleCommand)</param>
+        /// <param name="delayMs">Delay in milliseconds before enabling addons (to allow game to be ready)</param>
+        /// <param name="logMessage">Optional function to log messages (for UI output)</param>
+        public static void EnableAddonsForLocalClient(Action<string> sendCommand, int delayMs = 2000, Action<string>? logMessage = null)
+        {
+            if (!pluginInitialized || sendCommand == null) return;
+
+            // Get a snapshot of enabled addons to avoid holding lock during async operation
+            List<string> localEnabledAddons;
+            int addonCount;
+            lock (enabledAddonsLock)
+            {
+                localEnabledAddons = new List<string>(enabledAddons);
+                addonCount = enabledAddons.Count;
+            }
+
+            // Log that we're starting to enable addons
+            logMessage?.Invoke($"Enabling {addonCount} Workshop addon(s)...");
+
+            // Enable addons asynchronously with delay
+            Task.Run(async () =>
+            {
+                await Task.Delay(delayMs); // Wait for game to be ready
+
+                // Enable dependencies first (Scalable Init Support, AlyxLib)
+                var dependencyAddons = localEnabledAddons
+                    .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count == 0)
+                    .ToList();
+
+                // Log dependencies being enabled
+                if (dependencyAddons.Count > 0)
+                {
+                    logMessage?.Invoke($"Enabling {dependencyAddons.Count} dependency addon(s)...");
+                }
+
+                foreach (var addonId in dependencyAddons)
+                {
+                    var addonInfo = SupportedAddons[addonId];
+                    sendCommand($"addon_enable {addonId}");
+                    
+                    // Log each addon being enabled
+                    logMessage?.Invoke($"  → {addonInfo.DisplayName} (ID: {addonId})");
+                    
+                    await Task.Delay(100); // Small delay between commands to avoid buffer overflow
+                }
+
+                // Enable dependent addons (after dependencies are loaded)
+                var dependentAddons = localEnabledAddons
+                    .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count > 0)
+                    .Where(id =>
+                    {
+                        var addon = SupportedAddons[id];
+                        if (addon.RequiresAnyDependency)
+                        {
+                            return addon.Dependencies.Any(depId => localEnabledAddons.Contains(depId));
+                        }
+                        else
+                        {
+                            return addon.Dependencies.All(depId => localEnabledAddons.Contains(depId));
+                        }
+                    })
+                    .OrderBy(id => SupportedAddons[id].Dependencies.Count)
+                    .ToList();
+
+                // Log dependent addons being enabled
+                if (dependentAddons.Count > 0)
+                {
+                    logMessage?.Invoke($"Enabling {dependentAddons.Count} dependent addon(s)...");
+                }
+
+                foreach (var addonId in dependentAddons)
+                {
+                    var addonInfo = SupportedAddons[addonId];
+                    sendCommand($"addon_enable {addonId}");
+                    
+                    // Log each addon being enabled
+                    logMessage?.Invoke($"  → {addonInfo.DisplayName} (ID: {addonId})");
+                    
+                    await Task.Delay(100); // Small delay between commands
+                }
+
+                // Log completion
+                int totalEnabled = dependencyAddons.Count + dependentAddons.Count;
+                logMessage?.Invoke($"✓ Enabled {totalEnabled} Workshop addon(s) successfully");
+            });
         }
     }
 
