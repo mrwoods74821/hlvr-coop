@@ -1,0 +1,127 @@
+--[[
+    v1.3.0
+    https://github.com/FrostSource/alyxlib
+
+    Code for player hands.
+    
+]]
+
+local version = "v1.3.0"
+
+---Merge an existing prop with this hand.
+---@param prop EntityHandle|string # The prop handle or targetname.
+---@param hide_hand boolean # If the hand should turn invisible after merging.
+function CPropVRHand:MergeProp(prop, hide_hand)
+    if type(prop) == "string" then
+        prop = Entities:FindByName(nil, prop)
+    end
+    if IsValidEntity(prop) then
+        local glove = self:GetGlove()
+        if not glove then
+            Warning("Trying to merge prop with glove but glove was not found!\n")
+            return
+        end
+        -- don't use FollowEntity
+        prop:SetParent(glove, "!bonemerge")
+        if hide_hand then glove:SetRenderAlpha(0) end
+    else
+        Warning("Could not find prop '"..tostring(prop).."' to merge with hand.\n")
+    end
+end
+
+---Return true if this hand is currently holding a prop.
+---@return boolean
+function CPropVRHand:IsHoldingItem()
+    return IsEntity(self.ItemHeld, true)
+end
+
+---Drop the item held by this hand.
+---@return EntityHandle?
+function CPropVRHand:Drop()
+    if self.ItemHeld ~= nil then
+        Player:DropByHandle(self.ItemHeld)
+        ---@TODO: Make sure this doesn't return nil
+        return self.ItemHeld
+    end
+end
+
+---Grab the entity
+---@param ent EntityHandle|string
+function CPropVRHand:Grab(ent)
+    if type(ent) == "string" then
+        local name = ent
+        ent = Entities:FindByName(nil, name)
+        if ent == nil then
+            return warn("Could not find entity to grab with name " .. name)
+        end
+    end
+
+    ent:Grab(self)
+end
+
+---Get the rendered glove entity for this hand, i.e. the first `hlvr_prop_renderable_glove` class.
+---@return EntityHandle|nil
+function CPropVRHand:GetGlove()
+    return self:GetFirstChildWithClassname("hlvr_prop_renderable_glove")
+end
+
+---Get the entity for this hands grabbity glove (the animated part on the glove).
+---@return EntityHandle|nil
+function CPropVRHand:GetGrabbityGlove()
+    return self:GetFirstChildWithClassname("prop_grabbity_gloves")
+end
+
+---Returns true if the digital action is on for this. See `ENUM_DIGITAL_INPUT_ACTIONS` for action index values.
+---Note: Only reports input when headset is awake. Will still transmit input when controller loses tracking.
+---@param digitalAction DigitalInputAction
+---@return boolean
+function CPropVRHand:IsButtonPressed(digitalAction)
+    return Player:IsDigitalActionOnForHand(self.Literal, digitalAction)
+end
+
+---
+---Get the position of the palm of this hand.
+---
+---Returns the palm of the glove if it exists, otherwise the palm of the invisible hand.
+---Sometimes the glove becomes desynchronized with the hand, such as interacting with a handpose or holding a weapon,
+---so this function will try to return the position of the visible palm whenever possible.
+---
+---@return Vector
+function CPropVRHand:GetPalmPosition()
+    local glove = self:GetGlove()
+    if glove then
+        return glove:GetAttachmentOrigin(glove:ScriptLookupAttachment("vr_palm"))
+    else
+        return self:GetAttachmentOrigin(self:ScriptLookupAttachment("vr_hand_origin"))
+    end
+end
+
+---
+---Gets the 'hand_use_controller' entity associated with this hand.
+---
+---@return EntityHandle
+function CPropVRHand:GetHandUseController()
+    for _, controller in ipairs(Entities:FindAllByClassname("hand_use_controller")) do
+        if controller:GetOwner() == self then
+            return controller
+        end
+---@diagnostic disable-next-line: missing-return
+    end
+end
+
+---Forces the player to drop this entity if held.
+---@param self CBaseEntity
+function CBaseEntity:Drop()
+    Player:DropByHandle(self)
+end
+Expose(CBaseEntity.Drop, "Drop", CBaseEntity)
+
+---Force the player to grab this entity with a hand.
+---If no hand is supplied then the nearest hand will be used.
+---@param hand? CPropVRHand|0|1
+function CBaseEntity:Grab(hand)
+    Player:GrabByHandle(self, hand)
+end
+Expose(CBaseEntity.Grab, "Grab", CBaseEntity)
+
+return version

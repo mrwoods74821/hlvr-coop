@@ -1,0 +1,1 @@
+SendToConsole('spawn_group_load prefabs/player_body_init')

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+	<ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	  <Version>3.2.0.0</Version>
+	  <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+	  <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+	  <Product>HLVR Co-Op Mod - Workshop Addon Compatibility Plugin</Product>
+	  <Copyright>© 2024 Dayshower</Copyright>
+	  <Description>Enables and synchronizes Steam Workshop addons for cooperative gameplay</Description>
+	  <Company>Dayshower</Company>
+  </PropertyGroup>
+	<Target Name="CopyDLLs" AfterTargets="Build">
+		<Copy SourceFiles="$(TargetDir)$(ProjectName).dll" DestinationFolder="$(ProjectDir)..\HLVRCoOpMod\bin\Release\plugins" />
+		<Copy SourceFiles="$(TargetDir)$(ProjectName).dll;$(TargetDir)$(ProjectName).pdb" DestinationFolder="$(ProjectDir)..\HLVRCoOpMod\bin\Debug\plugins" />
+	</Target>
+	<ItemGroup>
+	  <ProjectReference Include="..\HLVRCoOpModCore\HLVRCoOpModCore.csproj" />
+	</ItemGroup>
+</Project>
