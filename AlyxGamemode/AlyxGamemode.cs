@@ -283,11 +283,12 @@ namespace AlyxGamemode
                                                                     // Update player state
                                                                     player.Origin = playerOrigin;
                                                                     player.Angles = playerAngles;
+                                                                    player.Health = playerHealth;
                                                                     
                                                                     // Note: Body position is tracked for internal use (respawn, checkpoints, etc.)
                                                                     // Body position is not broadcasted to other clients as head/hand positions
                                                                     // are already synchronized and visible
-                                                                    // Health is tracked for potential use in respawn logic, checkpoints, etc.
+                                                                    // Health is stored for use in respawn logic, checkpoints, etc.
                                                                 }
                                                                 catch (Exception ex)
                                                                 {

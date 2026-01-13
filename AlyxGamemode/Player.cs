@@ -11,6 +11,11 @@ namespace AlyxGamemode
     {
         public int Index = 0;
         public IndexedClient Client;
+        /// <summary>
+        /// Player's current health value. Updated from PLYR packets.
+        /// Used for respawn logic, checkpoints, and other game mechanics.
+        /// </summary>
+        public int Health = 100;
         public Player(int index, IndexedClient client)
         {
             this.Index = index;
