@@ -52,7 +52,6 @@
 - ⚠️ **Task 1.5: Fix Audio System During Level Transitions** - Intermittent audio issues
 
 **OPTIONAL (Nice to Have):**
-- **Task 2.4: Implement Dedicated Server Mode** - Headless server without UI
 - **Task 3.4: Implement Master Server Registry** - Internet-wide server discovery for port-forwarded servers
 
 **Everything else is complete!** ✅ The mod is fully functional except for these two critical issues.
@@ -106,7 +105,6 @@
 - **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions
 - **Incomplete:** None (all packet types investigated - 14 implemented, 13 confirmed as unused/legacy and properly documented)
 - **Disabled:** Automatic map switching (code exists but commented out)
-- **Missing:** Dedicated server mode (optional feature)
 
 ### Planned Work (Priority Order)
 
@@ -118,7 +116,6 @@
 **Priority 2: Incomplete Core Features**
 4. ~~**Fix Sound File Path Format**~~ ✅ (COMPLETED - Task 2.1) - Fixed jingle sound file path format and resource manifest
 5. ~~**Investigate and Implement Unimplemented Packet Types**~~ ✅ (COMPLETED - Task 2.3) - Investigated all packet types, confirmed 13 are unused/legacy and properly documented, all implemented packets verified as working
-6. **Implement Dedicated Server Mode** (MEDIUM) - Headless server without UI dependency
 
 **Priority 3: Quality of Life Improvements**
 7. ~~**Complete Lua Documentation**~~ ✅ (COMPLETED - Task 3.3) - Created comprehensive Lua API Reference documentation with examples and best practices
@@ -145,9 +142,6 @@
 1. **Task 1.1: Fix Automatic Map Switching** - Uncomment and fix map transition code in `AlyxGamemode.cs` lines 366-380. This is the #1 priority as it completely breaks cooperative gameplay when players reach level transitions.
 
 2. **Task 1.5: Fix Audio System During Level Transitions** - Fix intermittent audio issues. Research Source 2 audio reset commands and coordinate with map transitions. Should be done together with Task 1.1.
-
-**OPTIONAL (Nice to Have):**
-3. **Task 2.4: Implement Dedicated Server Mode** - Create headless server executable without UI dependency. This is useful for server hosting but not critical for core functionality.
 
 **Everything else is complete!** ✅
 
@@ -1330,188 +1324,6 @@ case PacketType.YourPacketType:
 - Empty handlers in AlyxGamemode.cs with explanatory comments (e.g., "UNUSED: Not sent (entities use fixed names)")
 - Packet parsing and string conversion properly handle all packet types for backward compatibility
 - No action needed - unused packets are legacy code that can remain for backward compatibility
-
----
-
-### Task 2.4: Implement Dedicated Server Mode
-
-**Status:** Explicitly documented as "not fully developed"  
-**Priority:** MEDIUM - Useful for server hosting  
-**Risk Level:** Medium  
-**Dependencies:** None
-
-#### Problem Statement
-
-Currently, servers must run with a client instance (listen server). There is no way to run a headless dedicated server without the UI.
-
-#### Architecture Design
-
-**Current Architecture:**
-```
-HLVRCoOpMod.exe
-├── UserInterface (Windows Forms)
-├── ServerProgram (requires UI)
-└── ClientProgram (optional)
-```
-
-**Target Architecture:**
-```
-HLVRCoOpMod.exe (with UI - listen server)
-HLVRCoOpModServer.exe (headless - dedicated server)
-```
-
-#### Implementation Steps
-
-**Step 1: Create Server Project**
-- Create new console application project: `HLVRCoOpModServer`
-- Reference `HLVRCoOpModCore`, `AlyxGamemode`, `DiscordRpcPlugin`
-- Copy server logic from `ServerProgram.cs`
-
-**Step 2: Separate Server Logic from UI**
-- Extract UI-independent code from `ServerProgram.cs`
-- Create `ServerCore.cs` with core server logic
-- Keep `ServerProgram.cs` as UI wrapper
-- **Implementation:**
-```csharp
-// New file: HLVRCoOpModCore/ServerCore.cs
-public class ServerCore
-{
-    public WebSocketServer? wss;
-    public List<IndexedClient> connections = new();
-    // ... all server logic without UI dependencies
-}
-
-// Modified: HLVRCoOpMod/ServerProgram.cs
-public class ServerProgram
-{
-    private ServerCore serverCore = new();
-    // Wraps ServerCore with UI integration
-}
-```
-
-**Step 3: Create Console Server Application**
-- Create `HLVRCoOpModServer/Program.cs`
-- Load configuration from file
-- Start server without UI
-- **Implementation:**
-```csharp
-// HLVRCoOpModServer/Program.cs
-class Program
-{
-    static void Main(string[] args)
-    {
-        // Load config from file
-        var config = LoadConfig("serverconfig.json");
-        
-        // Initialize server
-        ServerCore server = new ServerCore();
-        server.Start(typeof(AlyxGamemode), LoadPlugins());
-        
-        // Keep running
-        Console.WriteLine("Server started. Press Ctrl+C to stop.");
-        Console.CancelKeyPress += (s, e) => {
-            server.Close();
-            Environment.Exit(0);
-        };
-        
-        // Wait indefinitely
-        Thread.Sleep(Timeout.Infinite);
-    }
-}
-```
-
-**Step 4: Create Configuration System**
-- JSON configuration file
-- Command-line argument support
-- Environment variable support
-- **Implementation:**
-```csharp
-// serverconfig.json
-{
-    "port": 8080,
-    "password": "",
-    "map": "mp_kiwitest",
-    "maxPlayers": 16,
-    "gamemode": "AlyxGamemode"
-}
-```
-
-**Step 5: Add Logging for Headless Server**
-- File logging
-- Console logging
-- Log rotation
-- **Implementation:**
-```csharp
-public class ServerLogger
-{
-    private static StreamWriter? logFile;
-    
-    public static void Log(string message)
-    {
-        // Console
-        Console.WriteLine($"[{DateTime.Now}] {message}");
-        
-        // File
-        if (logFile != null)
-        {
-            logFile.WriteLine($"[{DateTime.Now}] {message}");
-            logFile.Flush();
-        }
-    }
-}
-```
-
-**Step 6: Handle UI-Dependent Code**
-- Remove or stub UI calls
-- Use console/file logging instead
-- Handle Invoke() calls (not needed in console)
-- **Implementation:**
-```csharp
-// Create abstraction for logging
-public interface ILogger
-{
-    void Log(string message);
-}
-
-// Console implementation
-public class ConsoleLogger : ILogger
-{
-    public void Log(string message) => Console.WriteLine(message);
-}
-
-// UI implementation (existing)
-public class UILogger : ILogger
-{
-    public void Log(string message) => Program.userInterface.Invoke(...);
-}
-```
-
-**Step 7: Add Service/Background Mode (Optional)**
-- Windows Service support
-- Systemd service (Linux)
-- Background daemon mode
-- **Implementation:**
-```csharp
-// Use Topshelf or similar for Windows Service
-// Or implement manually with ServiceBase
-```
-
-#### Success Criteria
-
-- [ ] Dedicated server runs without UI
-- [ ] Configuration loaded from file
-- [ ] Logging works (console/file)
-- [ ] Server can run as background service
-- [ ] All server functionality works without UI
-
-#### Testing Checklist
-
-- [ ] Server starts without UI
-- [ ] Clients can connect
-- [ ] All server features work
-- [ ] Configuration file loads correctly
-- [ ] Logging works
-- [ ] Server runs as service (if implemented)
 
 ---
 
