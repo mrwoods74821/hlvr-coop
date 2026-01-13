@@ -74,6 +74,7 @@ The mod uses a **hybrid architecture**:
 
 ### Development
 - [Lua Scripting System](Lua-Scripting-System) - Server-side Lua integration
+- **[Lua API Reference](Lua-API-Reference)** - Complete Lua API documentation with examples
 - [Plugin & Gamemode System](Plugin-Gamemode-System) - Extensibility framework
 - [Development Guide](Development-Guide) - How to add features and extend the mod
 

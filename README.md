@@ -117,7 +117,9 @@
 - Edit the script to your liking, pay attention to what is being "handled" as handling events will cancel out internal HLVRCoop events and other scripts in alphabetical order
 
 ### Lua Documentation
-Coming soon!
+- **[Lua API Reference](wiki/Lua-API-Reference)** - Complete API documentation with examples and tutorials
+- [Lua Scripting System](wiki/Lua-Scripting-System) - System overview and integration details
+- [Development Guide](wiki/Development-Guide) - How to write Lua scripts
 
 Check out the [Discord](https://discord.gg/X6Dp95WRR4) for Lua help if needed.
 

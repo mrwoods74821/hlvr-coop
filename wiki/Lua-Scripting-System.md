@@ -95,6 +95,8 @@ lua_env.persistence = {
 - `Channel(name, displayName, color)` - Log channel
 - `DateTime`, `Color`, etc. - .NET types
 
+**📖 For complete API documentation, see [Lua API Reference](Lua-API-Reference)**
+
 ---
 
 ## Base Scripts
@@ -121,6 +123,7 @@ See [Development Guide - Lua Scripts](Development-Guide#adding-features-via-lua-
 
 ## Related Documentation
 
+- **[Lua API Reference](Lua-API-Reference)** - Complete API documentation with examples
 - [Development Guide](Development-Guide) - How to write Lua scripts
 - [Plugin & Gamemode System](Plugin-Gamemode-System) - Event system
 - [Player Management](Player-Management) - Player data tracking

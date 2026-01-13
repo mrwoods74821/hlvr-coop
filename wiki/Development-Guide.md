@@ -218,6 +218,7 @@ case PacketType.YourPacket:
 
 ## Related Documentation
 
+- **[Lua API Reference](Lua-API-Reference)** - Complete Lua API documentation with examples
 - [Lua Scripting System](Lua-Scripting-System) - Lua integration details
 - [Plugin & Gamemode System](Plugin-Gamemode-System) - Plugin architecture
 - [Packet System](Packet-System) - Packet types
