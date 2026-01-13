@@ -202,7 +202,26 @@ namespace HLVRCoOpMod
                 {
                     PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PreResponse, response, connections, socket, Map.map);
                     LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PreResponse, response, connections, socket, Map.map);
-                    switch (response.type.ToLower())
+                    
+                    // Check if chat command was handled by plugins/Lua (workaround: response.type changed to "lua_chat_handled")
+                    // TODO: Replace with proper HandleState mechanism in future
+                    bool chatHandled = false;
+                    if (response.type != null && response.type.ToLower() == "lua_chat_handled")
+                    {
+                        chatHandled = true;
+                        // Log the chat message that was handled
+                        IndexedClient? handledClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                        if (handledClient != null && response.data != null && response.data.Length > 0)
+                        {
+                            Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, handledClient.Username + ": " + response.data));
+                        }
+                        // Skip default processing - command was handled by plugin/Lua
+                    }
+                    
+                    // Only process default handling if not already handled
+                    if (!chatHandled)
+                    {
+                        switch (response.type.ToLower())
                     {
                         case "client":
                             if (response.clientUsername != null && response.password != null)
@@ -337,23 +356,12 @@ namespace HLVRCoOpMod
                                 }
                             }
                             break;
-                        case "lua_chat_handled":
-                            // Workaround for plugins to "handle" chat commands.
-                            IndexedClient? indexedClient0 = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
-                            if (indexedClient0 != null)
-                            {
-                                if (response.data != null)
-                                {
-                                    if (response.data.Length == 0) return;
-                                    Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, indexedClient0.Username + ": " + response.data));
-                                }
-                            }
-                            break;
                         default:
                             //IndexedClient? indexed = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
                             //if (indexed != null) connections.Remove(indexed);
                             //socket.Close();
                             break;
+                        }
                     }
                     PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_PostResponse, response, connections, socket, Map.map);
                     LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_PostResponse, response, connections, socket, Map.map);
