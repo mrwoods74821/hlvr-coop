@@ -51,7 +51,7 @@
       <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="CurrentAddons" Type="System.String" Scope="User">
-      <Value Profile="(Default)">["Half-Life: Alyx","Discord Rich Presence"]</Value>
+      <Value Profile="(Default)">["Half-Life: Alyx","Discord Rich Presence","Workshop Addon Compatibility","Player Body Sync"]</Value>
     </Setting>
     <Setting Name="AlwaysOnTop" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>

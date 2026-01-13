@@ -229,7 +229,7 @@ namespace HLVRCoOpMod {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("[\"Half-Life: Alyx\",\"Discord Rich Presence\"]")]
+        [global::System.Configuration.DefaultSettingValueAttribute("[\"Half-Life: Alyx\",\"Discord Rich Presence\",\"Workshop Addon Compatibility\",\"Player Body Sync\"]")]
         public string CurrentAddons {
             get {
                 return ((string)(this["CurrentAddons"]));
