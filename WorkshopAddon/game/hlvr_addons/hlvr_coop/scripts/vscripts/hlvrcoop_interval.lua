@@ -12,6 +12,8 @@ local previousHealth = 100;
 local respawnPosition = nil;
 local respawnAngles = nil;
 local respawnCooldown = 0; -- Prevent rapid respawn spam
+local respawnScheduled = false; -- Track if respawn is already scheduled
+local respawnThinkName = "HLVRCOOP_RespawnThink"; -- Name for SetThink to track respawn
 
 print("HLVRCOOP Enabled!");
 
@@ -19,6 +21,158 @@ function Precache(context)
     PrecacheModel("models/props/choreo_office/headset_prop.vmdl", context)
     PrecacheModel("models/hands/alyx_glove_left.vmdl", context)
     PrecacheModel("models/hands/alyx_glove_right.vmdl", context)
+end
+
+-- Respawn system functions (defined globally so they're always available)
+function HLVRCOOP_FindSpawnPosition()
+    -- Try to find info_player_start by name first
+    local spawnEntity = Entities:FindByName(nil, "info_player_start");
+    if not spawnEntity then
+        -- Try to find by classname
+        spawnEntity = Entities:FindByClassname(nil, "info_player_start");
+    end
+    
+    if spawnEntity and IsValidEntity(spawnEntity) then
+        local pos = spawnEntity:GetAbsOrigin();
+        local ang = spawnEntity:GetAnglesAsVector();
+        
+        -- Validate position and angles
+        if pos and ang then
+            respawnPosition = pos;
+            respawnAngles = ang;
+            print("HLVRCOOP: Found spawn position at " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3]);
+        else
+            -- Fallback if GetAbsOrigin or GetAnglesAsVector returns nil
+            respawnPosition = Vector(0, 0, 0);
+            respawnAngles = Vector(0, 0, 0);
+            print("HLVRCOOP: Spawn entity found but position invalid, using origin (0, 0, 0)");
+        end
+    else
+        -- Fallback to origin (0, 0, 0) if no spawn point found
+        respawnPosition = Vector(0, 0, 0);
+        respawnAngles = Vector(0, 0, 0);
+        print("HLVRCOOP: No spawn point found, using origin (0, 0, 0)");
+    end
+end
+
+-- Teleport player to spawn (called 1 second after death, after health is restored)
+function HLVRCOOP_RespawnTeleport()
+    if not Player or not IsValidEntity(Player) then
+        respawnScheduled = false;
+        return nil;
+    end
+    
+    -- Stop the think
+    Player:StopThink(respawnThinkName);
+    
+    -- Ensure spawn position is found
+    if not respawnPosition then
+        HLVRCOOP_FindSpawnPosition();
+    end
+    
+    -- Verify respawn position is valid (should always be set by FindSpawnPosition, but check anyway)
+    if not respawnPosition then
+        print("HLVRCOOP: ERROR - Could not find respawn position!");
+        respawnScheduled = false;
+        return nil;
+    end
+    
+    -- Teleport to spawn position
+    local anchor = Player:GetHMDAnchor();
+    if anchor then
+        if Player:GetHMDAvatar() then
+            anchor:SetAbsOrigin(respawnPosition);
+            if respawnAngles then
+                anchor:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3]);
+            end
+        else
+            Player:SetAbsOrigin(respawnPosition);
+            if respawnAngles then
+                Player:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3]);
+            end
+        end
+    else
+        -- Fallback if anchor is nil
+        Player:SetAbsOrigin(respawnPosition);
+        if respawnAngles then
+            Player:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3]);
+        end
+    end
+    
+    -- Reset flags and cooldown
+    respawnScheduled = false;
+    respawnCooldown = 60; -- 1 second cooldown (60 ticks at ~60fps)
+    previousHealth = 100; -- Reset health tracking
+    
+    -- Send respawn notification to server (optional, for tracking)
+    print("HLVRCOOP: Respawned player at " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3]);
+    print("RESP " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3] .. " HLVRCOOP");
+    
+    return nil; -- Return nil to stop the think (one-time execution)
+end
+
+-- Check for death and schedule respawn if needed
+function HLVRCOOP_CheckDeath()
+    if not Player or not IsValidEntity(Player) then
+        return;
+    end
+    
+    -- Safely get health (handle potential nil/invalid values)
+    local currentHealth = Player:GetHealth();
+    if currentHealth == nil or type(currentHealth) ~= "number" then
+        return; -- Invalid health value, skip this frame
+    end
+    
+    -- If respawn is already scheduled, don't check for death again
+    -- Wait for the scheduled respawn to complete
+    if respawnScheduled then
+        -- Update previousHealth to track current state during respawn delay
+        previousHealth = currentHealth;
+        return;
+    end
+    
+    -- Update cooldown if active
+    if respawnCooldown > 0 then
+        respawnCooldown = respawnCooldown - 1;
+        -- Still update previousHealth during cooldown to track health changes
+        previousHealth = currentHealth;
+        return;
+    end
+    
+    -- Detect death (health dropped to 0 or below)
+    if previousHealth > 0 and currentHealth <= 0 then
+        -- Player just died - immediately restore health to prevent death screen
+        -- Then schedule teleport after 1 second
+        -- Set flag immediately to prevent race conditions with event listener
+        if not respawnScheduled then
+            respawnScheduled = true;
+            
+            -- Immediately restore health to prevent death screen from appearing
+            -- This allows the red screen to show but prevents the "Load Save File" UI
+            -- Verify Player is still valid before operations
+            if IsValidEntity(Player) then
+                Player:SetHealth(100);
+                previousHealth = 100; -- Update immediately to prevent re-triggering
+                
+                -- Stop any existing respawn think first (in case event listener also triggered)
+                Player:StopThink(respawnThinkName);
+                
+                -- Schedule teleport 1 second from now using SetThink
+                -- SetThink(func, name, delay) - delay is in seconds (1.0 = 1 second)
+                Player:SetThink(HLVRCOOP_RespawnTeleport, respawnThinkName, 1.0);
+                print("HLVRCOOP: Player died, health restored. Teleporting to spawn in 1 second");
+            else
+                -- Player became invalid, reset flag
+                respawnScheduled = false;
+            end
+        else
+            -- Respawn already scheduled (likely by event listener), just update health tracking
+            previousHealth = currentHealth;
+        end
+    else
+        -- Update previousHealth for next check
+        previousHealth = currentHealth;
+    end
 end
 
 function HLVRCoOpMod()
@@ -118,125 +272,6 @@ function HLVRCoOpMod()
             local origin = Player:GetAbsOrigin();
             local angles = Player:GetAnglesAsVector();
             print("TELE "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
-        end
-
-        -- Find spawn position from info_player_start entity
-        function HLVRCOOP_FindSpawnPosition()
-            -- Try to find info_player_start by name first
-            local spawnEntity = Entities:FindByName(nil, "info_player_start");
-            if not spawnEntity then
-                -- Try to find by classname
-                spawnEntity = Entities:FindByClassname(nil, "info_player_start");
-            end
-            
-            if spawnEntity and IsValidEntity(spawnEntity) then
-                local pos = spawnEntity:GetAbsOrigin();
-                local ang = spawnEntity:GetAnglesAsVector();
-                
-                -- Validate position and angles
-                if pos and ang then
-                    respawnPosition = pos;
-                    respawnAngles = ang;
-                    print("HLVRCOOP: Found spawn position at " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3]);
-                else
-                    -- Fallback if GetAbsOrigin or GetAnglesAsVector returns nil
-                    respawnPosition = Vector(0, 0, 0);
-                    respawnAngles = Vector(0, 0, 0);
-                    print("HLVRCOOP: Spawn entity found but position invalid, using origin (0, 0, 0)");
-                end
-            else
-                -- Fallback to origin (0, 0, 0) if no spawn point found
-                respawnPosition = Vector(0, 0, 0);
-                respawnAngles = Vector(0, 0, 0);
-                print("HLVRCOOP: No spawn point found, using origin (0, 0, 0)");
-            end
-        end
-
-        -- Respawn player at start of level
-        function HLVRCOOP_RespawnPlayer()
-            if not Player then
-                return;
-            end
-            
-            -- Ensure spawn position is found
-            if not respawnPosition then
-                HLVRCOOP_FindSpawnPosition();
-            end
-            
-            -- Verify respawn position is valid
-            if not respawnPosition then
-                print("HLVRCOOP: ERROR - Could not find respawn position!");
-                return;
-            end
-            
-            -- Immediately restore health to prevent death screen
-            -- Do this FIRST to prevent death screen from appearing
-            Player:SetHealth(100);
-            
-            -- Teleport to spawn position
-            local anchor = Player:GetHMDAnchor();
-            if anchor then
-                if Player:GetHMDAvatar() then
-                    anchor:SetAbsOrigin(respawnPosition);
-                    if respawnAngles then
-                        anchor:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3]);
-                    end
-                else
-                    Player:SetAbsOrigin(respawnPosition);
-                    if respawnAngles then
-                        Player:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3]);
-                    end
-                end
-            else
-                -- Fallback if anchor is nil
-                Player:SetAbsOrigin(respawnPosition);
-                if respawnAngles then
-                    Player:SetAbsAngles(respawnAngles[1], respawnAngles[2], respawnAngles[3]);
-                end
-            end
-            
-            -- Reset cooldown
-            respawnCooldown = 60; -- 1 second cooldown (60 ticks at ~60fps)
-            
-            -- Send respawn notification to server (optional, for tracking)
-            print("RESP " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3] .. " HLVRCOOP");
-        end
-
-        -- Check for death and respawn if needed
-        function HLVRCOOP_CheckDeath()
-            if not Player then
-                return;
-            end
-            
-            -- Safely get health (handle potential nil/invalid values)
-            local currentHealth = Player:GetHealth();
-            if currentHealth == nil or type(currentHealth) ~= "number" then
-                return; -- Invalid health value, skip this frame
-            end
-            
-            -- Update cooldown if active
-            if respawnCooldown > 0 then
-                respawnCooldown = respawnCooldown - 1;
-                -- Still update previousHealth during cooldown to track health changes
-                previousHealth = currentHealth;
-                return;
-            end
-            
-            -- Detect death (health dropped to 0 or below)
-            if previousHealth > 0 and currentHealth <= 0 then
-                -- Player just died - respawn immediately
-                HLVRCOOP_RespawnPlayer();
-                -- Update previousHealth after respawn (should be 100 now)
-                local newHealth = Player:GetHealth();
-                if newHealth ~= nil and type(newHealth) == "number" then
-                    previousHealth = newHealth;
-                else
-                    previousHealth = 100; -- Fallback
-                end
-            else
-                -- Update previousHealth for next check
-                previousHealth = currentHealth;
-            end
         end
 
         function HLVRCOOP_EntitySyncSpecific(entity)
@@ -962,5 +997,35 @@ function HLVRCoOpMod()
         HLVRCOOP_FindSpawnPosition();
         previousHealth = 100; -- Reset health tracking on map load
         respawnCooldown = 0; -- Reset cooldown on map load
+        respawnScheduled = false; -- Reset respawn flag on map load
+        
+        -- Also listen for player_death event as a backup detection method
+        -- This is registered during initialization and will persist
+        local function HLVRCOOP_OnPlayerDeathEvent(eventData)
+            -- Event fires when player dies - immediately restore health and schedule teleport
+            -- Use a more robust check to prevent race conditions
+            if Player and IsValidEntity(Player) and not respawnScheduled then
+                -- Set flag immediately to prevent race conditions
+                respawnScheduled = true;
+                
+                -- Immediately restore health to prevent death screen
+                -- Double-check Player is still valid (defensive programming)
+                if IsValidEntity(Player) then
+                    Player:SetHealth(100);
+                    previousHealth = 100;
+                    
+                    -- Stop any existing respawn think first (in case health check also triggered)
+                    Player:StopThink(respawnThinkName);
+                    
+                    -- Schedule teleport 1 second from now
+                    Player:SetThink(HLVRCOOP_RespawnTeleport, respawnThinkName, 1.0);
+                    print("HLVRCOOP: Player death event detected, health restored. Teleporting to spawn in 1 second");
+                else
+                    -- Player became invalid, reset flag
+                    respawnScheduled = false;
+                end
+            end
+        end
+        ListenToGameEvent("player_death", HLVRCOOP_OnPlayerDeathEvent, nil);
     end
 end
