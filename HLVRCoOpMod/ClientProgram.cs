@@ -35,7 +35,12 @@ namespace HLVRCoOpMod
             if (ws != null && vConsole != null)
             {
                 ui.Invoke(() => ui.LogToOutput(channel, "Connecting to VConsole using port " + Settings.Default.VconsolePort));
-                if (!vConsole.Connect(ws, ui, channel))
+                if (vConsole.Connect(ws, ui, channel))
+                {
+                    // Connection succeeded immediately (game already running)
+                    // Note: Player body preference will be sent after addons are enabled (see startup code below)
+                }
+                else
                 {
                     ui.Invoke(() =>
                     {
@@ -167,8 +172,8 @@ namespace HLVRCoOpMod
                     ws.Send(JsonConvert.SerializeObject(input));
                     ui.Invoke(() => ui.LogToOutput(channel, "Reconnected to server at " + Settings.Default.ClientIpAddress + ":" + Settings.Default.ClientPort));
                 });
-                ConnectVConsole(ws);
                 // Subscribe to VConsole reconnection event to re-authenticate with server
+                // This handler is used both for initial connection and reconnections
                 if (vConsole != null)
                 {
                     vConsole.Reconnected += (sender, e) =>
@@ -178,21 +183,21 @@ namespace HLVRCoOpMod
                         {
                             // Reset map so it will always reload (game quit/resumed scenario)
                             map = "";
-                            Response input = new("client")
-                            {
-                                clientUsername = Settings.Default.ClientUsername,
-                                password = Settings.Default.ClientPassword,
-                                timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
-                            };
-                            ws.Send(JsonConvert.SerializeObject(input));
-                            ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, re-authenticating with server..."));
                             
-                            // Send saved player body preference when VConsole reconnects
-                            int preference = Settings.Default.PlayerBodyPreference;
-                            if (preference >= 0 && preference <= 2)
+                            // Add delay before re-authenticating to ensure VConsole is fully ready
+                            Task.Run(async () =>
                             {
-                                SendVConsoleCommand($"convar_set player_body_preference {preference}");
-                            }
+                                await Task.Delay(1000); // Wait 1 second for VConsole to be fully ready
+                                
+                                Response input = new("client")
+                                {
+                                    clientUsername = Settings.Default.ClientUsername,
+                                    password = Settings.Default.ClientPassword,
+                                    timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalMilliseconds
+                                };
+                                ws.Send(JsonConvert.SerializeObject(input));
+                                ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, re-authenticating with server..."));
+                            });
                             
                             // Enable Workshop addons when VConsole reconnects (with delay for game to be ready)
                             ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, enabling Workshop addons..."));
@@ -205,21 +210,27 @@ namespace HLVRCoOpMod
                                 delayMs: 2000, // 2 second delay to allow game to be ready
                                 logMessage: (message) => ui.Invoke(() => ui.LogToOutput(addonChannel, message))
                             );
+                            
+                            // Send saved player body preference AFTER addons are enabled
+                            // Addons start enabling after 2000ms, so wait longer to ensure they're loaded
+                            Task.Run(async () =>
+                            {
+                                await Task.Delay(5000); // Wait 5 seconds total (2000ms for game + 3000ms for addons to load)
+                                // Only send if VConsole is connected
+                                if (vConsole != null && vConsole.IsConnected())
+                                {
+                                    int preference = Settings.Default.PlayerBodyPreference;
+                                    if (preference >= 0 && preference <= 2)
+                                    {
+                                        SendVConsoleCommand($"convar_set player_body_preference {preference}");
+                                    }
+                                }
+                            });
                         }
                     };
                 }
                 
-                // Send saved player body preference to game when client starts
-                int savedPreference = Settings.Default.PlayerBodyPreference;
-                if (savedPreference >= 0 && savedPreference <= 2 && vConsole != null)
-                {
-                    // Delay slightly to ensure VConsole is connected
-                    Task.Run(async () =>
-                    {
-                        await Task.Delay(1000); // Wait 1 second for VConsole to connect
-                        SendVConsoleCommand($"convar_set player_body_preference {savedPreference}");
-                    });
-                }
+                ConnectVConsole(ws);
                 
                 // Enable Workshop addons when client starts (with delay for game to be ready)
                 // This ensures addons are enabled even if client hasn't connected to server yet
@@ -238,6 +249,23 @@ namespace HLVRCoOpMod
                             delayMs: 0, // Already delayed above, no additional delay needed
                             logMessage: (message) => ui.Invoke(() => ui.LogToOutput(addonChannel, message))
                         );
+                        
+                        // Send saved player body preference AFTER addons are enabled
+                        // Addons start enabling after the above delay (2500ms) + internal delay (0ms here = immediate),
+                        // so wait longer to ensure addons are loaded before setting preference
+                        Task.Run(async () =>
+                        {
+                            await Task.Delay(5500); // Wait 5.5 seconds total (2500ms startup + 3000ms for addons to load)
+                            // Only send if VConsole is connected
+                            if (vConsole != null && vConsole.IsConnected())
+                            {
+                                int preference = Settings.Default.PlayerBodyPreference;
+                                if (preference >= 0 && preference <= 2)
+                                {
+                                    SendVConsoleCommand($"convar_set player_body_preference {preference}");
+                                }
+                            }
+                        });
                     }
                 });
                 

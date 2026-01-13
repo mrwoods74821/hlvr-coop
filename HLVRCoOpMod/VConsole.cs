@@ -348,6 +348,27 @@ namespace HLVRCoOpMod
             shouldStopReconnecting = true; // Signal reconnection loop to stop
             Disconnect(); // Clean up connection
         }
+        
+        /// <summary>
+        /// Checks if VConsole is currently connected and ready to send commands
+        /// </summary>
+        public bool IsConnected()
+        {
+            lock (streamLock)
+            {
+                if (killed || stream == null || client == null)
+                    return false;
+                
+                try
+                {
+                    return client.Connected;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
 
         public void WriteRaw(byte[] data)
         {

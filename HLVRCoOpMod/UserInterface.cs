@@ -580,9 +580,11 @@ namespace HLVRCoOpMod
             Settings.Default.PlayerBodyPreference = preference;
             Settings.Default.Save();
             
-            // Send command to game via VConsole (if client is connected)
+            // Send command to game via VConsole (if client is started)
+            // The preference is saved to Settings, so it will also be sent when VConsole connects/reconnects
             if (clientProgram != null && started && checkBoxClientEnabled.Checked)
             {
+                // Send immediately if VConsole is connected, otherwise it will be sent when VConsole connects
                 clientProgram.SendVConsoleCommand($"convar_set player_body_preference {preference}");
             }
         }
