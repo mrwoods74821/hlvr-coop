@@ -6,38 +6,79 @@ using System.Threading.Tasks;
 
 namespace AlyxGamemode
 {
+    /// <summary>
+    /// Packet types for Half-Life: Alyx Co-Op Mod communication.
+    /// Packets are sent from the game (Lua/VScript) via print() statements with "HLVRCOOP" tag.
+    /// </summary>
     public enum PacketType
     {
         None = 0,
+        
+        // ===== IMPLEMENTED PACKETS (Sent from Lua) =====
+        /// <summary>Player body position, angles, and health. Sent every tick. Code: PLYR</summary>
         PlayerPosAng,
+        /// <summary>Headset position and angles. Sent every tick. Code: HEAD</summary>
         HeadPosAng,
+        /// <summary>Left and right hand positions and angles. Sent every tick. Code: HAND</summary>
         HandPosAng,
+        /// <summary>Client initialization request. Sent when client joins. Code: INIT</summary>
         Initialization,
+        /// <summary>Entities initialized confirmation. Sent after script setup. Code: IENT</summary>
         InitializedEntities,
-        RightHandIndexes,
-        LeftHandIndexes,
-        HeadsetIndexes,
-        TextIndexes,
-        ColliderIndexes,
-        Prefix,
-        Alive,
-        ColliderDamage,
-        PhysicsObjectIndexStartPos,
+        /// <summary>Physics object position and angles update. Sent when physics objects move. Code: PHYS</summary>
         PhysicsObjectPosAng,
+        /// <summary>Map name and API version. Sent on map load. Code: MAPN</summary>
         MapName,
-        ButtonIndexStartPos,
-        ButtonPressIndex,
-        DoorIndexStartPos,
+        /// <summary>Broken prop notification. Sent when prop breaks. Code: BRAK</summary>
         BrokenProp,
-        TriggerIndexStartPos,
-        TriggerActivateIndex,
+        /// <summary>Entity removed notification. Sent when entity is deleted. Code: EREM</summary>
         EntityRemoved,
+        /// <summary>Entity output fired (trigger, button, etc.). Sent when entity outputs fire. Code: FIRE</summary>
         EntityFired,
+        /// <summary>NPC health update. Sent when NPC health changes. Code: NPHP</summary>
         NPCHealth,
+        /// <summary>Custom HLVRCoop command. Sent for chat commands. Code: CMND</summary>
         HLVRCOOPCommand,
+        /// <summary>Teleport command. Sent when player teleports. Code: TELE</summary>
         Teleport,
+        /// <summary>Template entity cache request. Sent for point_template entities. Code: TENT</summary>
         TemplateEntity,
+        /// <summary>Entity spawn notification. Sent when item is picked up. Code: SPWN</summary>
         Spawn,
+        
+        // ===== UNUSED/LEGACY PACKETS (Not sent from Lua) =====
+        // These packet types are defined but never sent by the game-side Lua scripts.
+        // They appear to be legacy code or planned features that were never implemented.
+        // Keeping them in the enum for backward compatibility, but handlers are empty.
+        
+        /// <summary>UNUSED: Right hand entity indexes. Not sent. Code: RHND</summary>
+        RightHandIndexes,
+        /// <summary>UNUSED: Left hand entity indexes. Not sent. Code: LHND</summary>
+        LeftHandIndexes,
+        /// <summary>UNUSED: Headset entity indexes. Not sent. Code: HSET</summary>
+        HeadsetIndexes,
+        /// <summary>UNUSED: Text entity indexes. Not sent. Code: TAGS</summary>
+        TextIndexes,
+        /// <summary>UNUSED: NPC collider indexes. Not sent. Code: NPCS</summary>
+        ColliderIndexes,
+        /// <summary>UNUSED: Unknown purpose. Not sent. Code: PRFX</summary>
+        Prefix,
+        /// <summary>UNUSED: Player alive state. Not sent (health tracked via PLYR). Code: ALIV</summary>
+        Alive,
+        /// <summary>UNUSED: Collider damage tracking. Not sent. Code: DMGE</summary>
+        ColliderDamage,
+        /// <summary>UNUSED: Physics object initial position. Not sent (handled via entity sync). Code: PROP</summary>
+        PhysicsObjectIndexStartPos,
+        /// <summary>UNUSED: Button initial position. Not sent. Code: BUTN</summary>
+        ButtonIndexStartPos,
+        /// <summary>UNUSED: Button press event. Not sent (button presses use FIRE packet). Code: BPRS</summary>
+        ButtonPressIndex,
+        /// <summary>UNUSED: Door initial position. Not sent (doors handled via PHYS packet). Code: DOOR</summary>
+        DoorIndexStartPos,
+        /// <summary>UNUSED: Trigger initial position. Not sent (handled via entity sync). Code: TRIG</summary>
+        TriggerIndexStartPos,
+        /// <summary>UNUSED: Trigger activation event. Not sent (trigger activations use FIRE packet). Code: TRGD</summary>
+        TriggerActivateIndex,
     }
     public class Packet
     {

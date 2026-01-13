@@ -322,7 +322,7 @@ function HLVRCoOpMod()
                 HLVRCOOP_EntitySyncSpecific(ent_held)
                 local name = ent_held:GetName()
                 local origin = ent_held:GetOrigin()
-                print("SPWN " .. data.item .. " " .. name .. " " .. origin[1] .. " " .. origin[2] .. " " .. origin[3])
+                print("SPWN " .. data.item .. " " .. name .. " " .. origin[1] .. " " .. origin[2] .. " " .. origin[3] .. " HLVRCOOP")
             end
         end
         ListenToGameEvent("item_pickup", HLVRCOOP_PickupSync, nil)

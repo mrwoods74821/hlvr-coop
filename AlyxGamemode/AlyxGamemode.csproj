@@ -23,5 +23,6 @@
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\HLVRCoOpModCore\HLVRCoOpModCore.csproj" />
+	  <ProjectReference Include="..\HLVRCoOpMod\HLVRCoOpMod.csproj" />
 	</ItemGroup>
 </Project>
