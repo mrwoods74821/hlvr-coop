@@ -113,8 +113,8 @@ namespace HLVRCoOpMod
                                         // (e.g., when game is starting up or reconnecting after exit)
                                         Task.Run(async () =>
                                         {
-                                            await Task.Delay(2000); // 2 second delay for game to be ready
-                                            if (vConsole != null)
+                                            await Task.Delay(3000); // 3 second delay for game to be ready (increased for initial startup)
+                                            if (vConsole != null && vConsole.IsConnected())
                                             {
                                                 vConsole.WriteCommand("addon_play " + targetMap + ";addon_tools_map " + targetMap);
                                                 map = targetMap;
@@ -211,21 +211,6 @@ namespace HLVRCoOpMod
                                 logMessage: (message) => ui.Invoke(() => ui.LogToOutput(addonChannel, message))
                             );
                             
-                            // Send saved player body preference AFTER addons are enabled
-                            // Addons start enabling after 2000ms, so wait longer to ensure they're loaded
-                            Task.Run(async () =>
-                            {
-                                await Task.Delay(5000); // Wait 5 seconds total (2000ms for game + 3000ms for addons to load)
-                                // Only send if VConsole is connected
-                                if (vConsole != null && vConsole.IsConnected())
-                                {
-                                    int preference = Settings.Default.PlayerBodyPreference;
-                                    if (preference >= 0 && preference <= 2)
-                                    {
-                                        SendVConsoleCommand($"convar_set player_body_preference {preference}");
-                                    }
-                                }
-                            });
                         }
                     };
                 }
@@ -250,22 +235,6 @@ namespace HLVRCoOpMod
                             logMessage: (message) => ui.Invoke(() => ui.LogToOutput(addonChannel, message))
                         );
                         
-                        // Send saved player body preference AFTER addons are enabled
-                        // Addons start enabling after the above delay (2500ms) + internal delay (0ms here = immediate),
-                        // so wait longer to ensure addons are loaded before setting preference
-                        Task.Run(async () =>
-                        {
-                            await Task.Delay(5500); // Wait 5.5 seconds total (2500ms startup + 3000ms for addons to load)
-                            // Only send if VConsole is connected
-                            if (vConsole != null && vConsole.IsConnected())
-                            {
-                                int preference = Settings.Default.PlayerBodyPreference;
-                                if (preference >= 0 && preference <= 2)
-                                {
-                                    SendVConsoleCommand($"convar_set player_body_preference {preference}");
-                                }
-                            }
-                        });
                     }
                 });
                 
