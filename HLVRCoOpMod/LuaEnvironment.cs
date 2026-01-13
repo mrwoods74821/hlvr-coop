@@ -104,7 +104,11 @@ namespace HLVRCoOpMod
             if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA &&
                 !Thread.CurrentThread.IsBackground && !Thread.CurrentThread.IsThreadPoolThread && Thread.CurrentThread.IsAlive)
             {
-                MethodInfo correctEntryMethod = Assembly.GetEntryAssembly().EntryPoint;
+                var entryAssembly = Assembly.GetEntryAssembly();
+                if (entryAssembly?.EntryPoint == null)
+                    return false;
+                    
+                MethodInfo correctEntryMethod = entryAssembly.EntryPoint;
                 StackTrace trace = new StackTrace();
                 StackFrame[] frames = trace.GetFrames();
                 for (int i = frames.Length - 1; i >= 0; i--)
@@ -126,10 +130,18 @@ namespace HLVRCoOpMod
                 // If on a different thread than main, invoke on main thread
                 if (!CheckForMainThread())
                 {
-                    Program.userInterface.Invoke(() =>
+                    if (Program.userInterface != null)
                     {
-                        HandleInternal(handleType, vs);
-                    });
+                        try
+                        {
+                            Program.userInterface.Invoke(() =>
+                            {
+                                HandleInternal(handleType, vs);
+                            });
+                        }
+                        catch (ObjectDisposedException) { } // UI disposed, ignore
+                        catch (InvalidOperationException) { } // UI not available, ignore
+                    }
                 }
                 else
                     HandleInternal(handleType, vs);

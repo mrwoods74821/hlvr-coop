@@ -10,34 +10,45 @@ namespace HLVRCoOpMod
 
         public static void LogError(string source, Exception ex)
         {
-            string message = $"[{source}] {ex.Message}\n{ex.StackTrace}";
+            string technicalMessage = $"[{source}] {ex.Message}\n{ex.StackTrace}";
+            string userFriendlyMessage = ErrorMessageHelper.GetUserFriendlyMessage(ex, source);
 
-            // Log to UI
+            // Log technical details to UI
             if (Program.userInterface != null)
             {
                 Program.userInterface.Invoke(() =>
                 {
-                    Program.userInterface.LogToOutput(errorChannel, message);
+                    // Show user-friendly message first
+                    Program.userInterface.LogToOutput(errorChannel, userFriendlyMessage);
+                    // Show technical details for debugging
+                    Program.userInterface.LogToOutput(errorChannel, "\nTechnical details: " + technicalMessage);
                 });
             }
 
             // Log to Debug (for development)
-            System.Diagnostics.Debug.WriteLine(message);
+            System.Diagnostics.Debug.WriteLine(technicalMessage);
         }
 
         public static void LogError(string source, string message)
         {
-            string fullMessage = $"[{source}] {message}";
+            string technicalMessage = $"[{source}] {message}";
+            string userFriendlyMessage = ErrorMessageHelper.GetUserFriendlyMessage(message, source);
 
             if (Program.userInterface != null)
             {
                 Program.userInterface.Invoke(() =>
                 {
-                    Program.userInterface.LogToOutput(errorChannel, fullMessage);
+                    // Show user-friendly message
+                    Program.userInterface.LogToOutput(errorChannel, userFriendlyMessage);
+                    // If messages differ, show technical details
+                    if (userFriendlyMessage != message)
+                    {
+                        Program.userInterface.LogToOutput(errorChannel, "\nTechnical details: " + technicalMessage);
+                    }
                 });
             }
 
-            System.Diagnostics.Debug.WriteLine(fullMessage);
+            System.Diagnostics.Debug.WriteLine(technicalMessage);
         }
     }
 }

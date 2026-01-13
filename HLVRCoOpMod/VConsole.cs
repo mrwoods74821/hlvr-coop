@@ -43,6 +43,28 @@ namespace HLVRCoOpMod
         
         public event EventHandler? Reconnected;
         
+        /// <summary>
+        /// Gets whether VConsole is currently connected to the game.
+        /// </summary>
+        public bool IsConnected
+        {
+            get
+            {
+                lock (streamLock)
+                {
+                    return !killed && stream != null && client != null && client.Connected;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets whether VConsole is currently attempting to reconnect.
+        /// </summary>
+        public bool IsReconnecting
+        {
+            get { return isReconnecting; }
+        }
+        
         public VConsole()
         {
         }
@@ -64,11 +86,11 @@ namespace HLVRCoOpMod
             }
             if (stream != null)
             {
-                try { stream.Close(); } catch { }
+                try { stream.Close(); } catch (ObjectDisposedException) { } catch (Exception ex) { ErrorLogger.LogError("VConsole.Disconnect.stream", ex); }
             }
             if (client != null)
             {
-                try { client.Close(); } catch { }
+                try { client.Close(); } catch (ObjectDisposedException) { } catch (Exception ex) { ErrorLogger.LogError("VConsole.Disconnect.client", ex); }
             }
 
             // Check if the port is listening before attempting to connect
@@ -125,11 +147,17 @@ namespace HLVRCoOpMod
                 }
             }
             reconnectAttempts = 0; // Reset reconnection attempts on successful connect
+            isReconnecting = false; // Connection successful, no longer reconnecting
             lock (bufferLock)
             {
                 bufferFull = false; // Reset buffer state on successful connect
                 bufferFullCount = 0;
                 bufferFullCommandQueue.Clear(); // Clear any queued commands from previous session
+            }
+            // Notify UI of connection status change
+            if (ui != null && Program.userInterface != null && Program.userInterface.clientProgram != null)
+            {
+                ui.Invoke(() => Program.userInterface.clientProgram.UpdateConnectionStatus());
             }
             return true;
         }
@@ -142,6 +170,11 @@ namespace HLVRCoOpMod
                 switch (command)
                 {
                     case "PRNT":
+                        if (e.Data.Length < 31)
+                        {
+                            // Invalid message length, skip processing
+                            return;
+                        }
                         byte[] message = e.Data.Skip(30).SkipLast(1).ToArray();
                         string newMessage = Encoding.ASCII.GetString(message).Replace("\n", "");
                         if (newMessage != "")
@@ -185,7 +218,7 @@ namespace HLVRCoOpMod
                                 // Forward the message to WebSocket (excluding "Command buffer full" messages)
                                 Response input = new("print", newMessage);
                                 input.timestamp = (long)DateTime.UtcNow.Subtract(DateTime.UnixEpoch).TotalSeconds;
-                                ws.Send(JsonConvert.SerializeObject(input));
+                                try { ws?.Send(JsonConvert.SerializeObject(input)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("VConsole.MessageAvailable.Send", ex); }
                             }
                         }
                         break;
@@ -219,6 +252,24 @@ namespace HLVRCoOpMod
             lock (streamLock)
             {
                 killed = true;
+            }
+            isReconnecting = true; // Mark as reconnecting
+
+            // Notify UI of connection status change
+            if (ui != null)
+            {
+                try
+                {
+                    ui.Invoke(() =>
+                    {
+                        if (Program.userInterface?.clientProgram != null)
+                        {
+                            Program.userInterface.clientProgram.UpdateConnectionStatus();
+                        }
+                    });
+                }
+                catch (ObjectDisposedException) { } // UI disposed, ignore
+                catch (InvalidOperationException) { } // UI not available, ignore
             }
 
             System.Diagnostics.Debug.WriteLine("VConsole: Connection lost, attempting to reconnect...");
@@ -273,7 +324,20 @@ namespace HLVRCoOpMod
                     // Notify UI that reconnection succeeded
                     if (ui != null && channel != null)
                     {
-                        ui.Invoke(() => ui.LogToOutput(channel, $"VConsole reconnected successfully after {reconnectAttempts + 1} attempt(s)"));
+                        try
+                        {
+                            ui.Invoke(() =>
+                            {
+                                ui.LogToOutput(channel, $"VConsole reconnected successfully after {reconnectAttempts + 1} attempt(s)");
+                                // Update connection status in UI
+                                if (Program.userInterface?.clientProgram != null)
+                                {
+                                    Program.userInterface.clientProgram.UpdateConnectionStatus();
+                                }
+                            });
+                        }
+                        catch (ObjectDisposedException) { } // UI disposed, ignore
+                        catch (InvalidOperationException) { } // UI not available, ignore
                     }
                     
                     reconnectAttempts = 0;
@@ -332,9 +396,13 @@ namespace HLVRCoOpMod
                         watcher.SetWorking(false);
                     }
                     if (stream != null)
-                        stream.Close();
+                    {
+                        try { stream.Close(); } catch (ObjectDisposedException) { } catch (Exception ex) { ErrorLogger.LogError("VConsole.Disconnect.stream", ex); }
+                    }
                     if (client != null)
-                        client.Close();
+                    {
+                        try { client.Close(); } catch (ObjectDisposedException) { } catch (Exception ex) { ErrorLogger.LogError("VConsole.Disconnect.client", ex); }
+                    }
                 }
             }
         }
@@ -373,7 +441,14 @@ namespace HLVRCoOpMod
             if (stream != null && !killed)
             {
                 byte[] vcmd = Encoding.ASCII.GetBytes("VFCS").Reverse().ToArray();
-                byte protocol = Convert.ToByte(Settings.Default.VconsoleProtocol);
+                // Validate protocol value to prevent overflow
+                int protocolValue = Settings.Default.VconsoleProtocol;
+                if (protocolValue < 0 || protocolValue > 255)
+                {
+                    ErrorLogger.LogError("VConsole.WriteWindowFocus", $"Invalid VconsoleProtocol value: {protocolValue}. Using default 211.");
+                    protocolValue = 211;
+                }
+                byte protocol = Convert.ToByte(protocolValue);
                 byte dataLength = Convert.ToByte(13);
                 List<byte> dataList = new()
                 {
@@ -410,7 +485,14 @@ namespace HLVRCoOpMod
             else if (killed)
             {
                 byte[] vcmd = Encoding.ASCII.GetBytes("VFCS").Reverse().ToArray();
-                byte protocol = Convert.ToByte(Settings.Default.VconsoleProtocol);
+                // Validate protocol value to prevent overflow
+                int protocolValue = Settings.Default.VconsoleProtocol;
+                if (protocolValue < 0 || protocolValue > 255)
+                {
+                    ErrorLogger.LogError("VConsole.WriteWindowFocus", $"Invalid VconsoleProtocol value: {protocolValue}. Using default 211.");
+                    protocolValue = 211;
+                }
+                byte protocol = Convert.ToByte(protocolValue);
                 byte dataLength = Convert.ToByte(13);
                 List<byte> dataList = new()
                 {
@@ -559,8 +641,21 @@ namespace HLVRCoOpMod
         {
             byte[] vcmd = Encoding.ASCII.GetBytes("CMND").Reverse().ToArray();
             byte[] data = Encoding.ASCII.GetBytes(command);
-            byte dataLength = Convert.ToByte(data.Length + 13);
-            byte protocol = Convert.ToByte(Settings.Default.VconsoleProtocol);
+            // Validate data length to prevent overflow (byte max is 255, header overhead is 13)
+            int totalLength = data.Length + 13;
+            if (totalLength > 255)
+            {
+                throw new ArgumentException($"Command too long: {data.Length} bytes (max 242 bytes)", nameof(command));
+            }
+            byte dataLength = Convert.ToByte(totalLength);
+            // Validate protocol value to prevent overflow
+            int protocolValue = Settings.Default.VconsoleProtocol;
+            if (protocolValue < 0 || protocolValue > 255)
+            {
+                ErrorLogger.LogError("VConsole.BuildCommandBytes", $"Invalid VconsoleProtocol value: {protocolValue}. Using default 211.");
+                protocolValue = 211;
+            }
+            byte protocol = Convert.ToByte(protocolValue);
             List<byte> dataList = new()
             {
                 0, protocol, 0, 0, 0, dataLength, 0, 0

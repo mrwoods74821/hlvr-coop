@@ -68,7 +68,8 @@ namespace AlyxGamemode
                                             socket.Send(JsonConvert.SerializeObject(vconsoleInput));
                                             if (AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id) == null)
                                             {
-                                                foreach (IndexedClient client in connections)
+                                                // Use ToList() to avoid modification during iteration
+                                                foreach (IndexedClient client in connections.ToList())
                                                 {
                                                     if (client.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id)
                                                     {
@@ -77,20 +78,27 @@ namespace AlyxGamemode
                                                         {
                                                             Response output2 = new("status", "♩ " + client.Username + " joined as index " + player.Index);
                                                             Response blip = new("command", "play hlvrcoop/blip" + rnd.Next(1, 4));
-                                                            connections.ForEach(c =>
+                                                            // Use ToList() to avoid modification during iteration
+                                                            foreach (IndexedClient c in connections.ToList())
                                                             {
-                                                                if (c.Session.ConnectionInfo.Id != client.Session.ConnectionInfo.Id)
+                                                                try
                                                                 {
-                                                                    c.Session.Send(JsonConvert.SerializeObject(blip));
-                                                                    c.Session.Send(JsonConvert.SerializeObject(output2));
+                                                                    if (c.Session.ConnectionInfo.Id != client.Session.ConnectionInfo.Id)
+                                                                    {
+                                                                        c.Session.Send(JsonConvert.SerializeObject(blip));
+                                                                        c.Session.Send(JsonConvert.SerializeObject(output2));
+                                                                    }
                                                                 }
-                                                            });
+                                                                catch (ObjectDisposedException) { } // Connection already closed
+                                                                catch (InvalidOperationException) { } // Connection not available
+                                                                catch (Exception) { } // Ignore errors in gamemode handler
+                                                            }
                                                         }
                                                         else
                                                         {
                                                             Response output2 = new("status", "The server is currently at maximum capacity, please try again later.");
                                                             socket.Send(JsonConvert.SerializeObject(output2));
-                                                            socket.Close();
+                                                            try { socket.Close(); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("AlyxGamemode.OnMessage.CloseMaxCapacity", ex); }
                                                         }
                                                         break;
                                                     }
@@ -100,6 +108,11 @@ namespace AlyxGamemode
                                         else if (response.data.Contains("HLVRCOOP"))
                                         {
                                             List<string> packetList = response.data.Split(" ").ToList();
+                                            if (packetList.Count == 0)
+                                            {
+                                                ErrorLogger.LogError("AlyxGamemode.PreResponse", "Empty packet list from response data");
+                                                break;
+                                            }
                                             string packetType = packetList[0];
                                             packetList.Remove(packetType);
                                             Packet packet = new(packetType, packetList.ToArray());
@@ -122,12 +135,22 @@ namespace AlyxGamemode
                                                                 try
                                                                 {
                                                                     Response spawn = new("command", "ent_create " + packet.args[0] + " {targetname \"" + packet.args[1] + "\" origin \"" + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + "\"}");
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcastClient2 in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(spawn));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(spawn));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.Spawn", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -155,12 +178,22 @@ namespace AlyxGamemode
                                                                         float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
                                                                     );
                                                                     Response teleport = new("command", "hlvrcoop_teleportangles " + TeleOrigin.X + " " + TeleOrigin.Y + " " + TeleOrigin.Z + " " + TeleAngles.Pitch + " " + TeleAngles.Yaw + " " + TeleAngles.Roll);
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcastClient2 in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(teleport));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(teleport));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.Teleport", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -200,14 +233,24 @@ namespace AlyxGamemode
                                                                     Response movement = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_head_" + player.Index + " " + HeadOrigin + " " + HeadAngles);
                                                                     Response hatMovement = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_text_" + player.Index + " " + HatOrigin + " " + HatAngles);
                                                                     Response headText = new("command", "ent_fire hlvrcoop_text_" + player.Index + " setmessage \"" + player.Client.Username + "\"");
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcastClient2 in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(movement));
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(hatMovement));
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(headText));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(movement));
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(hatMovement));
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(headText));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.HeadPosAng", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -246,13 +289,23 @@ namespace AlyxGamemode
                                                                     );
                                                                     Response movementLeftHand = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_lefthand_" + player.Index + " " + LeftHandOrigin + " " + LeftHandAngles);
                                                                     Response movementRightHand = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_righthand_" + player.Index + " " + RightHandOrigin + " " + RightHandAngles);
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcastClient2 in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementLeftHand));
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementRightHand));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementLeftHand));
+                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementRightHand));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.HandPosAng", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -339,12 +392,22 @@ namespace AlyxGamemode
                                                                     if (AlyxGlobalData.instance.AddManipulatedEntity(entity, socket.ConnectionInfo.Id, connections))
                                                                     {
                                                                         Response output4 = new("command", "hlvrcoop_setlocation " + packet.args[0] + " " + packet.args[1] + " " + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + " " + packet.args[5] + " " + packet.args[6]);
-                                                                        foreach (IndexedClient broadcastClient2 in connections)
+                                                                        // Use ToList() to avoid modification during iteration
+                                                                        foreach (IndexedClient broadcastClient2 in connections.ToList())
                                                                         {
-                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                            if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            try
                                                                             {
-                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(output4));
+                                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
+                                                                                if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                                {
+                                                                                    broadcastClient2.Session.Send(JsonConvert.SerializeObject(output4));
+                                                                                }
+                                                                            }
+                                                                            catch (ObjectDisposedException) { } // Connection already closed
+                                                                            catch (InvalidOperationException) { } // Connection not available
+                                                                            catch (Exception ex)
+                                                                            {
+                                                                                ErrorLogger.LogError("AlyxGamemode.PhysicsObjectPosAng", ex);
                                                                             }
                                                                         }
                                                                     }
@@ -367,12 +430,22 @@ namespace AlyxGamemode
                                                                     if (packet.args[0] != player.Client.Map)
                                                                     {
                                                                         Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
-                                                                        foreach (IndexedClient broadcast in connections)
+                                                                        // Use ToList() to avoid modification during iteration
+                                                                        foreach (IndexedClient broadcast in connections.ToList())
                                                                         {
-                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                            if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            try
                                                                             {
-                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(mapOutput));
+                                                                                Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                                if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                                {
+                                                                                    broadcast.Session.Send(JsonConvert.SerializeObject(mapOutput));
+                                                                                }
+                                                                            }
+                                                                            catch (ObjectDisposedException) { } // Connection already closed
+                                                                            catch (InvalidOperationException) { } // Connection not available
+                                                                            catch (Exception ex)
+                                                                            {
+                                                                                ErrorLogger.LogError("AlyxGamemode.MapName", ex);
                                                                             }
                                                                         }
                                                                         suffix = " - Telling all clients to switch...";
@@ -382,7 +455,15 @@ namespace AlyxGamemode
                                                                     Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
                                                                     socket.Send(JsonConvert.SerializeObject(jingle));
                                                                     socket.Send(JsonConvert.SerializeObject(output2));
-                                                                    int gamemodeAPIVersion = int.Parse(packet.args[1]);
+                                                                    int gamemodeAPIVersion = 0;
+                                                                    if (packet.args.Length >= 2 && int.TryParse(packet.args[1], out int parsedVersion))
+                                                                    {
+                                                                        gamemodeAPIVersion = parsedVersion;
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        ErrorLogger.LogError("AlyxGamemode.MapName", "Failed to parse API version from packet");
+                                                                    }
                                                                     if (gamemodeAPIVersion != APIVersion)
                                                                     {
                                                                         Response versionOutput = new("status", "Version mismatch! Client reports API version " + gamemodeAPIVersion + ", server expects API version " + APIVersion + ". Please update the client and respective Workshop addons.");
@@ -411,14 +492,24 @@ namespace AlyxGamemode
                                                                 try
                                                                 {
                                                                     Response removeBreak = new("command", "hlvrcoop_break " + packet.args[0]);
-                                                                    foreach (IndexedClient broadcast in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcast in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            Response breakprop = new("status", "Broken prop: " + packet.args[0]);
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(removeBreak));
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(breakprop));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                Response breakprop = new("status", "Broken prop: " + packet.args[0]);
+                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(removeBreak));
+                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(breakprop));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.BrokenProp", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -436,12 +527,22 @@ namespace AlyxGamemode
                                                                 try
                                                                 {
                                                                     Response remove = new("command", "ent_remove " + packet.args[0]);
-                                                                    foreach (IndexedClient broadcast in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcast in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(remove));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(remove));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.EntityRemoved", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -460,12 +561,22 @@ namespace AlyxGamemode
                                                                 {
                                                                     Entity entityfired = new(packet.args[0]);
                                                                     Response fire = new("command", "hlvrcoop_fireoutput " + packet.args[0] + " " + packet.args[1]);
-                                                                    foreach (IndexedClient broadcast in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcast in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(fire));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(fire));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.EntityFired", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -483,7 +594,17 @@ namespace AlyxGamemode
                                                                 try
                                                                 {
                                                                     Response p = new("command", "hlvrcoop_npc_sethealth " + packet.args[0] + " " + packet.args[1]);
-                                                                    connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(p)));
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient c in connections.ToList())
+                                                                    {
+                                                                        try
+                                                                        {
+                                                                            c.Session.Send(JsonConvert.SerializeObject(p));
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception) { } // Ignore errors in gamemode handler
+                                                                    }
                                                                 }
                                                                 catch (Exception ex)
                                                                 {
@@ -514,12 +635,22 @@ namespace AlyxGamemode
                                                                 try
                                                                 {
                                                                     Response templateCache = new("command", "hlvrcoop_cache_entity " + packet.args[0]);
-                                                                    foreach (IndexedClient broadcast in connections)
+                                                                    // Use ToList() to avoid modification during iteration
+                                                                    foreach (IndexedClient broadcast in connections.ToList())
                                                                     {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                        try
                                                                         {
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(templateCache));
+                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                                                                            if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                                                            {
+                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(templateCache));
+                                                                            }
+                                                                        }
+                                                                        catch (ObjectDisposedException) { } // Connection already closed
+                                                                        catch (InvalidOperationException) { } // Connection not available
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            ErrorLogger.LogError("AlyxGamemode.TemplateEntity", ex);
                                                                         }
                                                                     }
                                                                 }
@@ -556,7 +687,17 @@ namespace AlyxGamemode
                                             if (!response.data.StartsWith("/"))
                                             {
                                                 Response output = new("command", "play sounds/ui/hint.vsnd");
-                                                connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(output)));
+                                                // Use ToList() to avoid modification during iteration
+                                                foreach (IndexedClient c in connections.ToList())
+                                                {
+                                                    try
+                                                    {
+                                                        c.Session.Send(JsonConvert.SerializeObject(output));
+                                                    }
+                                                    catch (ObjectDisposedException) { } // Connection already closed
+                                                    catch (InvalidOperationException) { } // Connection not available
+                                                    catch (Exception) { } // Ignore errors in gamemode handler
+                                                }
                                             }
                                         }
                                     }

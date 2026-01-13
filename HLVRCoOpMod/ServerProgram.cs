@@ -105,7 +105,12 @@ namespace HLVRCoOpMod
                     {
                         con.Session.Send(JsonConvert.SerializeObject(disconnectCommand));
                     }
-                    catch { } // Ignore errors if connection already closed
+                    catch (ObjectDisposedException) { } // Connection already closed, ignore
+                    catch (InvalidOperationException) { } // Connection not available, ignore
+                    catch (Exception ex)
+                    {
+                        ErrorLogger.LogError("ServerProgram.Close.SendDisconnect", ex);
+                    }
                 }
                 Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, "Closing server on port " + Settings.Default.ServerPort));
                 wss.Dispose();
@@ -120,9 +125,19 @@ namespace HLVRCoOpMod
         {
             Map.map = map;
             Response output2 = new("command", "addon_play "+map+"; addon_tools_map "+map);
-            foreach (IndexedClient con in connections)
+            // Use ToList() to avoid modification during iteration
+            foreach (IndexedClient con in connections.ToList())
             {
-                con.Session.Send(JsonConvert.SerializeObject(output2));
+                try
+                {
+                    con.Session.Send(JsonConvert.SerializeObject(output2));
+                }
+                catch (ObjectDisposedException) { } // Connection already closed
+                catch (InvalidOperationException) { } // Connection not available
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("ServerProgram.ChangeMap", ex);
+                }
             }
         }
         /// <summary>
@@ -132,14 +147,25 @@ namespace HLVRCoOpMod
         public void GlobalVConsole(string command)
         {
             Response output2 = new("command", command);
-            foreach (IndexedClient con in connections)
+            // Use ToList() to avoid modification during iteration
+            foreach (IndexedClient con in connections.ToList())
             {
-                con.Session.Send(JsonConvert.SerializeObject(output2));
+                try
+                {
+                    con.Session.Send(JsonConvert.SerializeObject(output2));
+                }
+                catch (ObjectDisposedException) { } // Connection already closed
+                catch (InvalidOperationException) { } // Connection not available
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("ServerProgram.GlobalVConsole", ex);
+                }
             }
         }
         public void OnOpen(IWebSocketConnection socket)
         {
-            foreach (IndexedClient client in connections)
+            // Use ToList() to avoid modification during iteration
+            foreach (IndexedClient client in connections.ToList())
             {
                 if (client.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id)
                 {
@@ -155,7 +181,20 @@ namespace HLVRCoOpMod
                         PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientOpen, connections, socket, client.Username);
                         LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientOpen, connections, socket, client.Username);
                     }
-                    connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(outputDisconnect)));
+                    // Use ToList() to avoid modification during iteration
+                    foreach (IndexedClient c in connections.ToList())
+                    {
+                        try
+                        {
+                            c.Session.Send(JsonConvert.SerializeObject(outputDisconnect));
+                        }
+                        catch (ObjectDisposedException) { } // Connection already closed
+                        catch (InvalidOperationException) { } // Connection not available
+                        catch (Exception ex)
+                        {
+                            ErrorLogger.LogError("ServerProgram.OnOpen.SendDisconnect", ex);
+                        }
+                    }
                     Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, client.Username + " connected"));
                     break;
                 }
@@ -179,7 +218,20 @@ namespace HLVRCoOpMod
                         PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientClose, connections, socket, client.Username);
                         LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientClose, connections, socket, client.Username);
                     }
-                    connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(outputDisconnect)));
+                    // Use ToList() to avoid modification during iteration
+                    foreach (IndexedClient c in connections.ToList())
+                    {
+                        try
+                        {
+                            c.Session.Send(JsonConvert.SerializeObject(outputDisconnect));
+                        }
+                        catch (ObjectDisposedException) { } // Connection already closed
+                        catch (InvalidOperationException) { } // Connection not available
+                        catch (Exception ex)
+                        {
+                            ErrorLogger.LogError("ServerProgram.OnClose.SendDisconnect", ex);
+                        }
+                    }
                     Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, client.Username + " disconnected"));
                     connections.Remove(client);
                     break;
@@ -239,8 +291,8 @@ namespace HLVRCoOpMod
                                 if (Settings.Default.ServerPassword != "" && response.password != Settings.Default.ServerPassword)
                                 {
                                     Response output2 = new("status", "Invalid server password! Closing connection...");
-                                    socket.Send(JsonConvert.SerializeObject(output2));
-                                    socket.Close();
+                                    try { socket.Send(JsonConvert.SerializeObject(output2)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendInvalidPassword", ex); }
+                                    try { socket.Close(); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.CloseInvalidPassword", ex); }
                                     return;
                                 }
                                 else
@@ -256,29 +308,35 @@ namespace HLVRCoOpMod
                                             clientUsername = response.clientUsername,
                                             map = Map.map,
                                         };
-                                        socket.Send(JsonConvert.SerializeObject(output2));
+                                        try { socket.Send(JsonConvert.SerializeObject(output2)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendReauth", ex); }
                                         return;
                                     }
                                     
                                     // Check if username is already taken by a different connection
-                                    foreach (IndexedClient indexed1 in connections)
+                                    // Use ToList() to avoid modification during iteration
+                                    IndexedClient? duplicateClient = null;
+                                    foreach (IndexedClient indexed1 in connections.ToList())
                                     {
                                         if (indexed1.Username == response.clientUsername)
                                         {
-                                            Response output2 = new("status", "Client reconnected elsewhere, closing connection...");
-                                            socket.Send(JsonConvert.SerializeObject(output2));
-                                            socket.Close();
-                                            connections.Remove(indexed1);
+                                            duplicateClient = indexed1;
                                             break;
                                         }
+                                    }
+                                    if (duplicateClient != null)
+                                    {
+                                        Response output2 = new("status", "Client reconnected elsewhere, closing connection...");
+                                        try { socket.Send(JsonConvert.SerializeObject(output2)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendDuplicate", ex); }
+                                        try { socket.Close(); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.CloseDuplicate", ex); }
+                                        connections.Remove(duplicateClient);
                                     }
                                     if (response.clientUsername != null)
                                     {
                                         if (response.clientUsername.Length > 32 || Regex.Match(response.clientUsername, @"[\;""]").Success)
                                         {
                                             Response outputRegex = new("status", "Invalid username, closing connection...");
-                                            socket.Send(JsonConvert.SerializeObject(outputRegex));
-                                            socket.Close();
+                                            try { socket.Send(JsonConvert.SerializeObject(outputRegex)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendInvalidUsername", ex); }
+                                            try { socket.Close(); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.CloseInvalidUsername", ex); }
                                         }
                                         else
                                         {
@@ -289,7 +347,7 @@ namespace HLVRCoOpMod
                                             };
                                             IndexedClient client = new(socket, response.clientUsername, Map.map);
                                             connections.Add(client);
-                                            socket.Send(JsonConvert.SerializeObject(output2));
+                                            try { socket.Send(JsonConvert.SerializeObject(output2)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendAuthenticated", ex); }
                                             OnOpen(socket);
                                         }
                                     }
@@ -298,8 +356,8 @@ namespace HLVRCoOpMod
                             else
                             {
                                 Response output2 = new("status", "Invalid username! Closing connection...");
-                                socket.Send(JsonConvert.SerializeObject(output2));
-                                socket.Close();
+                                try { socket.Send(JsonConvert.SerializeObject(output2)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendNoUsername", ex); }
+                                try { socket.Close(); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.CloseNoUsername", ex); }
                             }
                             break;
                         case "chat":
@@ -312,8 +370,9 @@ namespace HLVRCoOpMod
                                     Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, indexedClient.Username + ": " + response.data));
                                     if (response.data.StartsWith("/"))
                                     {
-                                        string command = response.data.Split(" ").ToArray().First().Replace("/", "").ToLower();
-                                        string[] args = response.data.Split(" ").Skip(1).ToArray();
+                                        string[] parts = response.data.Split(" ");
+                                        string command = parts.Length > 0 ? parts[0].Replace("/", "").ToLower() : "";
+                                        string[] args = parts.Length > 1 ? parts.Skip(1).ToArray() : Array.Empty<string>();
                                         Response output3 = new("status", response.data)
                                         {
                                             clientUsername = indexedClient.Username,
@@ -339,7 +398,7 @@ namespace HLVRCoOpMod
                                                 }
                                                 break;
                                         }
-                                        socket.Send(JsonConvert.SerializeObject(output3));
+                                        try { socket.Send(JsonConvert.SerializeObject(output3)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendVConsoleDisabled", ex); }
                                     }
                                     else
                                     {
@@ -347,7 +406,20 @@ namespace HLVRCoOpMod
                                         {
                                             remoteClientUsername = indexedClient.Username
                                         };
-                                        connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(output4)));
+                                        // Use ToList() to avoid modification during iteration
+                                        foreach (IndexedClient c in connections.ToList())
+                                        {
+                                            try
+                                            {
+                                                c.Session.Send(JsonConvert.SerializeObject(output4));
+                                            }
+                                            catch (ObjectDisposedException) { } // Connection already closed
+                                            catch (InvalidOperationException) { } // Connection not available
+                                            catch (Exception ex)
+                                            {
+                                                ErrorLogger.LogError("ServerProgram.OnMessage.SendChat", ex);
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -362,7 +434,7 @@ namespace HLVRCoOpMod
                                     {
                                         clientUsername = indexed2.Username
                                     };
-                                    socket.Send(JsonConvert.SerializeObject(output5));
+                                    try { socket.Send(JsonConvert.SerializeObject(output5)); } catch (ObjectDisposedException) { } catch (InvalidOperationException) { } catch (Exception ex) { ErrorLogger.LogError("ServerProgram.OnMessage.SendVConsole", ex); }
                                 }
                             }
                             break;

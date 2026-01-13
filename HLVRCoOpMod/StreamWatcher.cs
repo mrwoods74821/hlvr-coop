@@ -23,11 +23,12 @@ namespace HLVRCoOpMod
         public string MessageType { get; private set; }
         public byte[] Data { get; private set;}
     }
-    public class StreamWatcher
+    public class StreamWatcher : IDisposable
     {
         private readonly Stream stream;
 
         private bool working = false;
+        private bool disposed = false;
 
         public StreamWatcher(Stream stream)
         {
@@ -39,7 +40,7 @@ namespace HLVRCoOpMod
             bool oldWorking = working;
             working = state;
             if(oldWorking != state && state)
-                Read();
+                _ = Read(); // Fire and forget - task will handle its own exceptions
         }
 
         protected void OnMessageAvailable(MessageAvailableEventArgs e)
@@ -47,7 +48,7 @@ namespace HLVRCoOpMod
             MessageAvailable?.Invoke(this, e);
         }
 
-        protected async void Read()
+        protected async Task Read()
         {
             while (working)
             {
@@ -55,6 +56,12 @@ namespace HLVRCoOpMod
                 {
                     try
                     {
+                        // Ensure stream is still readable
+                        if (!stream.CanRead)
+                        {
+                            OnConnectionLost();
+                            break;
+                        }
                         byte[] headerBuffer = new byte[10];
                         int bytesRead = 0;
                         while (bytesRead < 10)
@@ -81,6 +88,12 @@ namespace HLVRCoOpMod
                         string commandType = Encoding.ASCII.GetString(type);
                         // headerBuffer[9] contains (dataLength + 13), so subtract 13 to get actual data length
                         // (13 = header overhead: 4 bytes command + 8 bytes header info + 1 byte terminator)
+                        if (headerBuffer[9] < 13)
+                        {
+                            // Invalid header - data length would be negative, connection lost
+                            OnConnectionLost();
+                            break;
+                        }
                         byte length = (byte)(headerBuffer[9] - 13);
                         byte[] data = new byte[length];
                         bytesRead = 0;
@@ -128,5 +141,25 @@ namespace HLVRCoOpMod
 
         public event MessageAvailableEventHandler? MessageAvailable;
         public event EventHandler? ConnectionLost;
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    working = false; // Stop the read loop
+                    // Note: We don't dispose the stream here as it's owned by VConsole
+                    // VConsole will handle stream disposal
+                }
+                disposed = true;
+            }
+        }
     }
 }
