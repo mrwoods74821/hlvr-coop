@@ -193,7 +193,7 @@ namespace HLVRCoOpMod
             }
             if (vConsole != null)
             {
-                vConsole.Disconnect();
+                vConsole.DisconnectAndStopReconnecting(); // Stop reconnection when client is closing
             }
         }
         public void Chat(string text)

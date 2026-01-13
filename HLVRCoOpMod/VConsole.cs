@@ -16,7 +16,8 @@ namespace HLVRCoOpMod
         private WebsocketClient? ws;
         private TcpClient? client;
         private NetworkStream? stream;
-        private bool killed = false;
+        private volatile bool killed = false;
+        private volatile bool shouldStopReconnecting = false; // Flag to stop reconnection loop (set when client closes)
         private List<byte[]> commandQueue = new(); // Queue for byte[] commands when connection is killed
         private Queue<string> bufferFullCommandQueue = new(); // Queue for string commands when buffer is full
         private StreamWatcher? watcher;
@@ -38,6 +39,7 @@ namespace HLVRCoOpMod
         private bool isProcessingQueue = false;
         private bool isHandlingPersistentBufferFull = false;
         private readonly object bufferLock = new object(); // Lock for thread-safe buffer state access
+        private readonly object streamLock = new object(); // Lock for thread-safe stream operations
         
         public event EventHandler? Reconnected;
         
@@ -82,22 +84,45 @@ namespace HLVRCoOpMod
             }
             if (!listening)
                 return false;
-            client = new TcpClient("127.0.0.1", Settings.Default.VconsolePort);
-            stream = client.GetStream();
-            watcher = new StreamWatcher(stream);
+            
+            NetworkStream? newStream = null;
+            lock (streamLock)
+            {
+                client = new TcpClient("127.0.0.1", Settings.Default.VconsolePort);
+                newStream = client.GetStream();
+                stream = newStream;
+                killed = false; // Set killed = false inside lock before stream operations
+            }
+            
+            watcher = new StreamWatcher(newStream);
             watcher.MessageAvailable += MessageAvailable;
             watcher.ConnectionLost += OnConnectionLost;
             if (watcher != null)
                 watcher.SetWorking(true);
-            killed = false;
             WriteWindowFocus(true);
-            if (stream != null)
+            if (stream != null && !killed)
             {
                 foreach (byte[] command in commandQueue)
                 {
-                    stream.Write(command);
+                    try
+                    {
+                        stream.Write(command);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        killed = true;
+                        break;
+                    }
+                    catch (SocketException)
+                    {
+                        killed = true;
+                        break;
+                    }
                 }
-                commandQueue.Clear();
+                if (!killed)
+                {
+                    commandQueue.Clear();
+                }
             }
             reconnectAttempts = 0; // Reset reconnection attempts on successful connect
             lock (bufferLock)
@@ -186,8 +211,15 @@ namespace HLVRCoOpMod
         private async void OnConnectionLost(object? sender, EventArgs e)
         {
             // Prevent multiple simultaneous reconnection attempts
-            if (isReconnecting || killed)
+            if (isReconnecting)
                 return;
+
+            // Mark as killed immediately and synchronously to prevent WriteCommand from attempting to write to disposed stream
+            // Use streamLock to ensure atomic operation with any ongoing WriteCommand calls
+            lock (streamLock)
+            {
+                killed = true;
+            }
 
             System.Diagnostics.Debug.WriteLine("VConsole: Connection lost, attempting to reconnect...");
             
@@ -207,13 +239,21 @@ namespace HLVRCoOpMod
         public async Task StartReconnectionLoop()
         {
             // Prevent multiple simultaneous reconnection attempts
-            if (isReconnecting || killed)
+            if (isReconnecting)
                 return;
 
             isReconnecting = true;
             reconnectAttempts = 0;
+            
+            // Reset flags to allow reconnection loop to run
+            // (killed was set in OnConnectionLost to prevent writes, but we need to allow reconnection)
+            shouldStopReconnecting = false; // Reset stop flag when starting new reconnection loop
+            lock (streamLock)
+            {
+                killed = false;
+            }
 
-            while (!killed)
+            while (true)
             {
                 // Calculate delay with exponential backoff, capped at MAX_RETRY_DELAY
                 int delay = INITIAL_RETRY_DELAY * (int)Math.Pow(2, reconnectAttempts);
@@ -221,7 +261,9 @@ namespace HLVRCoOpMod
                     delay = MAX_RETRY_DELAY;
                 await Task.Delay(delay);
 
-                if (killed)
+                // Check if we should stop reconnecting (only set when client intentionally closes)
+                // Don't check 'killed' here because it's set during cleanup and shouldn't stop reconnection
+                if (shouldStopReconnecting)
                     break;
 
                 if (Reconnect())
@@ -243,7 +285,11 @@ namespace HLVRCoOpMod
 
                 // Reset killed flag after failed reconnection attempt so loop can continue
                 // (Reconnect() calls Disconnect() which sets killed=true, but we want to keep retrying)
-                killed = false;
+                // Note: We don't reset shouldStopReconnecting here - that should only be reset when starting a new loop
+                lock (streamLock)
+                {
+                    killed = false;
+                }
 
                 reconnectAttempts++;
                 System.Diagnostics.Debug.WriteLine($"VConsole: Reconnection attempt {reconnectAttempts} failed, will retry...");
@@ -255,9 +301,10 @@ namespace HLVRCoOpMod
                 }
             }
 
-            // Only reached if killed is set to true
+            // Only reached if shouldStopReconnecting is set to true (client intentionally closed)
             reconnectAttempts = 0;
             isReconnecting = false;
+            shouldStopReconnecting = false; // Reset flag for next time
             
             // Notify UI that reconnection was stopped
             if (ui != null && channel != null)
@@ -268,36 +315,62 @@ namespace HLVRCoOpMod
 
         public void Disconnect()
         {
-            if(!killed)
+            lock (streamLock)
             {
-                killed = true;
-                lock (bufferLock)
+                if(!killed)
                 {
-                    bufferFull = false; // Reset buffer state on disconnect
-                    bufferFullCount = 0;
+                    killed = true;
+                    lock (bufferLock)
+                    {
+                        bufferFull = false; // Reset buffer state on disconnect
+                        bufferFullCount = 0;
+                    }
+                    if (watcher != null)
+                    {
+                        watcher.MessageAvailable -= MessageAvailable;
+                        watcher.ConnectionLost -= OnConnectionLost;
+                        watcher.SetWorking(false);
+                    }
+                    if (stream != null)
+                        stream.Close();
+                    if (client != null)
+                        client.Close();
                 }
-                if (watcher != null)
-                {
-                    watcher.MessageAvailable -= MessageAvailable;
-                    watcher.ConnectionLost -= OnConnectionLost;
-                    watcher.SetWorking(false);
-                }
-                if (stream != null)
-                    stream.Close();
-                if (client != null)
-                    client.Close();
             }
+        }
+        
+        /// <summary>
+        /// Disconnects and stops any active reconnection loops.
+        /// Use this when the client is intentionally closing, not during automatic reconnection.
+        /// </summary>
+        public void DisconnectAndStopReconnecting()
+        {
+            shouldStopReconnecting = true; // Signal reconnection loop to stop
+            Disconnect(); // Clean up connection
         }
 
         public void WriteRaw(byte[] data)
         {
-            if (stream != null)
-                stream.Write(data);
+            if (stream != null && !killed)
+            {
+                try
+                {
+                    stream.Write(data);
+                }
+                catch (ObjectDisposedException)
+                {
+                    killed = true;
+                }
+                catch (SocketException)
+                {
+                    killed = true;
+                }
+            }
         }
 
         public void WriteWindowFocus(bool focused = true)
         {
-            if (stream != null)
+            if (stream != null && !killed)
             {
                 byte[] vcmd = Encoding.ASCII.GetBytes("VFCS").Reverse().ToArray();
                 byte protocol = Convert.ToByte(Settings.Default.VconsoleProtocol);
@@ -319,20 +392,50 @@ namespace HLVRCoOpMod
                     dataList = dataList.Prepend(cmdByte).ToList();
                 }
                 byte[] completeData = dataList.ToArray();
-                if (!killed)
+                try
+                {
                     stream.Write(completeData);
-                else
+                }
+                catch (ObjectDisposedException)
+                {
+                    killed = true;
                     commandQueue.Add(completeData);
+                }
+                catch (SocketException)
+                {
+                    killed = true;
+                    commandQueue.Add(completeData);
+                }
+            }
+            else if (killed)
+            {
+                byte[] vcmd = Encoding.ASCII.GetBytes("VFCS").Reverse().ToArray();
+                byte protocol = Convert.ToByte(Settings.Default.VconsoleProtocol);
+                byte dataLength = Convert.ToByte(13);
+                List<byte> dataList = new()
+                {
+                    0,
+                    protocol,
+                    0,
+                    0,
+                    0,
+                    dataLength,
+                    0,
+                    0,
+                    (byte)(focused == true ? 1 : 0)
+                };
+                foreach (byte cmdByte in vcmd)
+                {
+                    dataList = dataList.Prepend(cmdByte).ToList();
+                }
+                byte[] completeData = dataList.ToArray();
+                commandQueue.Add(completeData);
             }
         }
         public void WriteCommand(string command, bool urgent = false)
         {
-            // Capture stream reference to avoid null reference if it changes
-            NetworkStream? currentStream = stream;
-            if (currentStream == null)
-                return;
-            
-            // If connection is killed, queue urgent commands only (existing behavior)
+            // Check killed flag FIRST to prevent writes to disposed stream
+            // This must be checked before any stream operations to avoid ObjectDisposedException
             if (killed)
             {
                 if (urgent)
@@ -371,24 +474,84 @@ namespace HLVRCoOpMod
                 }
             }
             
-            // Send command immediately (re-check stream is still valid)
-            if (currentStream != stream || stream == null)
-                return;
-            
-            // Use currentStream to avoid race condition if stream changes
-            NetworkStream? streamToUse = currentStream;
-            byte[] commandBytes = BuildCommandBytes(command);
-            try
+            // Lock stream operations to prevent race conditions with disposal
+            lock (streamLock)
             {
-                streamToUse.Write(commandBytes);
-                lock (bufferLock)
+                // Re-check killed flag after acquiring lock (stream might have been disposed)
+                if (killed)
                 {
-                    lastCommandTime = DateTime.Now;
+                    if (urgent)
+                    {
+                        byte[] completeData = BuildCommandBytes(command);
+                        commandQueue.Add(completeData);
+                    }
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorLogger.LogError("VConsole.WriteCommand", ex);
+                
+                // Capture stream reference inside lock
+                NetworkStream? currentStream = stream;
+                if (currentStream == null)
+                    return;
+                
+                // Check if underlying socket is still connected before attempting write
+                // This prevents ObjectDisposedException from being thrown
+                try
+                {
+                    if (client != null && !client.Connected)
+                    {
+                        killed = true;
+                        return;
+                    }
+                }
+                catch
+                {
+                    // If we can't check connection state, assume it's dead
+                    killed = true;
+                    return;
+                }
+                
+                byte[] commandBytes = BuildCommandBytes(command);
+                try
+                {
+                    currentStream.Write(commandBytes);
+                    lock (bufferLock)
+                    {
+                        lastCommandTime = DateTime.Now;
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Stream was disposed (game quit), mark as killed silently
+                    // Don't log this error - it's expected when the game quits
+                    killed = true;
+                    return; // Exit immediately to prevent any further processing
+                }
+                catch (SocketException)
+                {
+                    // Connection was aborted (game quit/network error), mark as killed silently
+                    // Don't log this error - it's expected when the game quits
+                    killed = true;
+                    return; // Exit immediately to prevent any further processing
+                }
+                catch (Exception ex)
+                {
+                    // Check if exception is related to stream disposal/connection loss
+                    // If so, mark as killed and don't log
+                    if (ex.Message.Contains("disposed") || 
+                        ex.Message.Contains("aborted") || 
+                        ex.Message.Contains("connection") ||
+                        ex is System.IO.IOException)
+                    {
+                        killed = true;
+                        return;
+                    }
+                    
+                    // Only log if not already killed and it's not a connection-related error
+                    if (!killed)
+                    {
+                        ErrorLogger.LogError("VConsole.WriteCommand", ex);
+                    }
+                }
             }
         }
         
@@ -452,19 +615,37 @@ namespace HLVRCoOpMod
                     
                     try
                     {
-                        // Re-check stream is still valid before writing
-                        lock (bufferLock)
+                        // Re-check stream is still valid before writing (use streamLock for consistency)
+                        lock (streamLock)
                         {
-                            if (stream != currentStream || stream == null)
+                            if (killed || stream != currentStream || stream == null)
                                 break;
+                            
+                            currentStream.Write(commandBytes);
                         }
-                        
-                        currentStream.Write(commandBytes);
                         
                         lock (bufferLock)
                         {
                             lastCommandTime = DateTime.Now;
                         }
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Stream was disposed (game quit), mark as killed silently
+                        lock (streamLock)
+                        {
+                            killed = true;
+                        }
+                        break; // Stop processing on error
+                    }
+                    catch (SocketException)
+                    {
+                        // Connection was aborted (game quit/network error), mark as killed silently
+                        lock (streamLock)
+                        {
+                            killed = true;
+                        }
+                        break; // Stop processing on error
                     }
                     catch (Exception ex)
                     {

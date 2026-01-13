@@ -216,6 +216,22 @@ namespace HLVRCoOpMod
                                 }
                                 else
                                 {
+                                    // Check if this connection is already authenticated (same connection ID)
+                                    IndexedClient? existingClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                                    if (existingClient != null)
+                                    {
+                                        // Same connection re-authenticating (e.g., VConsole reconnected)
+                                        // Just send the current map
+                                        Response output2 = new("authenticated")
+                                        {
+                                            clientUsername = response.clientUsername,
+                                            map = Map.map,
+                                        };
+                                        socket.Send(JsonConvert.SerializeObject(output2));
+                                        return;
+                                    }
+                                    
+                                    // Check if username is already taken by a different connection
                                     foreach (IndexedClient indexed1 in connections)
                                     {
                                         if (indexed1.Username == response.clientUsername)
