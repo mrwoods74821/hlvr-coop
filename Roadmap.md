@@ -53,6 +53,7 @@
 
 **OPTIONAL (Nice to Have):**
 - **Task 2.4: Implement Dedicated Server Mode** - Headless server without UI
+- **Task 3.4: Implement Master Server Registry** - Internet-wide server discovery for port-forwarded servers
 
 **Everything else is complete!** ✅ The mod is fully functional except for these two critical issues.
 
@@ -121,6 +122,7 @@
 
 **Priority 3: Quality of Life Improvements**
 7. ~~**Complete Lua Documentation**~~ ✅ (COMPLETED - Task 3.3) - Created comprehensive Lua API Reference documentation with examples and best practices
+8. **Implement Master Server Registry** (MEDIUM) - Internet-wide server discovery for port-forwarded servers via central master server
 
 **Priority 4: Code Quality & Technical Debt**
 8. ~~**Remove Workarounds**~~ ✅ (COMPLETED - Task 4.1) - Refactored chat command workaround, improved code structure
@@ -1669,6 +1671,181 @@ Version fields are hardcoded to 0, so version checking doesn't work. This could 
 - Configuration guide
 - Practical examples
 - Best practices and troubleshooting
+
+---
+
+### Task 3.4: Implement Master Server Registry for Internet-Wide Server Discovery
+
+**Status:** ⏳ TODO  
+**Priority:** MEDIUM - Quality of life improvement for server browser  
+**Risk Level:** Medium  
+**Dependencies:** Server browser implementation (Task 3.5 - already completed)
+
+#### Problem Statement
+
+The current server browser only discovers servers on the local network via UDP broadcast. Port-forwarded servers on the internet cannot be automatically discovered, requiring users to manually add servers by IP:Port. This limits the ability to find and join public servers.
+
+**Current Limitations:**
+- UDP broadcast only works on local network (LAN)
+- Port-forwarded servers behind NAT cannot be discovered automatically
+- No central registry of available servers
+- Users must know server IP addresses to connect
+
+#### Solution Overview
+
+Implement a master server registry system that allows:
+1. **Server Registration**: Servers periodically register with a master server (heartbeat)
+2. **Server Discovery**: Clients query the master server to get a list of all online servers
+3. **Automatic Cleanup**: Master server removes servers that haven't pinged recently
+4. **Internet-Wide Discovery**: Enables finding servers across the internet, not just local network
+
+#### Implementation Components
+
+**1. Master Server (Web API)**
+- Simple HTTP/HTTPS API server
+- Two endpoints:
+  - `POST /register` - Servers send heartbeat with server info (IP, port, map, players, etc.)
+  - `GET /servers` - Clients request list of online servers
+- In-memory storage of server list
+- Automatic cleanup of stale servers (no heartbeat for 2-3 minutes)
+- Can be implemented in ASP.NET Core, Python Flask/FastAPI, or Node.js Express
+
+**2. Client-Side Integration**
+- Add master server URL configuration (with default)
+- Server registration: Periodically send heartbeat to master server when server is running
+- Server discovery: Query master server for server list
+- Merge master server results with LAN discovery results
+- Fallback to LAN discovery if master server is unavailable
+
+**3. Server Browser UI Updates**
+- Show servers from both LAN discovery and master server
+- Indicate source (Local Network vs Internet)
+- Option to refresh from master server
+- Configuration option for master server URL
+
+#### Technical Details
+
+**Master Server Requirements:**
+- Simple REST API
+- JSON request/response format
+- Server info structure:
+  ```json
+  {
+    "ipAddress": "192.168.1.100",
+    "port": 27025,
+    "map": "alyx_c17_01",
+    "playerCount": 2,
+    "maxPlayers": 16,
+    "passwordProtected": false,
+    "gamemode": "AlyxGamemode",
+    "serverName": "My Server",
+    "lastSeen": "2024-01-01T12:00:00Z"
+  }
+  ```
+
+**Server Registration:**
+- Send heartbeat every 30-60 seconds
+- Include public IP address (detected automatically or configured)
+- Include all server info (map, players, etc.)
+- Handle registration failures gracefully (don't block server startup)
+
+**Client Query:**
+- Query master server on server browser open
+- Query on manual refresh
+- Cache results for 10-15 seconds
+- Handle query failures gracefully (fallback to LAN only)
+
+#### Hosting Options
+
+**Free Hosting Services:**
+- Railway.app (free tier)
+- Render.com (free tier)
+- Fly.io (free tier)
+- Heroku (free tier with limitations)
+- Vercel/Netlify (serverless functions)
+
+**Self-Hosted:**
+- Simple ASP.NET Core app
+- Python Flask/FastAPI
+- Node.js Express
+- Can run on any server with internet access
+
+#### Implementation Steps
+
+**Step 1: Create Master Server Implementation**
+- Choose technology (ASP.NET Core recommended for C# consistency)
+- Implement registration endpoint
+- Implement server list endpoint
+- Add automatic cleanup of stale servers
+- Add basic error handling
+
+**Step 2: Add Master Server Configuration**
+- Add master server URL setting (with default)
+- Add configuration UI option (optional)
+- Add enable/disable toggle
+
+**Step 3: Implement Server Registration**
+- Add periodic heartbeat to master server when server is running
+- Include server info in heartbeat
+- Handle registration failures (log but don't block)
+- Stop heartbeat when server stops
+
+**Step 4: Implement Client Query**
+- Add master server query to ServerDiscovery
+- Merge results with LAN discovery
+- Handle query failures gracefully
+- Add refresh capability
+
+**Step 5: Update Server Browser UI**
+- Show servers from both sources
+- Indicate source (Local/Internet)
+- Add master server status indicator
+- Add manual refresh button
+
+**Step 6: Deploy Master Server**
+- Choose hosting service
+- Deploy master server code
+- Configure default master server URL
+- Test with multiple servers
+
+**Step 7: Testing**
+- Test server registration
+- Test client query
+- Test automatic cleanup
+- Test with multiple servers
+- Test failure scenarios (master server down, network issues)
+
+#### Success Criteria
+
+- [ ] Master server API implemented and deployed
+- [ ] Servers automatically register with master server when running
+- [ ] Clients can query master server for server list
+- [ ] Server browser shows servers from both LAN and master server
+- [ ] Stale servers are automatically removed from master server
+- [ ] System gracefully handles master server unavailability
+- [ ] Configuration allows custom master server URL
+- [ ] Documentation includes master server setup instructions
+
+#### Potential Issues & Solutions
+
+**Issue:** Master server hosting costs
+- **Solution:** Use free tier hosting services (Railway, Render, Fly.io)
+
+**Issue:** Master server downtime
+- **Solution:** Graceful fallback to LAN discovery, retry logic, multiple master servers
+
+**Issue:** Server IP detection (NAT)
+- **Solution:** Use external IP detection service or allow manual configuration
+
+**Issue:** Rate limiting / abuse
+- **Solution:** Add basic rate limiting, require server authentication (optional)
+
+**Issue:** Privacy concerns
+- **Solution:** Make master server optional, allow disabling, clear privacy policy
+
+#### Related Tasks
+
+- **Task 3.5: Server Browser** - ✅ COMPLETED - Provides foundation for master server integration
 
 ---
 

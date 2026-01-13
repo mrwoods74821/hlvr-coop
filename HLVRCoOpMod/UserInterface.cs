@@ -23,6 +23,7 @@ namespace HLVRCoOpMod
         private readonly List<Type> plugins = new();
         List<string>? currentAddons;
         private ToolStripComboBox? playerBodyPreferenceComboBox;
+        private ServerDiscovery? serverDiscovery;
         public UserInterface()
         {
             AutoScaleMode = AutoScaleMode.None;
@@ -146,6 +147,10 @@ namespace HLVRCoOpMod
             }
             // Programs
             clientProgram = new ClientProgram(this);
+            
+            // Initialize server discovery (for server browser) - use singleton
+            serverDiscovery = ServerDiscovery.Instance;
+            
             // Lua version of initializing
             LuaEnvironment.instance.Handle(PluginHandleType.UserInterface_Initialized);
         }
@@ -215,7 +220,14 @@ namespace HLVRCoOpMod
                 startTime = DateTime.Now;
                 LogToOutput(channel, "Starting at " + startTime.ToString(@"hh\:mm\:ss"));
                 if (checkBoxServerEnabled.Checked)
+                {
                     ServerProgram.instance.Start(gamemodeType, plugins);
+                    // Start broadcasting server presence for discovery
+                    if (serverDiscovery != null)
+                    {
+                        serverDiscovery.StartBroadcasting();
+                    }
+                }
                 if (checkBoxClientEnabled.Checked)
                 {
                     clientProgram.Start(plugins);
@@ -230,6 +242,11 @@ namespace HLVRCoOpMod
                 buttonStart.Text = "Start";
                 SetStatus(Color.Red, "Inactive");
                 ServerProgram.instance.Close();
+                // Stop broadcasting when server stops
+                if (serverDiscovery != null)
+                {
+                    serverDiscovery.StopBroadcasting();
+                }
                 clientProgram.Close();
                 started = false;
                 DateTime endTime = DateTime.Now;
@@ -640,6 +657,38 @@ namespace HLVRCoOpMod
             }
         }
 
+        /// <summary>
+        /// Sets client connection information programmatically
+        /// </summary>
+        public void SetClientConnection(string ipAddress, int port, string password = "")
+        {
+            Settings.Default.ClientIpAddress = ipAddress;
+            Settings.Default.ClientPort = port;
+            Settings.Default.ClientPassword = password;
+            Settings.Default.ClientEnabled = true;
+            
+            textBoxClientIpAddress.Text = ipAddress;
+            // Clamp port value to NumericUpDown range to prevent ArgumentOutOfRangeException
+            numericUpDownClientPort.Value = Math.Max(numericUpDownClientPort.Minimum, Math.Min(numericUpDownClientPort.Maximum, port));
+            textBoxClientPassword.Text = password;
+            checkBoxClientEnabled.Checked = true;
+        }
+        
+        /// <summary>
+        /// Opens the server browser dialog
+        /// </summary>
+        private void ServerBrowserToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (ServerBrowserDialog dialog = new ServerBrowserDialog(this))
+            {
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    // Connection was initiated from the browser
+                    // Settings are already updated by the dialog
+                }
+            }
+        }
+        
         /// <summary>
         /// Quick save current settings as a preset
         /// </summary>

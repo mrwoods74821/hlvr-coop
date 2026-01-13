@@ -11,6 +11,8 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using System.Drawing;
 using System.IO;
+using System.Net;
+using System.Net.WebSockets;
 
 namespace HLVRCoOpMod
 {
@@ -203,6 +205,46 @@ namespace HLVRCoOpMod
         public void OnMessage(string message, IWebSocketConnection socket)
         {
             Response ? response = JsonConvert.DeserializeObject<Response>(message);
+            if (response != null && response.type != null)
+            {
+                // Handle query requests even if gamemode is not initialized
+                if (response.type.ToLower() == "query")
+                {
+                    try
+                    {
+                        // Get server's local IP address
+                        string serverIp = GetLocalIPAddress();
+                        
+                        ServerInfo serverInfo = new ServerInfo
+                        {
+                            IpAddress = serverIp, // Will be overridden by client with the IP they used to connect
+                            Port = Settings.Default.ServerPort,
+                            Map = Map.map,
+                            PlayerCount = connections.Count,
+                            MaxPlayers = 16,
+                            PasswordProtected = !string.IsNullOrEmpty(Settings.Default.ServerPassword),
+                            Gamemode = gamemodeType?.Name ?? "Unknown",
+                            ServerName = !string.IsNullOrEmpty(Settings.Default.ServerMap) ? 
+                                Settings.Default.ServerMap + " Server" : "HLVR Co-Op Server"
+                        };
+                        
+                        Response serverInfoResponse = new("serverinfo")
+                        {
+                            data = Newtonsoft.Json.JsonConvert.SerializeObject(serverInfo)
+                        };
+                        socket.Send(JsonConvert.SerializeObject(serverInfoResponse));
+                        socket.Close(); // Close query connection immediately
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorLogger.LogError("ServerProgram.Query", ex);
+                        socket.Close();
+                        return;
+                    }
+                }
+            }
+            
             if (gamemodeType != null && response != null && response.type != null)
             {
                 PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_PreResponse, response, connections, socket, Map.map);
@@ -377,6 +419,26 @@ namespace HLVRCoOpMod
                     PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PostResponse, response, connections, socket, Map.map);
                     LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PostResponse, response, connections, socket, Map.map);
                 }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the local IP address of the server
+        /// </summary>
+        private string GetLocalIPAddress()
+        {
+            try
+            {
+                using (var socket = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork, System.Net.Sockets.SocketType.Dgram, 0))
+                {
+                    socket.Connect("8.8.8.8", 65530);
+                    var endPoint = socket.LocalEndPoint as System.Net.IPEndPoint;
+                    return endPoint?.Address.ToString() ?? "127.0.0.1";
+                }
+            }
+            catch
+            {
+                return "127.0.0.1";
             }
         }
     }
