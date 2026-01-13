@@ -65,12 +65,6 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
             end
         elseif arg1.type == "print" then
             if not arg1.data then return end
-            -- Test print function
-            --[[
-            if string.find(arg1.data, "joined the game") then
-                print(arg1.data)
-            end
-            ]]--
             -- Get player's coordinates
             for i = 0, arg2.Count - 1 do
                 if arg2[i].Session.ConnectionInfo.Id:ToString() == arg3.ConnectionInfo.Id:ToString() then

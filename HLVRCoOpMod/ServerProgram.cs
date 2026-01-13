@@ -52,6 +52,7 @@ namespace HLVRCoOpMod
                     wss = new WebSocketServer("ws://[::]:" + Settings.Default.ServerPort);
                     wss.Start(socket =>
                     {
+                        // OnOpen is called manually after authentication (see line 283) rather than automatically on connection
                         //socket.OnOpen = () => OnOpen(socket);
                         socket.OnClose = () => OnClose(socket);
                         socket.OnMessage = message => OnMessage(message, socket);
@@ -111,6 +112,10 @@ namespace HLVRCoOpMod
                 wss = null;
             }
         }
+        /// <summary>
+        /// Changes the map for all connected clients by broadcasting map change commands.
+        /// </summary>
+        /// <param name="map">The map name to switch to</param>
         public void ChangeMap(string map)
         {
             Map.map = map;
@@ -120,6 +125,10 @@ namespace HLVRCoOpMod
                 con.Session.Send(JsonConvert.SerializeObject(output2));
             }
         }
+        /// <summary>
+        /// Sends a VConsole command to all connected clients.
+        /// </summary>
+        /// <param name="command">The VConsole command to execute on all clients</param>
         public void GlobalVConsole(string command)
         {
             Response output2 = new("command", command);
@@ -357,9 +366,7 @@ namespace HLVRCoOpMod
                             }
                             break;
                         default:
-                            //IndexedClient? indexed = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
-                            //if (indexed != null) connections.Remove(indexed);
-                            //socket.Close();
+                            // Unknown response type - no action needed
                             break;
                         }
                     }
