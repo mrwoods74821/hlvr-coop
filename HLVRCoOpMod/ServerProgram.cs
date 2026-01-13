@@ -212,23 +212,24 @@ namespace HLVRCoOpMod
                     PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PreResponse, response, connections, socket, Map.map);
                     LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PreResponse, response, connections, socket, Map.map);
                     
-                    // Check if chat command was handled by plugins/Lua (workaround: response.type changed to "lua_chat_handled")
-                    // TODO: Replace with proper HandleState mechanism in future
-                    bool chatHandled = false;
-                    if (response.type != null && response.type.ToLower() == "lua_chat_handled")
+                    // Check if response was handled by plugins/Lua
+                    // New proper mechanism: check response.handled property
+                    // Backward compatibility: also check for legacy "lua_chat_handled" type
+                    bool responseHandled = response.handled;
+                    if (!responseHandled && response.type != null && response.type.ToLower() == "lua_chat_handled")
                     {
-                        chatHandled = true;
-                        // Log the chat message that was handled
+                        // Legacy workaround: response.type was changed to "lua_chat_handled"
+                        responseHandled = true;
+                        // Log the chat message that was handled (for chat commands)
                         IndexedClient? handledClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
                         if (handledClient != null && response.data != null && response.data.Length > 0)
                         {
                             Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, handledClient.Username + ": " + response.data));
                         }
-                        // Skip default processing - command was handled by plugin/Lua
                     }
                     
                     // Only process default handling if not already handled
-                    if (!chatHandled)
+                    if (!responseHandled && response.type != null)
                     {
                         switch (response.type.ToLower())
                     {

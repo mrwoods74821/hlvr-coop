@@ -33,7 +33,7 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                 local message = string.sub(arg1.data, 7) -- Remove "/echo " from the message
                 local respMsg = Response("status", message) -- Create response
                 arg3:Send(respMsg:ToString()) -- Send response to websocket
-                arg1.type = "lua_chat_handled" -- Let the server know that we handled it
+                arg1.handled = true -- Mark as handled to prevent default processing
             -- Ping command
             elseif arg1.data == "/ping" then
                 if not arg1.timestamp then return end
@@ -41,7 +41,7 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                 local ping = (DateTime.UtcNow:Subtract(DateTime.UnixEpoch).TotalMilliseconds - arg1.timestamp) 
                 local pingMsg = Response("status", "Pong! " .. math.floor(ping+0.5) .. "ms")
                 arg3:Send(pingMsg:ToString())
-                arg1.type = "lua_chat_handled"
+                arg1.handled = true -- Mark as handled to prevent default processing
             -- Help command
             elseif arg1.data == "/help" then
                 if not arg3 then return end
@@ -49,7 +49,7 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                     local help = Response("status", v)
                     arg3:Send(help:ToString())
                 end
-                arg1.type = "lua_chat_handled"
+                arg1.handled = true -- Mark as handled to prevent default processing
             -- List command
             elseif arg1.data == "/list" then
                 if not arg2 or not arg3 then return end
@@ -61,7 +61,7 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                 end
                 local listfooter = Response("status", "-----------")
                 arg3:Send(listfooter:ToString())
-                arg1.type = "lua_chat_handled"
+                arg1.handled = true -- Mark as handled to prevent default processing
             end
         elseif arg1.type == "print" then
             if not arg1.data then return end

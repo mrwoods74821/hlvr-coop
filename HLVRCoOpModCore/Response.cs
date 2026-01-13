@@ -19,6 +19,11 @@ namespace HLVRCoOpModCore
         public int? version = internalVersion;
         public bool urgent;
         public long? timestamp;
+        /// <summary>
+        /// Indicates whether this response has been handled by a plugin, gamemode, or Lua script.
+        /// When set to true, default processing should be skipped.
+        /// </summary>
+        public bool handled;
         public Response()
         {
         }
