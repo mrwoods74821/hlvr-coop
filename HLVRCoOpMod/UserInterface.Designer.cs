@@ -36,6 +36,10 @@ namespace HLVRCoOpMod
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveOptionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.quickSavePresetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.presetManagerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.closeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gamemodeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -132,6 +136,10 @@ namespace HLVRCoOpMod
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.saveOptionsToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.quickSavePresetToolStripMenuItem,
+            this.presetManagerToolStripMenuItem,
+            this.toolStripSeparator2,
             this.closeToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
@@ -143,6 +151,30 @@ namespace HLVRCoOpMod
             this.saveOptionsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.saveOptionsToolStripMenuItem.Text = "Save Options";
             this.saveOptionsToolStripMenuItem.Click += new System.EventHandler(this.SaveOptionsToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(189, 6);
+            // 
+            // quickSavePresetToolStripMenuItem
+            // 
+            this.quickSavePresetToolStripMenuItem.Name = "quickSavePresetToolStripMenuItem";
+            this.quickSavePresetToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.quickSavePresetToolStripMenuItem.Text = "Quick Save Preset...";
+            this.quickSavePresetToolStripMenuItem.Click += new System.EventHandler(this.QuickSavePresetToolStripMenuItem_Click);
+            // 
+            // presetManagerToolStripMenuItem
+            // 
+            this.presetManagerToolStripMenuItem.Name = "presetManagerToolStripMenuItem";
+            this.presetManagerToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.presetManagerToolStripMenuItem.Text = "Preset Manager...";
+            this.presetManagerToolStripMenuItem.Click += new System.EventHandler(this.PresetManagerToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(189, 6);
             // 
             // closeToolStripMenuItem
             // 
@@ -759,5 +791,9 @@ namespace HLVRCoOpMod
         private ToolStripMenuItem serverDisableUserVConsoleInputToolStripMenuItem;
         private ToolStripMenuItem clientPrintVConsoleToolStripMenuItem;
         private ToolStripMenuItem gitHubToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripMenuItem quickSavePresetToolStripMenuItem;
+        private ToolStripMenuItem presetManagerToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator2;
     }
 }

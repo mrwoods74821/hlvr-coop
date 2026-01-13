@@ -49,7 +49,7 @@ namespace HLVRCoOpMod
             serverDisableUserVConsoleInputToolStripMenuItem.Checked = Settings.Default.ServerDisableUserVconsoleInput;
             // Options
             saveOptionsOnExitToolStripMenuItem.Checked = Settings.Default.SaveOptionsOnExit;
-            currentAddons = JsonConvert.DeserializeObject<List<string>>(Settings.Default.CurrentAddons);
+            currentAddons = JsonConvert.DeserializeObject<List<string>>(Settings.Default.CurrentAddons) ?? new List<string>();
             alwaysOnTopToolStripMenuItem.Checked = Settings.Default.AlwaysOnTop;
             TopMost = Settings.Default.AlwaysOnTop;
             // Player Body Preference (will be set when plugin menu is created)
@@ -190,7 +190,7 @@ namespace HLVRCoOpMod
         }
         private void Save()
         {
-            Settings.Default.CurrentAddons = JsonConvert.SerializeObject(currentAddons);
+            Settings.Default.CurrentAddons = JsonConvert.SerializeObject(currentAddons ?? new List<string>());
             Settings.Default.Save();
         }
         private void Exit(object? sender, EventArgs e)
@@ -567,6 +567,103 @@ namespace HLVRCoOpMod
             if (clientProgram != null && started && checkBoxClientEnabled.Checked)
             {
                 clientProgram.SendVConsoleCommand($"convar_set player_body_preference {preference}");
+            }
+        }
+
+        /// <summary>
+        /// Gets the main channel for logging
+        /// </summary>
+        public Channel GetChannel()
+        {
+            return channel;
+        }
+
+        /// <summary>
+        /// Applies a preset to the UI controls (without saving to Settings.Default)
+        /// </summary>
+        public void ApplyPresetToUI(PresetManager.Preset preset)
+        {
+            // Client settings
+            checkBoxClientEnabled.Checked = preset.ClientEnabled;
+            textBoxClientIpAddress.Text = preset.ClientIpAddress;
+            // Clamp port value to valid range to prevent ArgumentOutOfRangeException
+            numericUpDownClientPort.Value = Math.Max(numericUpDownClientPort.Minimum, Math.Min(numericUpDownClientPort.Maximum, preset.ClientPort));
+            textBoxClientUsername.Text = preset.ClientUsername;
+            textBoxClientPassword.Text = preset.ClientPassword;
+            clientPrintVConsoleToolStripMenuItem.Checked = preset.ClientPrintVconsole;
+            
+            // Server settings
+            checkBoxServerEnabled.Checked = preset.ServerEnabled;
+            // Clamp port value to valid range to prevent ArgumentOutOfRangeException
+            numericUpDownServerPort.Value = Math.Max(numericUpDownServerPort.Minimum, Math.Min(numericUpDownServerPort.Maximum, preset.ServerPort));
+            textBoxServerPassword.Text = preset.ServerPassword;
+            textBoxServerMap.Text = preset.ServerMap;
+            serverDisableUserVConsoleInputToolStripMenuItem.Checked = preset.ServerDisableUserVconsoleInput;
+            
+            // Options
+            saveOptionsOnExitToolStripMenuItem.Checked = preset.SaveOptionsOnExit;
+            alwaysOnTopToolStripMenuItem.Checked = preset.AlwaysOnTop;
+            TopMost = preset.AlwaysOnTop;
+            
+            // Player body preference
+            if (playerBodyPreferenceComboBox != null)
+            {
+                if (preset.PlayerBodyPreference >= 0 && preset.PlayerBodyPreference <= 2)
+                {
+                    playerBodyPreferenceComboBox.SelectedIndex = preset.PlayerBodyPreference;
+                }
+            }
+            
+            // Current addons (this is more complex, would need to parse and apply)
+            // For now, we'll just update the settings - the UI will reflect it on next load
+            try
+            {
+                currentAddons = JsonConvert.DeserializeObject<List<string>>(preset.CurrentAddons) ?? new List<string>();
+            }
+            catch
+            {
+                currentAddons = new List<string>();
+            }
+            
+            // Note: Settings.Default is already updated by PresetManager.ApplyPresetToSettings
+            // We just need to update the UI controls
+        }
+
+        /// <summary>
+        /// Opens the preset manager dialog
+        /// </summary>
+        private void PresetManagerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (PresetManagerDialog dialog = new PresetManagerDialog(this))
+            {
+                dialog.ShowDialog(this);
+            }
+        }
+
+        /// <summary>
+        /// Quick save current settings as a preset
+        /// </summary>
+        private void QuickSavePresetToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (QuickSavePresetDialog dialog = new QuickSavePresetDialog())
+            {
+                if (dialog.ShowDialog(this) == DialogResult.OK)
+                {
+                    string presetName = dialog.PresetName;
+                    if (!string.IsNullOrEmpty(presetName))
+                    {
+                        try
+                        {
+                            var preset = PresetManager.CreatePresetFromCurrentSettings(presetName);
+                            PresetManager.SavePreset(presetName, preset);
+                            LogToOutput(channel, $"Preset '{presetName}' saved successfully.");
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Failed to save preset: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                }
             }
         }
     }
