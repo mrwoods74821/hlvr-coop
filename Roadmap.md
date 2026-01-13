@@ -133,6 +133,17 @@
 - [ ] Auto-connect is intermittent; sometimes connects, sometimes does not—needs reliability/pass/fail logging.
 - [ ] Workshop addon compatibility plugin does not auto-enable the expected addons on startup.
 - [ ] Exiting the game without stopping the server throws StreamWatcher socket closure errors; needs graceful cleanup.
+  - **Error Details:**
+    ```
+    [ERR] [StreamWatcher] Unable to read data from the transport connection: An existing connection was forcibly closed by the remote host..
+       at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ThrowException(SocketError error, CancellationToken cancellationToken)
+       at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.System.Threading.Tasks.Sources.IValueTaskSource<System.Int32>.GetResult(Int16 token)
+       at System.Threading.Tasks.ValueTask`1.ValueTaskSourceAsTask.<>c.<.cctor>b__4_0(Object state)
+    --- End of stack trace from previous location ---
+       at HLVRCoOpMod.StreamWatcher.Read() in C:\Users\elija\OneDrive\Documents\GitHub\hlvr-coop\HLVRCoOpMod\StreamWatcher.cs:line 89
+    ```
+  - **Location:** `HLVRCoOpMod/StreamWatcher.cs:line 89`
+  - **Cause:** Game exits while VConsole connection is still active; StreamWatcher.Read() throws when trying to read from closed socket.
 - [ ] Player body visibility between players unverified; requires test to confirm models are visible.
 
 ### Task 1.1: Fix Automatic Map Switching (CRITICAL)
