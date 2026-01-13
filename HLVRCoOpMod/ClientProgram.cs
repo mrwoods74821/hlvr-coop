@@ -173,13 +173,41 @@ namespace HLVRCoOpMod
                             };
                             ws.Send(JsonConvert.SerializeObject(input));
                             ui.Invoke(() => ui.LogToOutput(channel, "VConsole reconnected, re-authenticating with server..."));
+                            
+                            // Send saved player body preference when VConsole reconnects
+                            int preference = Settings.Default.PlayerBodyPreference;
+                            if (preference >= 0 && preference <= 2)
+                            {
+                                SendVConsoleCommand($"convar_set player_body_preference {preference}");
+                            }
                         }
                     };
                 }
+                
+                // Send saved player body preference to game when client starts
+                int savedPreference = Settings.Default.PlayerBodyPreference;
+                if (savedPreference >= 0 && savedPreference <= 2 && vConsole != null)
+                {
+                    // Delay slightly to ensure VConsole is connected
+                    Task.Run(async () =>
+                    {
+                        await Task.Delay(1000); // Wait 1 second for VConsole to connect
+                        SendVConsoleCommand($"convar_set player_body_preference {savedPreference}");
+                    });
+                }
+                
                 PluginHandler.Handle(plugins, PluginHandleType.Client_PostStart, ui, ws, error);
                 LuaEnvironment.instance.Handle(PluginHandleType.Client_PostStart, ui, ws, error);
             }
         }
+        public void SendVConsoleCommand(string command)
+        {
+            if (vConsole != null)
+            {
+                vConsole.WriteCommand(command);
+            }
+        }
+
         public void Close()
         {
             if (ws != null)

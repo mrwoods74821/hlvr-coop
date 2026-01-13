@@ -108,18 +108,8 @@ namespace WorkshopAddonCompatibilityPlugin
                     }
                     break;
 
-                case PluginHandleType.Server_PostGamemode_PreResponse:
-                    // Handle addon-specific synchronization if needed
-                    if (vs != null && vs.Length >= 3)
-                    {
-                        Response response = (Response)vs[0];
-                        List<IndexedClient> connections = (List<IndexedClient>)vs[1];
-                        IWebSocketConnection socket = (IWebSocketConnection)vs[2];
-                        
-                        // Handle Player Body synchronization
-                        HandlePlayerBodySync(response, connections, socket);
-                    }
-                    break;
+                // Note: Player Body synchronization is handled by PlayerBodySyncPlugin
+                // This plugin only handles enabling addons, not synchronizing their state
 
                 case PluginHandleType.UserInterface_Exit:
                     // Save enabled addons to settings
@@ -199,36 +189,6 @@ namespace WorkshopAddonCompatibilityPlugin
             }
         }
 
-        /// <summary>
-        /// Handles Player Body synchronization across clients
-        /// This ensures all players can see each other's bodies in multiplayer
-        /// Player Body uses convar 'player_body_preference': 0=auto, 1=Gordon, 2=Alyx
-        /// </summary>
-        private void HandlePlayerBodySync(Response response, List<IndexedClient> connections, IWebSocketConnection socket)
-        {
-            // Check if Player Body addon is enabled
-            if (!enabledAddons.Contains("3581426521") || socket == null)
-                return;
-
-            // Check if response contains player body preference changes
-            // This would need to be detected from VConsole output or a custom packet
-            // For now, we can send a command to query the current preference
-            // and broadcast it to all clients
-            
-            // TODO: Implement Player Body synchronization
-            // Implementation approach:
-            // 1. Detect convar changes via VConsole: "player_body_preference" convar changes
-            // 2. When a player changes their body preference, broadcast to all other clients:
-            //    - Send command: "convar_set player_body_preference <value>"
-            //    - Each client will then spawn the appropriate body model
-            // 
-            // This could be done via:
-            // - Custom packet type (e.g., "BODY" packet with preference value)
-            // - Or via VConsole command monitoring and broadcasting
-            // 
-            // Note: Player Body addon automatically spawns the correct model based on the convar,
-            // so we just need to synchronize the convar value across clients
-        }
 
         /// <summary>
         /// Gets the list of enabled addon Workshop IDs

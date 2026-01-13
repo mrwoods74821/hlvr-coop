@@ -22,6 +22,7 @@ namespace HLVRCoOpMod
         private readonly List<AddonInitializer> addons = new();
         private readonly List<Type> plugins = new();
         List<string>? currentAddons;
+        private ToolStripComboBox? playerBodyPreferenceComboBox;
         public UserInterface()
         {
             AutoScaleMode = AutoScaleMode.None;
@@ -51,6 +52,7 @@ namespace HLVRCoOpMod
             currentAddons = JsonConvert.DeserializeObject<List<string>>(Settings.Default.CurrentAddons);
             alwaysOnTopToolStripMenuItem.Checked = Settings.Default.AlwaysOnTop;
             TopMost = Settings.Default.AlwaysOnTop;
+            // Player Body Preference (will be set when plugin menu is created)
             Application.ApplicationExit += new EventHandler(closeToolStripMenuItem_Click);
             // Load extensions
             string? appDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -117,6 +119,12 @@ namespace HLVRCoOpMod
                                     item.Click += SelectAddon;
                                     pluginsToolStripMenuItem.DropDownItems.Add(item);
                                     addons.Add(new AddonInitializer(newPlugin.Name, type, AddonType.Plugin));
+                                    
+                                    // Add playermodel dropdown for Player Body Sync plugin
+                                    if (newPlugin.Name == "Player Body Sync")
+                                    {
+                                        AddPlayerBodySyncSubmenu(item);
+                                    }
                                 }
                             }
                         }
@@ -502,6 +510,64 @@ namespace HLVRCoOpMod
         private void koFiToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Process.Start(new ProcessStartInfo("https://www.paypal.com/paypalme/EStaley944") { UseShellExecute = true });
+        }
+
+        /// <summary>
+        /// Adds a playermodel selection dropdown submenu to the Player Body Sync plugin menu item
+        /// </summary>
+        private void AddPlayerBodySyncSubmenu(ToolStripMenuItem pluginMenuItem)
+        {
+            // Create a separator
+            ToolStripSeparator separator = new();
+            pluginMenuItem.DropDownItems.Add(separator);
+            
+            // Create label
+            ToolStripLabel label = new("Playermodel:");
+            pluginMenuItem.DropDownItems.Add(label);
+            
+            // Create ComboBox
+            playerBodyPreferenceComboBox = new ToolStripComboBox
+            {
+                Name = "playerBodyPreferenceComboBox",
+                Width = 150
+            };
+            playerBodyPreferenceComboBox.Items.AddRange(new object[] { "Auto", "Gordon", "Alyx" });
+            
+            // Load saved preference (0=Auto, 1=Gordon, 2=Alyx)
+            int savedPreference = Settings.Default.PlayerBodyPreference;
+            if (savedPreference >= 0 && savedPreference <= 2)
+            {
+                playerBodyPreferenceComboBox.SelectedIndex = savedPreference;
+            }
+            else
+            {
+                playerBodyPreferenceComboBox.SelectedIndex = 0; // Default to Auto
+            }
+            
+            // Handle selection change
+            playerBodyPreferenceComboBox.SelectedIndexChanged += PlayerBodyPreferenceComboBox_SelectedIndexChanged;
+            
+            pluginMenuItem.DropDownItems.Add(playerBodyPreferenceComboBox);
+        }
+
+        /// <summary>
+        /// Handles when the player body preference dropdown selection changes
+        /// </summary>
+        private void PlayerBodyPreferenceComboBox_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (playerBodyPreferenceComboBox == null) return;
+            
+            int preference = playerBodyPreferenceComboBox.SelectedIndex;
+            
+            // Save preference to settings
+            Settings.Default.PlayerBodyPreference = preference;
+            Settings.Default.Save();
+            
+            // Send command to game via VConsole (if client is connected)
+            if (clientProgram != null && started && checkBoxClientEnabled.Checked)
+            {
+                clientProgram.SendVConsoleCommand($"convar_set player_body_preference {preference}");
+            }
         }
     }
 }
