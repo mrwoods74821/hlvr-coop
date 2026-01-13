@@ -128,6 +128,13 @@
 
 ## Priority 1: Critical Functionality (Game-Breaking Issues)
 
+### Newly Reported Regressions (Pending Triage)
+- [ ] Client auto-connect on game launch no longer works; fails to join server automatically.
+- [ ] Auto-connect is intermittent; sometimes connects, sometimes does not—needs reliability/pass/fail logging.
+- [ ] Workshop addon compatibility plugin does not auto-enable the expected addons on startup.
+- [ ] Exiting the game without stopping the server throws StreamWatcher socket closure errors; needs graceful cleanup.
+- [ ] Player body visibility between players unverified; requires test to confirm models are visible.
+
 ### Task 1.1: Fix Automatic Map Switching (CRITICAL)
 
 **Status:** Code exists but commented out  
