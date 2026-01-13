@@ -22,7 +22,8 @@ namespace WorkshopAddonCompatibilityPlugin
                 AddonName = "player_body", // May need to be determined from actual addon files
                 DisplayName = "Player Body - ALYX / GORDON",
                 RequiresSync = true, // Body visibility needs synchronization
-                Dependencies = new List<string> { "2182586257", "3329679071" } // Scalable Init Support or AlyxLib
+                Dependencies = new List<string> { "2182586257", "3329679071" }, // Scalable Init Support or AlyxLib (either one)
+                RequiresAnyDependency = true // Only needs ONE of the dependencies, not all
             }},
             // More Resin
             { "2396122619", new WorkshopAddonInfo
@@ -156,7 +157,7 @@ namespace WorkshopAddonCompatibilityPlugin
         /// </summary>
         private void EnableAddonsForClient(IWebSocketConnection socket)
         {
-            if (!pluginInitialized) return;
+            if (!pluginInitialized || socket == null) return;
 
             // Enable dependencies first (Scalable Init Support, AlyxLib)
             var dependencyAddons = enabledAddons
@@ -171,8 +172,23 @@ namespace WorkshopAddonCompatibilityPlugin
             }
 
             // Enable dependent addons (after dependencies are loaded)
+            // Only enable if their dependency requirements are met
             var dependentAddons = enabledAddons
                 .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count > 0)
+                .Where(id =>
+                {
+                    var addon = SupportedAddons[id];
+                    if (addon.RequiresAnyDependency)
+                    {
+                        // For "or" dependencies: at least one dependency must be enabled
+                        return addon.Dependencies.Any(depId => enabledAddons.Contains(depId));
+                    }
+                    else
+                    {
+                        // For "and" dependencies: all dependencies must be enabled
+                        return addon.Dependencies.All(depId => enabledAddons.Contains(depId));
+                    }
+                })
                 .OrderBy(id => SupportedAddons[id].Dependencies.Count) // Enable in dependency order
                 .ToList();
 
@@ -191,7 +207,7 @@ namespace WorkshopAddonCompatibilityPlugin
         private void HandlePlayerBodySync(Response response, List<IndexedClient> connections, IWebSocketConnection socket)
         {
             // Check if Player Body addon is enabled
-            if (!enabledAddons.Contains("3581426521"))
+            if (!enabledAddons.Contains("3581426521") || socket == null)
                 return;
 
             // Check if response contains player body preference changes
@@ -257,5 +273,10 @@ namespace WorkshopAddonCompatibilityPlugin
         public string DisplayName { get; set; } = "";
         public bool RequiresSync { get; set; } = false;
         public List<string> Dependencies { get; set; } = new();
+        /// <summary>
+        /// If true, addon only needs ONE of the dependencies (OR logic).
+        /// If false, addon needs ALL dependencies (AND logic).
+        /// </summary>
+        public bool RequiresAnyDependency { get; set; } = false;
     }
 }
