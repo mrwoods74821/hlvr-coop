@@ -353,7 +353,7 @@ if handleType == "Server_PreGamemode_PreResponse" then
             arg3:Send(resp:ToString())
             
             -- Mark as handled to prevent default processing
-            arg1.type = "lua_chat_handled"
+            arg1.handled = true
         end
     end
 end
@@ -539,6 +539,34 @@ Response objects represent messages sent between client and server.
 | `version` | int | Protocol version |
 | `urgent` | bool | Urgent flag (for commands) |
 | `timestamp` | long | Unix timestamp (milliseconds) |
+| `handled` | bool | **NEW:** Indicates if response was handled by plugin/Lua. Set to `true` to prevent default processing. |
+
+### Handling Responses
+
+#### `handled` Property
+
+The `handled` property allows scripts to signal that they have processed a response and default processing should be skipped.
+
+**Usage:**
+```lua
+if arg1.type == "chat" and arg1.data == "/mycommand" then
+    -- Process the command
+    local resp = Response("status", "Command executed!")
+    arg3:Send(resp:ToString())
+    
+    -- Mark as handled to prevent default chat processing
+    arg1.handled = true
+end
+```
+
+**When to use:**
+- When handling chat commands in `Server_PreGamemode_PreResponse`
+- When you want to prevent default server behavior
+- When implementing custom command processing
+
+**Default value:** `false` (response is not handled)
+
+**Backward compatibility:** The legacy method of setting `arg1.type = "lua_chat_handled"` is still supported but deprecated. New scripts should use `arg1.handled = true`.
 
 ### Methods
 
@@ -682,7 +710,7 @@ lua_env.handlers[lua_env.persistence["my_handler"]] = function(handleType, arg1,
         if arg1.type == "chat" and arg1.data == "/hello" then
             local resp = Response("status", "Hello, " .. arg3.ConnectionInfo.Id:ToString() .. "!")
             arg3:Send(resp:ToString())
-            arg1.type = "lua_chat_handled"
+            arg1.handled = true  -- Mark as handled to prevent default processing
         end
     end
 end
@@ -873,9 +901,11 @@ Mark commands as handled to prevent default processing:
 ```lua
 if arg1.data == "/mycommand" then
     -- Handle command
-    arg1.type = "lua_chat_handled"  -- Important!
+    arg1.handled = true  -- Important! Prevents default processing
 end
 ```
+
+**Note:** The legacy method of setting `arg1.type = "lua_chat_handled"` is still supported for backward compatibility, but using `arg1.handled = true` is the recommended approach.
 
 ---
 

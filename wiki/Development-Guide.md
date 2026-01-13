@@ -38,10 +38,12 @@ end
 if handleType == "Server_PreGamemode_PreResponse" then
     if arg1.type == "chat" and arg1.data == "/mycommand" then
         -- Handle command
-        arg1.type = "lua_chat_handled"  -- Prevent default handling
+        arg1.handled = true  -- Prevent default handling
     end
 end
 ```
+
+**Note:** The legacy method `arg1.type = "lua_chat_handled"` is still supported for backward compatibility, but `arg1.handled = true` is the recommended approach.
 
 ---
 
