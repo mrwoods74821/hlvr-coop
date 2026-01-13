@@ -320,7 +320,7 @@ namespace AlyxGamemode
                                                                     suffix = " - Telling all clients to switch...";
                                                                 }
                                                                 */
-                                                                Response jingle = new("command", "play hlvrcoop/jingle_up2");
+                                                                Response jingle = new("command", "play sounds/hlvrcoop/jingle_up2.vsnd");
                                                                 Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
                                                                 socket.Send(JsonConvert.SerializeObject(jingle));
                                                                 socket.Send(JsonConvert.SerializeObject(output2));

@@ -80,10 +80,11 @@
 - **Version System** (Task 3.2) - Version checking implemented (version 1) to prevent compatibility issues
 - **PLYR Packet Handler** - Player body position tracking implemented
 - **Server Disconnect Feature** - Players automatically disconnected and returned to main menu when server stops
+- **Sound File Path Format** (Task 2.1) - Fixed jingle sound file path format and added sound events to resource manifest
 
 ### Current State
-- **Functional:** Core multiplayer synchronization works, all reconnection systems implemented, comprehensive error handling, version checking enabled
-- **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions, sound file path format issues
+- **Functional:** Core multiplayer synchronization works, all reconnection systems implemented, comprehensive error handling, version checking enabled, sound file path format fixed
+- **Broken:** Automatic level transitions desynchronize players, audio system breaks during level transitions
 - **Incomplete:** 13 packet types defined but not implemented (14 originally, PLYR is implemented)
 - **Disabled:** Automatic map switching (code exists but commented out)
 - **Missing:** Dedicated server mode
@@ -96,7 +97,7 @@
 3. ~~**Fix Command Buffer Full Handling**~~ ✅ (COMPLETED - Task 1.3) - Command queue, rate limiting, and automatic recovery implemented
 
 **Priority 2: Incomplete Core Features**
-4. **Fix Sound File Path Format** (MINOR) - Cosmetic issue with jingle sound file path
+4. ~~**Fix Sound File Path Format**~~ ✅ (COMPLETED - Task 2.1) - Fixed jingle sound file path format and resource manifest
 5. **Investigate and Implement Unimplemented Packet Types** (MEDIUM) - Implement remaining 13 packet types
 6. **Implement Dedicated Server Mode** (MEDIUM) - Headless server without UI dependency
 
@@ -1035,9 +1036,9 @@ Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_to
 
 ## Priority 2: Incomplete Core Features
 
-### Task 2.1: Fix Sound File Path Format (MINOR)
+### Task 2.1: ~~Fix Sound File Path Format~~ - COMPLETED
 
-**Status:** Sound file cannot be loaded  
+**Status:** ✅ IMPLEMENTED - Fixed sound file path format and added sound events to resource manifest  
 **Priority:** LOW - Cosmetic issue (jingle sound doesn't play)  
 **Risk Level:** Low  
 **Dependencies:** None
@@ -1061,9 +1062,14 @@ The jingle sound (`hlvrcoop/jingle_up2`) fails to load during map transitions. T
 
 **Location:** `AlyxGamemode/AlyxGamemode.cs` line 323
 
-**Current Code:**
+**Previous Code:**
 ```csharp
 Response jingle = new("command", "play hlvrcoop/jingle_up2");
+```
+
+**Fixed Code:**
+```csharp
+Response jingle = new("command", "play sounds/hlvrcoop/jingle_up2.vsnd");
 ```
 
 **Comparison with Working Sounds:**
@@ -1092,17 +1098,30 @@ Response jingle = new("command", "play hlvrcoop/jingle_up2");
 - Verify sound event is properly registered
 - Check if addon resources are loaded correctly
 
+#### Implementation Details
+
+**Changes Made:**
+1. Updated sound file path format in `AlyxGamemode.cs` line 323:
+   - Changed from: `"play hlvrcoop/jingle_up2"` (short format)
+   - Changed to: `"play sounds/hlvrcoop/jingle_up2.vsnd"` (full path format matching working UI hint sound)
+2. Added sound events file to resource manifest:
+   - Added `"soundevents/hlvr_coop_soundevents.vsndevts"` to `hlvr_coop_addon_resources.vrman`
+   - This ensures sound events are properly registered when the addon is compiled
+
+**Note:** The `.wav` files in the WorkshopAddon are automatically converted to `.vsnd` files by Workshop Tools during compilation, so referencing the `.vsnd` format is correct.
+
 #### Success Criteria
 
-- [ ] Jingle sound plays on map transition
-- [ ] No VConsole errors about missing sound files
-- [ ] Sound path format is consistent with other sounds
+- [x] Sound path format changed to full path with `.vsnd` extension
+- [x] Resource manifest updated to include sound events file
+- [ ] Jingle sound plays on map transition (requires testing after addon recompilation)
+- [ ] No VConsole errors about missing sound files (requires testing)
 
 #### Notes
 
 - This is a minor cosmetic issue - map transitions work without the jingle
-- May be related to addon resource loading or sound event registration
-- Could also be that the sound file doesn't exist in the installed addon
+- The fix requires the addon to be recompiled in Workshop Tools for the resource manifest change to take effect
+- Testing is needed to confirm the sound plays correctly after recompilation
 
 ---
 
@@ -1904,7 +1923,7 @@ Add support for popular Half-Life: Alyx Steam Workshop addons to enhance the mul
 7. ~~**Implement VConsole Reconnection**~~ ✅ (COMPLETED - Task 1.2)
 8. ~~**Enable WebSocket Client Reconnection**~~ ✅ (COMPLETED - Task 3.1)
 9. ~~**Implement Version System**~~ ✅ (COMPLETED - Task 3.2)
-10. **Fix sound file path format** (LOW)
+10. ~~**Fix sound file path format**~~ ✅ (COMPLETED - Task 2.1)
 11. **Investigate unimplemented packets** (MEDIUM)
 12. **Complete Lua documentation** (LOW)
 13. **Code cleanup** (LOW)

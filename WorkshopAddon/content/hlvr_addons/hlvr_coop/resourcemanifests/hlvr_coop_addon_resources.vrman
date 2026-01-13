@@ -20,6 +20,7 @@
             "models/editor/playerstart.vmdl",
             "models/characters/gordon/gordon.vmdl",
             "models/props/construction/hat_construction.vmdl",
+            "soundevents/hlvr_coop_soundevents.vsndevts",
 		],
 	]
 }
