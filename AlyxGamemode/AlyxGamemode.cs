@@ -34,8 +34,79 @@ namespace AlyxGamemode
                             List<IndexedClient> openConnections = (List<IndexedClient>)vs[0];
                             IWebSocketConnection openSocket = (IWebSocketConnection)vs[1];
                             Player? player2 = AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id);
+                            
+                            // Enable the Workshop addon first
                             Response enableAddon = new("command", "addon_enable hlvr_coop");
                             openSocket.Send(JsonConvert.SerializeObject(enableAddon));
+                            
+                            // Send initialization command after a delay to allow addon to load
+                            // Remote clients don't send "has joined the game" message, so we need to:
+                            // 1. Add the player to the game state
+                            // 2. Send initialization command to trigger game-side script
+                            Task.Run(async () =>
+                            {
+                                await Task.Delay(2000); // Wait 2 seconds for addon to enable
+                                
+                                // Check if player still doesn't exist (connection not closed)
+                                if (AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id) == null)
+                                {
+                                    // Find the client in connections list
+                                    IndexedClient? clientToAdd = null;
+                                    foreach (IndexedClient client in openConnections)
+                                    {
+                                        if (client.Session.ConnectionInfo.Id == openSocket.ConnectionInfo.Id)
+                                        {
+                                            clientToAdd = client;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (clientToAdd != null)
+                                    {
+                                        // Add player to game state (normally done when "has joined the game" is received)
+                                        Player? player = AlyxGlobalData.instance.AddPlayer(clientToAdd);
+                                        if (player != null)
+                                        {
+                                            // CRITICAL: Remote clients can't send INIT packet until script entities exist
+                                            // Create script entities immediately (normally done when INIT packet is received)
+                                            // The script will then send INIT packet automatically when it loads
+                                            Response vconsoleInput = new("command", "ent_remove hlvrcoop_script;sv_cheats 1;ent_create logic_script {targetname hlvrcoop_script vscripts hlvrcoop_interval};ent_create logic_timer {targetname hlvrcoop_timer refiretime 0.01};echo IENT HLVRCOOP");
+                                            Response output3 = new("status", "Initializing co-op...");
+                                            openSocket.Send(JsonConvert.SerializeObject(output3));
+                                            openSocket.Send(JsonConvert.SerializeObject(vconsoleInput));
+                                            
+                                            // Start the timer after a delay (script entities need time to create)
+                                            Task.Run(async () =>
+                                            {
+                                                await Task.Delay(2500); // Wait for script entities to create and initialize
+                                                Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>HLVRCoOpMod>0>-1");
+                                                Response output4 = new("status", "Co-op initialized!");
+                                                openSocket.Send(JsonConvert.SerializeObject(output4));
+                                                openSocket.Send(JsonConvert.SerializeObject(vconsoleInput5));
+                                            });
+                                            
+                                            // Notify other clients that player joined
+                                            Response output2 = new("status", "♩ " + clientToAdd.Username + " joined as index " + player.Index);
+                                            Response blip = new("command", "play hlvrcoop/blip" + rnd.Next(1, 4));
+                                            openConnections.ForEach(c =>
+                                            {
+                                                if (c.Session.ConnectionInfo.Id != clientToAdd.Session.ConnectionInfo.Id)
+                                                {
+                                                    c.Session.Send(JsonConvert.SerializeObject(blip));
+                                                    c.Session.Send(JsonConvert.SerializeObject(output2));
+                                                }
+                                            });
+                                        }
+                                        else
+                                        {
+                                            // Server is full - disconnect client
+                                            Response output2 = new("status", "The server is currently at maximum capacity, please try again later.");
+                                            openSocket.Send(JsonConvert.SerializeObject(output2));
+                                            openSocket.Close();
+                                        }
+                                    }
+                                }
+                            });
                         }
                         break;
                     case GamemodeHandleType.ClientClose:

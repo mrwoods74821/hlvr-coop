@@ -70,15 +70,8 @@ namespace HLVRCoOpMod
                 ws.DisconnectionHappened.Subscribe(info =>
                 {
                     ui.Invoke(() => ui.LogToOutput(channel, "Disconnected: " + info.Type.ToString()));
-                    // Send disconnect command to game to return to main menu
-                    if (vConsole != null)
-                    {
-                        try
-                        {
-                            vConsole.WriteCommand("disconnect", true);
-                        }
-                        catch { } // Ignore errors if VConsole already disconnected
-                    }
+                    // Auto-reconnection is enabled, so we don't send disconnect command to game
+                    // The WebSocket will reconnect automatically and the game will continue running
                 });
                 ws.MessageReceived.Subscribe(msg =>
                 {
@@ -143,10 +136,10 @@ namespace HLVRCoOpMod
                                 }
                                 break;
                             case "vconsole":
-                                if (vConsole != null && response.data != null && Settings.Default.ClientPrintVconsole)
+                                if (vConsole != null && response.data != null)
                                 {
                                     if (ui != null)
-                                        ui.Invoke(() => ui.LogToOutput(vConsoleChannel, response.data));
+                                        ui.Invoke(() => ui.LogToVConsole(response.data));
                                 }
                                 break;
                             default:
