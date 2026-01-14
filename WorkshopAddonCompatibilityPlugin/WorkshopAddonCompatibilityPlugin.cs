@@ -12,59 +12,13 @@ namespace WorkshopAddonCompatibilityPlugin
 {
     /// <summary>
     /// Plugin that enables and synchronizes Steam Workshop addons for cooperative gameplay.
-    /// Supports: Player Body, More Resin, Unpin Ragdolls, Removable Health Vials, Partial Clip Storage, Scalable Init Support, AlyxLib,
-    /// Charger Melee Charge, Fast Headcrab Restored, Brutal Blood, Bullet Penetration Mod
+    /// Supports: Player Body and Scalable Init Support (dependency)
     /// </summary>
     public class WorkshopAddonCompatibilityPlugin : BasePlugin
     {
         private static readonly Dictionary<string, WorkshopAddonInfo> SupportedAddons = new()
         {
-            // Player Body - ALYX / GORDON
-            { "3581426521", new WorkshopAddonInfo
-            {
-                WorkshopId = "3581426521",
-                AddonName = "player_body", // May need to be determined from actual addon files
-                DisplayName = "Player Body - ALYX / GORDON",
-                RequiresSync = true, // Body visibility needs synchronization
-                Dependencies = new List<string> { "2182586257", "3329679071" }, // Scalable Init Support or AlyxLib (either one)
-                RequiresAnyDependency = true // Only needs ONE of the dependencies, not all
-            }},
-            // More Resin
-            { "2396122619", new WorkshopAddonInfo
-            {
-                WorkshopId = "2396122619",
-                AddonName = "2396122619", // Workshop ID (map extensions only, no scripts)
-                DisplayName = "More Resin",
-                RequiresSync = false // Resin locations are map-based extensions, no sync needed
-            }},
-            // Unpin Ragdolls
-            { "2173405711", new WorkshopAddonInfo
-            {
-                WorkshopId = "2173405711",
-                AddonName = "unpin_ragdolls",
-                DisplayName = "Unpin Ragdolls",
-                RequiresSync = true, // Ragdoll physics need synchronization
-                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
-            }},
-            // Removable Health Vials
-            { "3527754624", new WorkshopAddonInfo
-            {
-                WorkshopId = "3527754624",
-                AddonName = "removable_health_vials",
-                DisplayName = "Removable Health Vials",
-                RequiresSync = true, // Vial state needs synchronization
-                Dependencies = new List<string> { "3329679071" } // AlyxLib
-            }},
-            // Partial Clip Storage
-            { "3329684800", new WorkshopAddonInfo
-            {
-                WorkshopId = "3329684800",
-                AddonName = "partial_clip_storage",
-                DisplayName = "Partial Clip Storage",
-                RequiresSync = true, // Clip state needs synchronization
-                Dependencies = new List<string> { "3329679071" } // AlyxLib
-            }},
-            // Scalable Init Support
+            // Scalable Init Support (dependency for Player Body)
             { "2182586257", new WorkshopAddonInfo
             {
                 WorkshopId = "2182586257",
@@ -72,48 +26,15 @@ namespace WorkshopAddonCompatibilityPlugin
                 DisplayName = "Scalable Init Support",
                 RequiresSync = false // Mod-loader, no sync needed
             }},
-            // AlyxLib
-            { "3329679071", new WorkshopAddonInfo
+            // Player Body - ALYX / GORDON
+            { "3581426521", new WorkshopAddonInfo
             {
-                WorkshopId = "3329679071",
-                AddonName = "alyxlib",
-                DisplayName = "AlyxLib",
-                RequiresSync = false // Library, no sync needed
-            }},
-            // Charger Melee Charge
-            { "3616305735", new WorkshopAddonInfo
-            {
-                WorkshopId = "3616305735",
-                AddonName = "charger_melee_charge",
-                DisplayName = "Charger Melee Charge",
-                RequiresSync = false, // NPC behavior is handled by existing NPC sync system
-                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
-            }},
-            // Fast Headcrab Restored
-            { "3308356996", new WorkshopAddonInfo
-            {
-                WorkshopId = "3308356996",
-                AddonName = "3308356996", // Workshop ID (map extensions only, no scripts)
-                DisplayName = "Fast Headcrab Restored",
-                RequiresSync = false // Map extensions only, no sync needed
-            }},
-            // Brutal Blood
-            { "2857095424", new WorkshopAddonInfo
-            {
-                WorkshopId = "2857095424",
-                AddonName = "brutal_blood",
-                DisplayName = "Brutal Blood",
-                RequiresSync = false, // Blood effects are visual only, no sync needed
-                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
-            }},
-            // Bullet Penetration Mod
-            { "3008209128", new WorkshopAddonInfo
-            {
-                WorkshopId = "3008209128",
-                AddonName = "bullet_penetration_mod",
-                DisplayName = "Bullet Penetration Mod",
-                RequiresSync = false, // Bullet penetration is client-side visual effect, no sync needed
-                Dependencies = new List<string> { "2182586257" } // Scalable Init Support
+                WorkshopId = "3581426521",
+                AddonName = "player_body", // May need to be determined from actual addon files
+                DisplayName = "Player Body - ALYX / GORDON",
+                RequiresSync = true, // Body visibility needs synchronization
+                Dependencies = new List<string> { "2182586257" }, // Scalable Init Support
+                RequiresAnyDependency = false // Needs Scalable Init Support
             }}
         };
 
@@ -198,7 +119,7 @@ namespace WorkshopAddonCompatibilityPlugin
                 localEnabledAddons = new List<string>(enabledAddons);
             }
 
-            // Enable dependencies first (Scalable Init Support, AlyxLib)
+            // Enable dependencies first (Scalable Init Support)
             var dependencyAddons = localEnabledAddons
                 .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count == 0)
                 .ToList();
@@ -310,7 +231,7 @@ namespace WorkshopAddonCompatibilityPlugin
             {
                 await Task.Delay(delayMs); // Wait for game to be ready
 
-                // Enable dependencies first (Scalable Init Support, AlyxLib)
+                // Enable dependencies first (Scalable Init Support)
                 var dependencyAddons = localEnabledAddons
                     .Where(id => SupportedAddons.ContainsKey(id) && SupportedAddons[id].Dependencies.Count == 0)
                     .ToList();

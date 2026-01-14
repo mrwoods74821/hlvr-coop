@@ -355,6 +355,16 @@ namespace HLVRCoOpMod
             }
         }
 
+        public void LogToVConsole(params object[] text)
+        {
+            if (richTextBoxVConsole != null)
+            {
+                richTextBoxVConsole.Select(richTextBoxVConsole.TextLength, 0);
+                richTextBoxVConsole.SelectionColor = Color.Maroon;
+                richTextBoxVConsole.AppendText("\n" + string.Join(" ", text));
+            }
+        }
+
         public void SetStatus(Color color, params object[] text)
         {
             toolStripStatusLabelConnection.ForeColor = color;

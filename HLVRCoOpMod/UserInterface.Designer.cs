@@ -70,6 +70,8 @@ namespace HLVRCoOpMod
             this.buttonCommandType = new System.Windows.Forms.Button();
             this.tabControlBottom = new System.Windows.Forms.TabControl();
             this.tabPageOutput = new System.Windows.Forms.TabPage();
+            this.tabPageVConsole = new System.Windows.Forms.TabPage();
+            this.richTextBoxVConsole = new System.Windows.Forms.RichTextBox();
             this.tabPageServer = new System.Windows.Forms.TabPage();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
@@ -102,6 +104,7 @@ namespace HLVRCoOpMod
             this.statusStrip.SuspendLayout();
             this.tabControlBottom.SuspendLayout();
             this.tabPageOutput.SuspendLayout();
+            this.tabPageVConsole.SuspendLayout();
             this.tabPageServer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownServerPort)).BeginInit();
             this.tabPageClient.SuspendLayout();
@@ -403,6 +406,7 @@ namespace HLVRCoOpMod
             // tabControlBottom
             // 
             this.tabControlBottom.Controls.Add(this.tabPageOutput);
+            this.tabControlBottom.Controls.Add(this.tabPageVConsole);
             this.tabControlBottom.Location = new System.Drawing.Point(12, 225);
             this.tabControlBottom.Name = "tabControlBottom";
             this.tabControlBottom.SelectedIndex = 0;
@@ -418,6 +422,27 @@ namespace HLVRCoOpMod
             this.tabPageOutput.Size = new System.Drawing.Size(764, 144);
             this.tabPageOutput.TabIndex = 0;
             this.tabPageOutput.Text = "Global";
+            // 
+            // tabPageVConsole
+            // 
+            this.tabPageVConsole.Controls.Add(this.richTextBoxVConsole);
+            this.tabPageVConsole.Location = new System.Drawing.Point(4, 24);
+            this.tabPageVConsole.Name = "tabPageVConsole";
+            this.tabPageVConsole.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPageVConsole.Size = new System.Drawing.Size(764, 144);
+            this.tabPageVConsole.TabIndex = 1;
+            this.tabPageVConsole.Text = "VConsole";
+            // 
+            // richTextBoxVConsole
+            // 
+            this.richTextBoxVConsole.HideSelection = false;
+            this.richTextBoxVConsole.Location = new System.Drawing.Point(6, 6);
+            this.richTextBoxVConsole.Name = "richTextBoxVConsole";
+            this.richTextBoxVConsole.ReadOnly = true;
+            this.richTextBoxVConsole.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+            this.richTextBoxVConsole.Size = new System.Drawing.Size(752, 131);
+            this.richTextBoxVConsole.TabIndex = 0;
+            this.richTextBoxVConsole.WordWrap = true;
             // 
             // tabPageServer
             // 
@@ -733,6 +758,7 @@ namespace HLVRCoOpMod
             this.statusStrip.PerformLayout();
             this.tabControlBottom.ResumeLayout(false);
             this.tabPageOutput.ResumeLayout(false);
+            this.tabPageVConsole.ResumeLayout(false);
             this.tabPageServer.ResumeLayout(false);
             this.tabPageServer.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownServerPort)).EndInit();
@@ -770,6 +796,8 @@ namespace HLVRCoOpMod
         private ToolStripStatusLabel toolStripStatusLabelLibraries;
         private TabControl tabControlBottom;
         private TabPage tabPageOutput;
+        private TabPage tabPageVConsole;
+        private RichTextBox richTextBoxVConsole;
         private TabPage tabPageServer;
         private Button buttonServerChangeMap;
         private CheckBox checkBoxServerEnabled;
