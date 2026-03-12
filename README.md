@@ -6,9 +6,9 @@
 
 <a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/8ExaaRw.png"></a>
 
-[![Releases](https://img.shields.io/github/v/tag/teampopplio/HLVRCoop?label=release)](https://github.com/dayflaree/hlvr-coop/releases)
+[![Releases](https://img.shields.io/github/v/tag/dayflaree/hlvr-coop?label=release)](https://github.com/dayflaree/hlvr-coop/releases)
 
-[![Downloads](https://img.shields.io/github/downloads/teampopplio/HLVRCoop/total)](https://github.com/dayflaree/hlvr-coop/releases)
+[![Downloads](https://img.shields.io/github/downloads/dayflaree/hlvr-coop/total)](https://github.com/dayflaree/hlvr-coop/releases)
 
 [![Discord](https://img.shields.io/discord/738131767944282183?label=discord)](https://discord.gg/X6Dp95WRR4)
 
@@ -16,6 +16,14 @@
 --------
 
 ### Half-Life: Alyx Co-Op Mod (HLVRCoop) is a cooperative experience for Half-Life: Alyx that brings multiplayer to the game.
+
+## Project Status
+
+Core multiplayer systems are implemented and actively maintained in this fork.  
+Current stability focus areas are:
+- map transition synchronization reliability
+- intermittent audio reliability after transitions
+- bootstrap/session convergence validation (`SessionReady`) across startup/reconnect permutations
 
 ## Features
 
@@ -27,7 +35,7 @@
 - Lua scripting support
 - Support for Workshop maps
 - Discord rich presence
-- Public addon contents
+- Open workshop addon source/assets included in repository
 
 ## Installation
 
@@ -57,7 +65,7 @@
 ## Hosting a Server
 - Follow the [instructions](#installation) to install HLVRCoop
 - *(Optional)* Follow the [client instructions](#connecting-to-a-server) to create a listen server
-	- Note: Non-listen servers are not fully developed yet, please follow the above instructions for now
+	- Note: Listen-server flow is the most tested path. Dedicated-style hosting exists but should be validated with your target setup.
 - Click on the "Server" tab in the HLVRCoop application
 - Check the "Enabled" box to host a server
 - *(Optional)* Set a password for the server, make sure to provide it to peers
@@ -141,6 +149,7 @@ Feel free to provide scripts to the HLVRCoop community via the [Discord](https:/
 ### Instructions
 - Clone the repository within Visual Studio
 - Build all projects for HLVRCoop (x64) by pressing `Ctrl+Shift+B` or by clicking "Build" > "Build Solution"
+	- CLI alternative: `dotnet build HLVRCOOP.sln -c Release`
 	- Note: You may need to build the `HLVRCoOpModCore` project first, this can be done by right-clicking the project and selecting "Build"
 - In Visual Studio, set `HLVRCoOpMod` as the startup project by right-clicking the project and selecting "Set as Startup Project"
 - Click on the green "Start" button to start debugging
