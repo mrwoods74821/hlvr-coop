@@ -33,6 +33,8 @@ namespace AlyxGamemode
             public int DroppedPacketCount { get; set; } = 0;
             public string LastDropReason { get; set; } = "";
             public DateTime? FirstPacketUtc { get; set; }
+            public bool WatchdogStarted { get; set; } = false;
+            public int BootstrapRetryCount { get; set; } = 0;
         }
 
         private readonly Dictionary<Guid, SessionState> sessionStates = new();
@@ -117,6 +119,49 @@ namespace AlyxGamemode
                 }
 
                 state.FirstPacketUtc ??= DateTime.UtcNow;
+                state.LastUpdatedUtc = DateTime.UtcNow;
+                return state;
+            }
+        }
+
+        public bool TryStartWatchdog(Guid id)
+        {
+            lock (sync)
+            {
+                if (!sessionStates.TryGetValue(id, out SessionState? state))
+                {
+                    state = new SessionState
+                    {
+                        ClientId = id,
+                        Phase = SessionPhase.Connected
+                    };
+                    sessionStates[id] = state;
+                }
+
+                if (state.WatchdogStarted)
+                    return false;
+
+                state.WatchdogStarted = true;
+                state.LastUpdatedUtc = DateTime.UtcNow;
+                return true;
+            }
+        }
+
+        public SessionState IncrementBootstrapRetry(Guid id)
+        {
+            lock (sync)
+            {
+                if (!sessionStates.TryGetValue(id, out SessionState? state))
+                {
+                    state = new SessionState
+                    {
+                        ClientId = id,
+                        Phase = SessionPhase.Connected
+                    };
+                    sessionStates[id] = state;
+                }
+
+                state.BootstrapRetryCount++;
                 state.LastUpdatedUtc = DateTime.UtcNow;
                 return state;
             }

@@ -103,25 +103,7 @@ namespace AlyxGamemode
                                             // The script will then send INIT packet automatically when it loads
                                             SendBootstrap(openSocket, clientToAdd.Username);
 
-                                            Task.Run(async () =>
-                                            {
-                                                await Task.Delay(12000);
-                                                AlyxGlobalData.SessionState? phaseState = AlyxGlobalData.instance.GetSession(openSocket.ConnectionInfo.Id);
-                                                if (phaseState != null && phaseState.Phase != AlyxGlobalData.SessionPhase.SessionReady)
-                                                {
-                                                    SyncLog($"[SYNC][RETRY] {clientToAdd.Username}: readiness timeout at phase {phaseState.Phase}, retrying bootstrap once");
-                                                    SendBootstrap(openSocket, clientToAdd.Username);
-
-                                                    await Task.Delay(10000);
-                                                    AlyxGlobalData.SessionState? phaseStateAfterRetry = AlyxGlobalData.instance.GetSession(openSocket.ConnectionInfo.Id);
-                                                    if (phaseStateAfterRetry != null && phaseStateAfterRetry.Phase != AlyxGlobalData.SessionPhase.SessionReady)
-                                                    {
-                                                        SyncLog($"[SYNC][FAIL] {clientToAdd.Username}: not ready after retry, phase={phaseStateAfterRetry.Phase}, dropped={phaseStateAfterRetry.DroppedPacketCount}, reason={phaseStateAfterRetry.LastDropReason}");
-                                                        Response failStatus = new("status", "Co-op initialization is taking too long. Please reconnect if synchronization does not start.");
-                                                        openSocket.Send(JsonConvert.SerializeObject(failStatus));
-                                                    }
-                                                }
-                                            });
+                                            SyncLog($"[SYNC] {clientToAdd.Username}: waiting for first HLVRCOOP packet before starting readiness watchdog");
                                             
                                             // Start the timer after a delay (script entities need time to create)
                                             Task.Run(async () =>
@@ -226,6 +208,38 @@ namespace AlyxGamemode
                                             if (packet.IsValid())
                                             {
                                                 AlyxGlobalData.SessionState observedState = AlyxGlobalData.instance.MarkPacketObserved(socket.ConnectionInfo.Id);
+
+                                                if (observedState.FirstPacketUtc.HasValue && AlyxGlobalData.instance.TryStartWatchdog(socket.ConnectionInfo.Id))
+                                                {
+                                                    string watchdogUsername = string.IsNullOrWhiteSpace(observedState.Username) ? socket.ConnectionInfo.Id.ToString() : observedState.Username;
+                                                    SyncLog($"[SYNC] {watchdogUsername}: first HLVRCOOP packet observed, starting readiness watchdog");
+
+                                                    Task.Run(async () =>
+                                                    {
+                                                        await Task.Delay(12000);
+                                                        AlyxGlobalData.SessionState? phaseState = AlyxGlobalData.instance.GetSession(socket.ConnectionInfo.Id);
+                                                        if (phaseState != null && phaseState.Phase != AlyxGlobalData.SessionPhase.SessionReady)
+                                                        {
+                                                            string retryUsername = string.IsNullOrWhiteSpace(phaseState.Username) ? watchdogUsername : phaseState.Username;
+                                                            AlyxGlobalData.SessionState retryState = AlyxGlobalData.instance.IncrementBootstrapRetry(socket.ConnectionInfo.Id);
+                                                            if (retryState.BootstrapRetryCount <= 1)
+                                                            {
+                                                                SyncLog($"[SYNC][RETRY] {retryUsername}: readiness timeout at phase {phaseState.Phase}, retrying bootstrap once");
+                                                                SendBootstrap(socket, retryUsername);
+
+                                                                await Task.Delay(10000);
+                                                                AlyxGlobalData.SessionState? phaseStateAfterRetry = AlyxGlobalData.instance.GetSession(socket.ConnectionInfo.Id);
+                                                                if (phaseStateAfterRetry != null && phaseStateAfterRetry.Phase != AlyxGlobalData.SessionPhase.SessionReady)
+                                                                {
+                                                                    SyncLog($"[SYNC][FAIL] {retryUsername}: not ready after retry, phase={phaseStateAfterRetry.Phase}, dropped={phaseStateAfterRetry.DroppedPacketCount}, reason={phaseStateAfterRetry.LastDropReason}");
+                                                                    Response failStatus = new("status", "Co-op initialization is taking too long. Please reconnect if synchronization does not start.");
+                                                                    socket.Send(JsonConvert.SerializeObject(failStatus));
+                                                                }
+                                                            }
+                                                        }
+                                                    });
+                                                }
+
                                                 Player? pair = AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id);
                                                 if (pair != null)
                                                 {
