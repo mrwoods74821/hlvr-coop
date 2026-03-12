@@ -99,11 +99,11 @@ If server/mod is started before HLA + VConsole are active, delayed initializatio
 ## 5) Practical Test Checklist (Current)
 
 - [ ] Fresh start: host + one client reaches `SessionReady`.
-- [ ] Start server before game: no false failure before first game packet.
-- [ ] Reconnect client after temporary disconnect recovers cleanly.
+- [x] Start server before game: no false failure before first game packet.
+- [x] Reconnect client after temporary disconnect recovers cleanly.
 - [ ] Map transition keeps all players synchronized.
 - [ ] Audio remains correct after transition.
-- [ ] Release publish output launches correctly:
+- [x] Release publish output launches correctly:
   - `HLVRCoOpMod\bin\Release\HLVRCoOpMod.exe`
 
 ---
