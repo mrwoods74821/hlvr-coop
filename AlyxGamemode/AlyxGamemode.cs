@@ -4,14 +4,40 @@ using HLVRCoOpMod;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Drawing;
 using System.Threading;
 
 namespace AlyxGamemode
 {
     public class AlyxGamemode : CoreGamemode
     {
+        private static readonly Channel syncChannel = new("SYNC", "Sync", Color.DarkCyan);
+
+        private static void SyncLog(string message)
+        {
+            try
+            {
+                ErrorLogger.LogError("Sync", message);
+            }
+            catch
+            {
+                // Best-effort diagnostics; never break gameplay flow
+            }
+        }
+
+        private static void SendBootstrap(IWebSocketConnection socket, string username)
+        {
+            Response bootstrapCommand = new("command", "ent_remove hlvrcoop_script;sv_cheats 1;ent_create logic_script {targetname hlvrcoop_script vscripts hlvrcoop_interval};ent_create logic_timer {targetname hlvrcoop_timer refiretime 0.01};echo IENT HLVRCOOP");
+            Response bootstrapStatus = new("status", "Initializing co-op...");
+            socket.Send(JsonConvert.SerializeObject(bootstrapStatus));
+            socket.Send(JsonConvert.SerializeObject(bootstrapCommand));
+            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, username, AlyxGlobalData.SessionPhase.ScriptBootstrapSent);
+            SyncLog($"[SYNC] {username}: script bootstrap sent");
+        }
+
         public AlyxGamemode() : base()
         {
             Author = "Dayshower";
@@ -34,10 +60,15 @@ namespace AlyxGamemode
                             List<IndexedClient> openConnections = (List<IndexedClient>)vs[0];
                             IWebSocketConnection openSocket = (IWebSocketConnection)vs[1];
                             Player? player2 = AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id);
-                            
+                            IndexedClient? openingClient = openConnections.Find(c => c.Session.ConnectionInfo.Id == openSocket.ConnectionInfo.Id);
+                            string openingUsername = openingClient?.Username ?? "unknown";
+                            AlyxGlobalData.instance.UpsertSession(openSocket.ConnectionInfo.Id, openingUsername, AlyxGlobalData.SessionPhase.Connected);
+
                             // Enable the Workshop addon first
                             Response enableAddon = new("command", "addon_enable hlvr_coop");
                             openSocket.Send(JsonConvert.SerializeObject(enableAddon));
+                            AlyxGlobalData.instance.UpsertSession(openSocket.ConnectionInfo.Id, openingUsername, AlyxGlobalData.SessionPhase.AddonEnabled);
+                            SyncLog($"[SYNC] {openingUsername}: addon enabled command sent");
                             
                             // Send initialization command after a delay to allow addon to load
                             // Remote clients don't send "has joined the game" message, so we need to:
@@ -70,10 +101,27 @@ namespace AlyxGamemode
                                             // CRITICAL: Remote clients can't send INIT packet until script entities exist
                                             // Create script entities immediately (normally done when INIT packet is received)
                                             // The script will then send INIT packet automatically when it loads
-                                            Response vconsoleInput = new("command", "ent_remove hlvrcoop_script;sv_cheats 1;ent_create logic_script {targetname hlvrcoop_script vscripts hlvrcoop_interval};ent_create logic_timer {targetname hlvrcoop_timer refiretime 0.01};echo IENT HLVRCOOP");
-                                            Response output3 = new("status", "Initializing co-op...");
-                                            openSocket.Send(JsonConvert.SerializeObject(output3));
-                                            openSocket.Send(JsonConvert.SerializeObject(vconsoleInput));
+                                            SendBootstrap(openSocket, clientToAdd.Username);
+
+                                            Task.Run(async () =>
+                                            {
+                                                await Task.Delay(12000);
+                                                AlyxGlobalData.SessionState? phaseState = AlyxGlobalData.instance.GetSession(openSocket.ConnectionInfo.Id);
+                                                if (phaseState != null && phaseState.Phase != AlyxGlobalData.SessionPhase.SessionReady)
+                                                {
+                                                    SyncLog($"[SYNC][RETRY] {clientToAdd.Username}: readiness timeout at phase {phaseState.Phase}, retrying bootstrap once");
+                                                    SendBootstrap(openSocket, clientToAdd.Username);
+
+                                                    await Task.Delay(10000);
+                                                    AlyxGlobalData.SessionState? phaseStateAfterRetry = AlyxGlobalData.instance.GetSession(openSocket.ConnectionInfo.Id);
+                                                    if (phaseStateAfterRetry != null && phaseStateAfterRetry.Phase != AlyxGlobalData.SessionPhase.SessionReady)
+                                                    {
+                                                        SyncLog($"[SYNC][FAIL] {clientToAdd.Username}: not ready after retry, phase={phaseStateAfterRetry.Phase}, dropped={phaseStateAfterRetry.DroppedPacketCount}, reason={phaseStateAfterRetry.LastDropReason}");
+                                                        Response failStatus = new("status", "Co-op initialization is taking too long. Please reconnect if synchronization does not start.");
+                                                        openSocket.Send(JsonConvert.SerializeObject(failStatus));
+                                                    }
+                                                }
+                                            });
                                             
                                             // Start the timer after a delay (script entities need time to create)
                                             Task.Run(async () =>
@@ -96,6 +144,7 @@ namespace AlyxGamemode
                                                     c.Session.Send(JsonConvert.SerializeObject(output2));
                                                 }
                                             });
+                                            SyncLog($"[SYNC] {clientToAdd.Username}: player object added with index {player.Index}");
                                         }
                                         else
                                         {
@@ -176,6 +225,7 @@ namespace AlyxGamemode
                                             Packet packet = new(packetType, packetList.ToArray());
                                             if (packet.IsValid())
                                             {
+                                                AlyxGlobalData.SessionState observedState = AlyxGlobalData.instance.MarkPacketObserved(socket.ConnectionInfo.Id);
                                                 Player? pair = AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id);
                                                 if (pair != null)
                                                 {
@@ -393,6 +443,8 @@ namespace AlyxGamemode
                                                             }
                                                             break;
                                                         case PacketType.Initialization:
+                                                            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.SessionPhase.InitPacketReceived);
+                                                            SyncLog($"[SYNC] {player.Client.Username}: INIT packet received");
                                                             Response vconsoleInput2 = new("command", "ent_create logic_script {targetname hlvrcoop_script vscripts hlvrcoop_interval};ent_create logic_timer {targetname hlvrcoop_timer refiretime 0.01};echo IENT HLVRCOOP");
                                                             Response output3 = new("status", "Initializing co-op...");
                                                             socket.Send(JsonConvert.SerializeObject(output3));
@@ -408,6 +460,8 @@ namespace AlyxGamemode
                                                                 socket.Send(JsonConvert.SerializeObject(vconsoleInput5));
                                                             }));
                                                             thr.Start();
+                                                            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.SessionPhase.SessionReady);
+                                                            SyncLog($"[SYNC] {player.Client.Username}: session ready");
                                                             break;
                                                         // ===== UNUSED/LEGACY PACKET TYPES =====
                                                         // These packet types are defined but never sent by the game-side Lua scripts.
@@ -625,6 +679,15 @@ namespace AlyxGamemode
                                                                 }
                                                             }
                                                             break;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    string unknownName = observedState.Username;
+                                                    AlyxGlobalData.SessionState dropped = AlyxGlobalData.instance.MarkPacketDropped(socket.ConnectionInfo.Id, "Player object not initialized when HLVRCOOP packet arrived");
+                                                    if (dropped.DroppedPacketCount == 1 || dropped.DroppedPacketCount % 25 == 0)
+                                                    {
+                                                        SyncLog($"[SYNC][DROP] {(string.IsNullOrWhiteSpace(unknownName) ? socket.ConnectionInfo.Id.ToString() : unknownName)} dropped={dropped.DroppedPacketCount} reason={dropped.LastDropReason}");
                                                     }
                                                 }
                                                 if(!overrideState)

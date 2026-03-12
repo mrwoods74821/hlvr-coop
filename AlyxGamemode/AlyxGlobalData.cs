@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AlyxGamemode
@@ -13,6 +14,29 @@ namespace AlyxGamemode
         public static readonly AlyxGlobalData instance = new();
         private readonly List<Player> players = new();
         private readonly List<Moveable> manipulatedEntities = new();
+
+        public enum SessionPhase
+        {
+            Connected,
+            AddonEnabled,
+            ScriptBootstrapSent,
+            InitPacketReceived,
+            SessionReady
+        }
+
+        public sealed class SessionState
+        {
+            public Guid ClientId { get; set; }
+            public string Username { get; set; } = "";
+            public SessionPhase Phase { get; set; } = SessionPhase.Connected;
+            public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
+            public int DroppedPacketCount { get; set; } = 0;
+            public string LastDropReason { get; set; } = "";
+            public DateTime? FirstPacketUtc { get; set; }
+        }
+
+        private readonly Dictionary<Guid, SessionState> sessionStates = new();
+        private readonly object sync = new();
         public bool AddManipulatedEntity(Entity MovedObject, Guid ClientID, List<IndexedClient> Connections)
         {
             Moveable? oldMoveable = manipulatedEntities.Find(m => m.GetMovedObject().Name == MovedObject.Name);
@@ -31,6 +55,92 @@ namespace AlyxGamemode
         public List<Player> GetPlayers()
         {
             return players;
+        }
+
+        public SessionState UpsertSession(Guid id, string username, SessionPhase phase)
+        {
+            lock (sync)
+            {
+                if (!sessionStates.TryGetValue(id, out SessionState? state))
+                {
+                    state = new SessionState
+                    {
+                        ClientId = id,
+                        Username = username,
+                        Phase = phase,
+                        LastUpdatedUtc = DateTime.UtcNow
+                    };
+                    sessionStates[id] = state;
+                }
+                else
+                {
+                    state.Username = string.IsNullOrWhiteSpace(username) ? state.Username : username;
+                    state.Phase = phase;
+                    state.LastUpdatedUtc = DateTime.UtcNow;
+                }
+
+                return state;
+            }
+        }
+
+        public SessionState? GetSession(Guid id)
+        {
+            lock (sync)
+            {
+                sessionStates.TryGetValue(id, out SessionState? state);
+                return state;
+            }
+        }
+
+        public bool IsSessionReady(Guid id)
+        {
+            lock (sync)
+            {
+                if (!sessionStates.TryGetValue(id, out SessionState? state))
+                    return false;
+                return state.Phase == SessionPhase.SessionReady;
+            }
+        }
+
+        public SessionState MarkPacketObserved(Guid id)
+        {
+            lock (sync)
+            {
+                if (!sessionStates.TryGetValue(id, out SessionState? state))
+                {
+                    state = new SessionState
+                    {
+                        ClientId = id,
+                        Phase = SessionPhase.Connected
+                    };
+                    sessionStates[id] = state;
+                }
+
+                state.FirstPacketUtc ??= DateTime.UtcNow;
+                state.LastUpdatedUtc = DateTime.UtcNow;
+                return state;
+            }
+        }
+
+        public SessionState MarkPacketDropped(Guid id, string reason)
+        {
+            lock (sync)
+            {
+                if (!sessionStates.TryGetValue(id, out SessionState? state))
+                {
+                    state = new SessionState
+                    {
+                        ClientId = id,
+                        Phase = SessionPhase.Connected
+                    };
+                    sessionStates[id] = state;
+                }
+
+                state.DroppedPacketCount++;
+                state.LastDropReason = reason;
+                state.LastUpdatedUtc = DateTime.UtcNow;
+                return state;
+            }
         }
         public Player? GetPlayer(Guid id)
         {
@@ -56,6 +166,11 @@ namespace AlyxGamemode
         }
         public bool RemovePlayer(Guid id)
         {
+            lock (sync)
+            {
+                sessionStates.Remove(id);
+            }
+
             Player? oldPlayer = players.Find(p => p != null && p.Client.Session.ConnectionInfo.Id == id);
             if (oldPlayer != null)
                 return players.Remove(oldPlayer);
