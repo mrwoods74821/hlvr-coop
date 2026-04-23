@@ -10,7 +10,7 @@
 
 [![Downloads](https://img.shields.io/github/downloads/dayflaree/hlvr-coop/total)](https://github.com/dayflaree/hlvr-coop/releases)
 
-[![Discord](https://img.shields.io/discord/738131767944282183?label=discord)](https://discord.gg/X6Dp95WRR4)
+[![Discord](https://img.shields.io/discord/738131767944282183?label=discord)](https://discord.gg/nqbcyZRghz)
 
 
 --------
