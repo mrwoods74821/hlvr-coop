@@ -86,6 +86,8 @@ namespace AlyxGamemode
     {
         public PacketType type = PacketType.None;
         public string[] args = Array.Empty<string>();
+        public uint? SequenceId { get; private set; }
+        public long? Timestamp { get; private set; }
         public Packet()
         {
         }
@@ -101,7 +103,7 @@ namespace AlyxGamemode
         public Packet(string type, string[] args)
         {
             this.type = ParseType(type);
-            this.args = args;
+            ParseTrailingFields(args);
         }
         public Packet(PacketType type)
         {
@@ -115,7 +117,31 @@ namespace AlyxGamemode
         public Packet(PacketType type, string[] args)
         {
             this.type = type;
-            this.args = args;
+            ParseTrailingFields(args);
+        }
+
+        private void ParseTrailingFields(string[] rawArgs)
+        {
+            // Backward-compatible: try to parse trailing sequence and timestamp fields.
+            // New format: ... <positional_args> <seq> <ts> HLVRCOOP
+            // Old format: ... <positional_args> HLVRCOOP (no seq/ts)
+            // We look for 2 trailing numeric values before the final HLVRCOOP tag.
+            // The "HLVRCOOP" tag was already stripped by the caller (it's the last element
+            // removed before constructing the Packet), so we look at the last 2 elements.
+            if (rawArgs.Length >= 2)
+            {
+                if (uint.TryParse(rawArgs[rawArgs.Length - 2], out uint seq)
+                    && long.TryParse(rawArgs[rawArgs.Length - 1], out long ts))
+                {
+                    SequenceId = seq;
+                    Timestamp = ts;
+                    string[] coreArgs = new string[rawArgs.Length - 2];
+                    Array.Copy(rawArgs, coreArgs, rawArgs.Length - 2);
+                    this.args = coreArgs;
+                    return;
+                }
+            }
+            this.args = rawArgs;
         }
         public bool IsValid()
         {

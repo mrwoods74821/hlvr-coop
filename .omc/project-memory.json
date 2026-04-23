@@ -127,15 +127,15 @@
   },
   "hotPaths": [
     {
-      "path": "AlyxGamemode\\AlyxGamemode.cs",
-      "accessCount": 42,
-      "lastAccessed": 1776983445063,
+      "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts\\hlvrcoop_interval.lua",
+      "accessCount": 55,
+      "lastAccessed": 1776984529809,
       "type": "file"
     },
     {
-      "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts\\hlvrcoop_interval.lua",
-      "accessCount": 24,
-      "lastAccessed": 1776983135327,
+      "path": "AlyxGamemode\\AlyxGamemode.cs",
+      "accessCount": 55,
+      "lastAccessed": 1776984555134,
       "type": "file"
     },
     {
@@ -145,21 +145,27 @@
       "type": "directory"
     },
     {
+      "path": "AlyxGamemode\\AlyxGlobalData.cs",
+      "accessCount": 16,
+      "lastAccessed": 1776984517439,
+      "type": "file"
+    },
+    {
+      "path": "AlyxGamemode\\Packet.cs",
+      "accessCount": 13,
+      "lastAccessed": 1776984530773,
+      "type": "file"
+    },
+    {
       "path": "HLVRCoOpMod\\VConsole.cs",
       "accessCount": 11,
       "lastAccessed": 1776983445119,
       "type": "file"
     },
     {
-      "path": "AlyxGamemode\\Packet.cs",
-      "accessCount": 9,
-      "lastAccessed": 1776982887134,
-      "type": "file"
-    },
-    {
-      "path": "AlyxGamemode\\AlyxGlobalData.cs",
-      "accessCount": 9,
-      "lastAccessed": 1776983116718,
+      "path": "HLVRCoOpModCore\\Client.cs",
+      "accessCount": 8,
+      "lastAccessed": 1776984064225,
       "type": "file"
     },
     {
@@ -169,15 +175,9 @@
       "type": "file"
     },
     {
-      "path": "HLVRCoOpModCore\\Client.cs",
-      "accessCount": 7,
-      "lastAccessed": 1776982887146,
-      "type": "file"
-    },
-    {
       "path": "HLVRCoOpModCore\\IndexedClient.cs",
-      "accessCount": 6,
-      "lastAccessed": 1776982962361,
+      "accessCount": 7,
+      "lastAccessed": 1776984064791,
       "type": "file"
     },
     {
@@ -248,8 +248,8 @@
     },
     {
       "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1776980777207,
+      "accessCount": 2,
+      "lastAccessed": 1776985200645,
       "type": "file"
     },
     {

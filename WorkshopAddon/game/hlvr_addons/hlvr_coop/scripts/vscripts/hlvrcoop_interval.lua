@@ -3,9 +3,10 @@ require "util.utilinit"
 local Player = Entities:GetLocalPlayer();
 
 HLVRCOOP_USE_UUIDS = true;
-HLVRCOOP_API_VERSION = 4; -- this value will change if breaking changes are pushed to workshop
+HLVRCOOP_API_VERSION = 5; -- this value will change if breaking changes are pushed to workshop
 HLVRCOOP_ACTIVE = false;
 HLVRCOOP_ENTCACHE = {};
+HLVRCOOP_SEQ = 0;
 
 -- Respawn system variables
 local previousHealth = 100;
@@ -106,7 +107,8 @@ function HLVRCOOP_RespawnTeleport()
     
     -- Send respawn notification to server (optional, for tracking)
     print("HLVRCOOP: Respawned player at " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3]);
-    print("RESP " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3] .. " HLVRCOOP");
+    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+    print("RESP " .. respawnPosition[1] .. " " .. respawnPosition[2] .. " " .. respawnPosition[3] .. " " .. HLVRCOOP_SEQ .. " " .. GameRules:GetGameTime() .. " HLVRCOOP");
     
     return nil; -- Return nil to stop the think (one-time execution)
 end
@@ -181,39 +183,54 @@ function HLVRCoOpMod()
         -- This ensures we can restore health before the death screen appears
         HLVRCOOP_CheckDeath();
         
-        if hlvrcoop_inbetween >= 5 then
-            hlvrcoop_inbetween = 0;
-            local playerOrigin = Player:GetOrigin();
-            local playerCenter = Player:GetCenter();
-            local playerAngles = Player:GetAnglesAsVector();
-            local playerHealth = Player:GetHealth();
-            local head = Player:GetHMDAvatar()
-            
-            if head then
-                local leftController = head:GetVRHand(0)
-                local rightController = head:GetVRHand(1)
-                local leftHand = GetHandFromController(leftController)
-                local rightHand = GetHandFromController(rightController)
+        hlvrcoop_tick = hlvrcoop_tick + 1;
 
-                local playerHead = head:GetAbsOrigin();
-                local playerHeadAng = head:GetAnglesAsVector();
-                local playerLeftHand = leftHand:GetAbsOrigin();
-                local playerRightHand = rightHand:GetAbsOrigin();
-                local playerLeftHandAngles = leftHand:GetAnglesAsVector();
-                local playerRightHandAngles = rightHand:GetAnglesAsVector();
+        local playerOrigin = Player:GetOrigin();
+        local playerCenter = Player:GetCenter();
+        local playerAngles = Player:GetAnglesAsVector();
+        local playerHealth = Player:GetHealth();
+        local head = Player:GetHMDAvatar()
 
-                print("HEAD "..playerHead[1].." "..playerHead[2].." "..playerHead[3].." "..playerHeadAng[1].." "..playerHeadAng[2].." "..playerHeadAng[3].." HLVRCOOP");
-                print("HAND "..playerLeftHand[1].." "..playerLeftHand[2].." "..playerLeftHand[3].." "..playerLeftHandAngles[1].." "..playerLeftHandAngles[2].." "..playerLeftHandAngles[3].." "..playerRightHand[1].." "..playerRightHand[2].." "..playerRightHand[3].." "..playerRightHandAngles[1].." "..playerRightHandAngles[2].." "..playerRightHandAngles[3].." HLVRCOOP");
-            else
-                print("HEAD "..playerCenter[1].." "..playerCenter[2].." "..(playerCenter[3]+30).." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." HLVRCOOP");
+        -- Variable-rate send: HEAD at 10Hz (tick%10==0), HAND at 10Hz offset (tick%10==5), PLYR at 5Hz (tick%20==0)
+        if head then
+            local leftController = head:GetVRHand(0)
+            local rightController = head:GetVRHand(1)
+            local leftHand = GetHandFromController(leftController)
+            local rightHand = GetHandFromController(rightController)
+
+            local playerHead = head:GetAbsOrigin();
+            local playerHeadAng = head:GetAnglesAsVector();
+            local playerLeftHand = leftHand:GetAbsOrigin();
+            local playerRightHand = rightHand:GetAbsOrigin();
+            local playerLeftHandAngles = leftHand:GetAnglesAsVector();
+            local playerRightHandAngles = rightHand:GetAnglesAsVector();
+
+            if hlvrcoop_tick % 10 == 0 then
+                HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                local ts = GameRules:GetGameTime();
+                print("HEAD "..playerHead[1].." "..playerHead[2].." "..playerHead[3].." "..playerHeadAng[1].." "..playerHeadAng[2].." "..playerHeadAng[3].." "..HLVRCOOP_SEQ.." "..ts.." HLVRCOOP");
             end
 
-            print("PLYR "..playerOrigin[1].." "..playerOrigin[2].." "..playerOrigin[3].." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." "..playerHealth.." HLVRCOOP");
-            
-            HLVRCOOP_CacheSync();
+            if hlvrcoop_tick % 10 == 5 then
+                HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                local ts = GameRules:GetGameTime();
+                print("HAND "..playerLeftHand[1].." "..playerLeftHand[2].." "..playerLeftHand[3].." "..playerLeftHandAngles[1].." "..playerLeftHandAngles[2].." "..playerLeftHandAngles[3].." "..playerRightHand[1].." "..playerRightHand[2].." "..playerRightHand[3].." "..playerRightHandAngles[1].." "..playerRightHandAngles[2].." "..playerRightHandAngles[3].." "..HLVRCOOP_SEQ.." "..ts.." HLVRCOOP");
+            end
         else
-            hlvrcoop_inbetween = hlvrcoop_inbetween + 1;
+            if hlvrcoop_tick % 10 == 0 then
+                HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                local ts = GameRules:GetGameTime();
+                print("HEAD "..playerCenter[1].." "..playerCenter[2].." "..(playerCenter[3]+30).." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." "..HLVRCOOP_SEQ.." "..ts.." HLVRCOOP");
+            end
         end
+
+        if hlvrcoop_tick % 20 == 0 then
+            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+            local ts = GameRules:GetGameTime();
+            print("PLYR "..playerOrigin[1].." "..playerOrigin[2].." "..playerOrigin[3].." "..playerAngles[1].." "..playerAngles[2].." "..playerAngles[3].." "..playerHealth.." "..HLVRCOOP_SEQ.." "..ts.." HLVRCOOP");
+        end
+
+        HLVRCOOP_CacheSync();
     else
         function uuid(name, x, y, z, classname)
             -- this system ensures that entities always have a unique ID
@@ -229,10 +246,12 @@ function HLVRCoOpMod()
                         local origin = entity:GetAbsOrigin();
                         local angles = entity:GetAnglesAsVector();
                         if object.class == "prop_door_rotating_physics" and (math.floor(angles[1]) ~= math.floor(object.angles[1])) or (math.floor(angles[2]) ~= math.floor(object.angles[2])) or (math.floor(angles[3]) ~= math.floor(object.angles[3])) then
-                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
+                            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                             object.angles = angles;
                         elseif (math.floor(origin[1]) ~= math.floor(object.origin[1])) or (math.floor(origin[2]) ~= math.floor(object.origin[2])) or (math.floor(origin[3]) ~= math.floor(object.origin[3])) then
-                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
+                            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                            print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                             object.origin = origin;
                             object.angles = angles;
                         end
@@ -240,9 +259,11 @@ function HLVRCoOpMod()
                             if object.class ~= "npc_furniture" then
                                 local health = entity:GetHealth();
                                 if health <= 0 then
-                                    print("NPHP "..object.name.." 0 HLVRCOOP");
+                                    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                    print("NPHP "..object.name.." 0 "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                                 elseif object.health == nil or object.health > health then
-                                    print("NPHP "..object.name.." "..health.." HLVRCOOP");
+                                    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                    print("NPHP "..object.name.." "..health.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                                     object.health = health;
                                 end
                             end
@@ -254,12 +275,15 @@ function HLVRCoOpMod()
                             -- bruteforce npc death
                             if object.health == nil or object.health > 0 then
                                 object.health = 0
-                                print("NPHP "..object.name.." 0 HLVRCOOP");
+                                HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                print("NPHP "..object.name.." 0 "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                             end
                         elseif string.find(object.class, "prop_") or string.find(object.class, "item_") then
-                            print("BRAK "..object.name.." HLVRCOOP");
+                            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                            print("BRAK "..object.name.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                         else
-                            print("EREM "..object.name.." HLVRCOOP");
+                            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                            print("EREM "..object.name.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                         end
                     end
                     object = nil;
@@ -271,7 +295,8 @@ function HLVRCoOpMod()
         function HLVRCOOP_Teleport()
             local origin = Player:GetAbsOrigin();
             local angles = Player:GetAnglesAsVector();
-            print("TELE "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." HLVRCOOP");
+            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+            print("TELE "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
         end
 
         function HLVRCOOP_EntitySyncSpecific(entity)
@@ -486,13 +511,15 @@ function HLVRCoOpMod()
                 HLVRCOOP_EntitySyncSpecific(ent_held)
                 local name = ent_held:GetName()
                 local origin = ent_held:GetOrigin()
-                print("SPWN " .. data.item .. " " .. name .. " " .. origin[1] .. " " .. origin[2] .. " " .. origin[3] .. " HLVRCOOP")
+                HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                print("SPWN " .. data.item .. " " .. name .. " " .. origin[1] .. " " .. origin[2] .. " " .. origin[3] .. " " .. HLVRCOOP_SEQ .. " " .. GameRules:GetGameTime() .. " HLVRCOOP")
             end
         end
         ListenToGameEvent("item_pickup", HLVRCOOP_PickupSync, nil)
 
         local function HLVRCOOP_ResinSync(data)
-            print("CRFT " .. Player.Items.resin_found .. " HLVRCOOP");
+            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+            print("CRFT " .. Player.Items.resin_found .. " " .. HLVRCOOP_SEQ .. " " .. GameRules:GetGameTime() .. " HLVRCOOP");
         end
         ListenToGameEvent("player_drop_resin_in_backpack", HLVRCOOP_ResinSync, nil)
 
@@ -504,13 +531,15 @@ function HLVRCoOpMod()
             local name = ent:GetName();
             if not HLVRCOOP_USE_UUIDS then
                 if name ~= "" then
-                    print("FIRE "..name.." "..output.." HLVRCOOP");
+                    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                    print("FIRE "..name.." "..output.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                 end
             else
                 local class = ent:GetClassname();
                 local origin = ent:GetOrigin();
                 local uu = uuid(name, origin[1], origin[2], origin[3], class);
-                print("FIRE "..uu.." "..output.." HLVRCOOP");
+                HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                print("FIRE "..uu.." "..output.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
             end
         end
 
@@ -721,6 +750,7 @@ function HLVRCoOpMod()
         hlvrcoop_text = {};
         hlvrcoop_player_count = 16;
         hlvrcoop_inbetween = 0;
+        hlvrcoop_tick = 0;
 
         SpawnEntityFromTableSynchronous("point_worldtext", {
             origin = "16128 16128 16128",
@@ -840,6 +870,55 @@ function HLVRCoOpMod()
             end
         end, "HLVR Co-Op Mod", 0);
 
+        -- Consolidated head + text + name command
+        -- Format: hlvrcoop_setlocation_head <index> <hx> <hy> <hz> <hp> <hyaw> <hr> <tx> <ty> <tz> |<name>
+        Convars:RegisterCommand("hlvrcoop_setlocation_head", function(command, index, hx, hy, hz, hp, hyaw, hr, tx, ty, tz, nameRaw)
+            local i = tonumber(index)
+            -- Parse name: | delimiter separates last coordinate from the display name
+            -- nameRaw may contain the name after |, or if Convars splits on spaces,
+            -- the caller uses |prefix to capture the rest
+            local displayName = nameRaw or ""
+            -- Strip leading | if present
+            if string.sub(displayName, 1, 1) == "|" then
+                displayName = string.sub(displayName, 2)
+            end
+
+            -- Update head entity
+            local idx = i + 1
+            if hlvrcoop_heads[idx] and IsValidEntity(hlvrcoop_heads[idx]) then
+                hlvrcoop_heads[idx]:SetAbsOrigin(Vector(tonumber(hx), tonumber(hy), tonumber(hz)));
+                hlvrcoop_heads[idx]:SetAbsAngles(tonumber(hp), tonumber(hyaw), tonumber(hr));
+            end
+
+            -- Update text entity position
+            if hlvrcoop_text[idx] and IsValidEntity(hlvrcoop_text[idx]) then
+                hlvrcoop_text[idx]:SetAbsOrigin(Vector(tonumber(tx), tonumber(ty), tonumber(tz)));
+                -- Update the text message via DoEntFireByInstanceHandle
+                if displayName ~= "" then
+                    DoEntFireByInstanceHandle(hlvrcoop_text[idx], "SetMessage", displayName, 0, nil, nil);
+                end
+            end
+        end, "HLVR Co-Op Mod", 0);
+
+        -- Consolidated hands command
+        -- Format: hlvrcoop_setlocation_hands <index> <lx> <ly> <lz> <lp> <lyaw> <lr> <rx> <ry> <rz> <rp> <ryaw> <rr>
+        Convars:RegisterCommand("hlvrcoop_setlocation_hands", function(command, index, lx, ly, lz, lp, lyaw, lr, rx, ry, rz, rp, ryaw, rr)
+            local i = tonumber(index)
+            local idx = i + 1
+
+            -- Update left hand
+            if hlvrcoop_lefthands[idx] and IsValidEntity(hlvrcoop_lefthands[idx]) then
+                hlvrcoop_lefthands[idx]:SetAbsOrigin(Vector(tonumber(lx), tonumber(ly), tonumber(lz)));
+                hlvrcoop_lefthands[idx]:SetAbsAngles(tonumber(lp), tonumber(lyaw), tonumber(lr));
+            end
+
+            -- Update right hand
+            if hlvrcoop_righthands[idx] and IsValidEntity(hlvrcoop_righthands[idx]) then
+                hlvrcoop_righthands[idx]:SetAbsOrigin(Vector(tonumber(rx), tonumber(ry), tonumber(rz)));
+                hlvrcoop_righthands[idx]:SetAbsAngles(tonumber(rp), tonumber(ryaw), tonumber(rr));
+            end
+        end, "HLVR Co-Op Mod", 0);
+
         Convars:RegisterCommand("hlvrcoop_fireoutput", function(command, name, type)
             if not HLVRCOOP_USE_UUIDS then
                 local entities = Entities:FindAllByName(name);
@@ -952,7 +1031,8 @@ function HLVRCoOpMod()
         end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_command", function(command, hlvrcoopcommand)
-            print("CMND "..hlvrcoopcommand.." HLVRCOOP");
+            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+            print("CMND "..hlvrcoopcommand.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
         end, "HLVR Co-Op Mod", 0);
 
         Convars:RegisterCommand("hlvrcoop_cache_entity", function(command, cacheent)
@@ -990,7 +1070,8 @@ function HLVRCoOpMod()
             HLVRCOOP_EntitySync(false)
         end, "HLVR Co-Op Mod", 0);
 
-        print("MAPN "..GetMapName().." "..HLVRCOOP_API_VERSION.." HLVRCOOP");
+        HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+        print("MAPN "..GetMapName().." "..HLVRCOOP_API_VERSION.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
         HLVRCOOP_EntitySync(true);
         
         -- Initialize spawn position on map load

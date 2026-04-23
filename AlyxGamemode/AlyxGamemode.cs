@@ -15,6 +15,9 @@ namespace AlyxGamemode
     public class AlyxGamemode : CoreGamemode
     {
         private static readonly Channel syncChannel = new("SYNC", "Sync", Color.DarkCyan);
+        private const int APIVersion = 5;
+        private static readonly Dictionary<Guid, uint> clientSequenceTracker = new();
+        private static readonly object seqLock = new();
 
         private static void SyncLog(string message)
         {
@@ -34,8 +37,50 @@ namespace AlyxGamemode
             Response bootstrapStatus = new("status", "Initializing co-op...");
             socket.Send(JsonConvert.SerializeObject(bootstrapStatus));
             socket.Send(JsonConvert.SerializeObject(bootstrapCommand));
-            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, username, AlyxGlobalData.SessionPhase.ScriptBootstrapSent);
+            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, username, AlyxGlobalData.ConnectionState.Initializing);
             SyncLog($"[SYNC] {username}: script bootstrap sent");
+        }
+
+        private static void BroadcastToOthers(List<IndexedClient> connections, IWebSocketConnection originator, Response message)
+        {
+            string serialized = JsonConvert.SerializeObject(message);
+            foreach (IndexedClient client in connections)
+            {
+                Player? player = AlyxGlobalData.instance.GetPlayer(client.Session.ConnectionInfo.Id);
+                if (player != null && client.Session.ConnectionInfo.Id != originator.ConnectionInfo.Id)
+                {
+                    client.Session.Send(serialized);
+                }
+            }
+        }
+
+        private static bool IsMovementPacket(PacketType type)
+        {
+            return type == PacketType.HeadPosAng
+                || type == PacketType.HandPosAng
+                || type == PacketType.PlayerPosAng
+                || type == PacketType.PhysicsObjectPosAng;
+        }
+
+        private static bool ShouldProcessPacket(Packet packet, IWebSocketConnection socket)
+        {
+            if (!IsMovementPacket(packet.type) || !packet.SequenceId.HasValue)
+                return true;
+
+            lock (seqLock)
+            {
+                if (!clientSequenceTracker.TryGetValue(socket.ConnectionInfo.Id, out uint lastSeq))
+                {
+                    clientSequenceTracker[socket.ConnectionInfo.Id] = packet.SequenceId.Value;
+                    return true;
+                }
+
+                if (packet.SequenceId.Value <= lastSeq)
+                    return false;
+
+                clientSequenceTracker[socket.ConnectionInfo.Id] = packet.SequenceId.Value;
+                return true;
+            }
         }
 
         public AlyxGamemode() : base()
@@ -46,7 +91,6 @@ namespace AlyxGamemode
         }
         public AlyxGamemode(GamemodeHandleType type, params object[]? vs)
         {
-            int APIVersion = 4;
             State = HandleState.Continue;
             bool overrideState = false;
             Random rnd = new Random();
@@ -62,14 +106,14 @@ namespace AlyxGamemode
                             Player? player2 = AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id);
                             IndexedClient? openingClient = openConnections.Find(c => c.Session.ConnectionInfo.Id == openSocket.ConnectionInfo.Id);
                             string openingUsername = openingClient?.Username ?? "unknown";
-                            AlyxGlobalData.instance.UpsertSession(openSocket.ConnectionInfo.Id, openingUsername, AlyxGlobalData.SessionPhase.Connected);
+                            AlyxGlobalData.instance.UpsertSession(openSocket.ConnectionInfo.Id, openingUsername, AlyxGlobalData.ConnectionState.Connected);
 
                             // Enable the Workshop addon first
                             Response enableAddon = new("command", "addon_enable hlvr_coop");
                             openSocket.Send(JsonConvert.SerializeObject(enableAddon));
-                            AlyxGlobalData.instance.UpsertSession(openSocket.ConnectionInfo.Id, openingUsername, AlyxGlobalData.SessionPhase.AddonEnabled);
+                            AlyxGlobalData.instance.UpsertSession(openSocket.ConnectionInfo.Id, openingUsername, AlyxGlobalData.ConnectionState.Authenticated);
                             SyncLog($"[SYNC] {openingUsername}: addon enabled command sent");
-                            
+
                             // Send initialization command after a delay to allow addon to load
                             // Remote clients don't send "has joined the game" message, so we need to:
                             // 1. Add the player to the game state
@@ -77,7 +121,7 @@ namespace AlyxGamemode
                             Task.Run(async () =>
                             {
                                 await Task.Delay(2000); // Wait 2 seconds for addon to enable
-                                
+
                                 // Check if player still doesn't exist (connection not closed)
                                 if (AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id) == null)
                                 {
@@ -91,7 +135,7 @@ namespace AlyxGamemode
                                             break;
                                         }
                                     }
-                                    
+
                                     if (clientToAdd != null)
                                     {
                                         // Add player to game state (normally done when "has joined the game" is received)
@@ -104,7 +148,7 @@ namespace AlyxGamemode
                                             SendBootstrap(openSocket, clientToAdd.Username);
 
                                             SyncLog($"[SYNC] {clientToAdd.Username}: waiting for first HLVRCOOP packet before starting readiness watchdog");
-                                            
+
                                             // Start the timer after a delay (script entities need time to create)
                                             Task.Run(async () =>
                                             {
@@ -114,7 +158,7 @@ namespace AlyxGamemode
                                                 openSocket.Send(JsonConvert.SerializeObject(output4));
                                                 openSocket.Send(JsonConvert.SerializeObject(vconsoleInput5));
                                             });
-                                            
+
                                             // Notify other clients that player joined
                                             Response output2 = new("status", "♩ " + clientToAdd.Username + " joined as index " + player.Index);
                                             Response blip = new("command", "play hlvrcoop/blip" + rnd.Next(1, 4));
@@ -149,6 +193,10 @@ namespace AlyxGamemode
                             if (player != null)
                             {
                                 AlyxGlobalData.instance.RemovePlayer(closeSocket.ConnectionInfo.Id);
+                            }
+                            lock (seqLock)
+                            {
+                                clientSequenceTracker.Remove(closeSocket.ConnectionInfo.Id);
                             }
                         }
                         break;
@@ -218,7 +266,7 @@ namespace AlyxGamemode
                                                     {
                                                         await Task.Delay(12000);
                                                         AlyxGlobalData.SessionState? phaseState = AlyxGlobalData.instance.GetSession(socket.ConnectionInfo.Id);
-                                                        if (phaseState != null && phaseState.Phase != AlyxGlobalData.SessionPhase.SessionReady)
+                                                        if (phaseState != null && phaseState.Phase != AlyxGlobalData.ConnectionState.Ready)
                                                         {
                                                             string retryUsername = string.IsNullOrWhiteSpace(phaseState.Username) ? watchdogUsername : phaseState.Username;
                                                             AlyxGlobalData.SessionState retryState = AlyxGlobalData.instance.IncrementBootstrapRetry(socket.ConnectionInfo.Id);
@@ -229,7 +277,7 @@ namespace AlyxGamemode
 
                                                                 await Task.Delay(10000);
                                                                 AlyxGlobalData.SessionState? phaseStateAfterRetry = AlyxGlobalData.instance.GetSession(socket.ConnectionInfo.Id);
-                                                                if (phaseStateAfterRetry != null && phaseStateAfterRetry.Phase != AlyxGlobalData.SessionPhase.SessionReady)
+                                                                if (phaseStateAfterRetry != null && phaseStateAfterRetry.Phase != AlyxGlobalData.ConnectionState.Ready)
                                                                 {
                                                                     SyncLog($"[SYNC][FAIL] {retryUsername}: not ready after retry, phase={phaseStateAfterRetry.Phase}, dropped={phaseStateAfterRetry.DroppedPacketCount}, reason={phaseStateAfterRetry.LastDropReason}");
                                                                     Response failStatus = new("status", "Co-op initialization is taking too long. Please reconnect if synchronization does not start.");
@@ -244,455 +292,75 @@ namespace AlyxGamemode
                                                 if (pair != null)
                                                 {
                                                     Player player = pair;
-                                                    // Packet processing switch statement
-                                                    // All packets are sent from game-side Lua scripts via print() with "HLVRCOOP" tag
-                                                    // See Packet.cs for packet type definitions and documentation
-                                                    switch (packet.type)
+                                                    if (ShouldProcessPacket(packet, socket))
                                                     {
-                                                        case PacketType.Spawn:
-                                                            // Entity spawn notification (e.g., item pickup)
-                                                            // Format: SPWN <classname> <name> <x> <y> <z> HLVRCOOP
-                                                            if (packet.args.Length >= 5)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Response spawn = new("command", "ent_create " + packet.args[0] + " {targetname \"" + packet.args[1] + "\" origin \"" + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + "\"}");
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(spawn));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.Spawn", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.Respawn:
-                                                            // Player respawn notification
-                                                            // Format: RESP <x> <y> <z> HLVRCOOP
-                                                            // This is informational - the respawn has already happened client-side
-                                                            // Server can log this for tracking purposes
-                                                            if (packet.args.Length >= 3)
-                                                            {
-                                                                try
-                                                                {
-                                                                    // Optional: Log respawn event or notify other players
-                                                                    // For now, just acknowledge the respawn
-                                                                    // The respawn is handled entirely client-side
-                                                                    Player? respawnedPlayer = AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id);
-                                                                    if (respawnedPlayer != null)
-                                                                    {
-                                                                        // Reset player health tracking
-                                                                        respawnedPlayer.Health = 100;
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.Respawn", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.Teleport:
-                                                            // Teleport command (trigger_teleport output)
-                                                            // Format: TELE <x> <y> <z> <pitch> <yaw> <roll> HLVRCOOP
-                                                            if (packet.args.Length >= 6)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Vector TeleOrigin = new(
-                                                                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Angle TeleAngles = new(
-                                                                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Response teleport = new("command", "hlvrcoop_teleportangles " + TeleOrigin.X + " " + TeleOrigin.Y + " " + TeleOrigin.Z + " " + TeleAngles.Pitch + " " + TeleAngles.Yaw + " " + TeleAngles.Roll);
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(teleport));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.Teleport", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.HeadPosAng:
-                                                            // Headset position and angles (sent every tick)
-                                                            // Format: HEAD <x> <y> <z> <pitch> <yaw> <roll> HLVRCOOP
-                                                            if (packet.args.Length >= 6)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Vector HeadOrigin = new(
-                                                                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Angle HeadAngles = new(
-                                                                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Vector HatOrigin = new(
-                                                                        HeadOrigin.X,
-                                                                        HeadOrigin.Y,
-                                                                        HeadOrigin.Z + 10
-                                                                    );
-                                                                    Vector HatAngles = new(
-                                                                        0,
-                                                                        HeadAngles.Yaw + 90,
-                                                                        90
-                                                                    );
-                                                                    Response movement = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_head_" + player.Index + " " + HeadOrigin + " " + HeadAngles);
-                                                                    Response hatMovement = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_text_" + player.Index + " " + HatOrigin + " " + HatAngles);
-                                                                    Response headText = new("command", "ent_fire hlvrcoop_text_" + player.Index + " setmessage \"" + player.Client.Username + "\"");
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(movement));
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(hatMovement));
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(headText));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.HeadPosAng", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.HandPosAng:
-                                                            // Left and right hand positions and angles (sent every tick)
-                                                            // Format: HAND <lx> <ly> <lz> <lpitch> <lyaw> <lroll> <rx> <ry> <rz> <rpitch> <ryaw> <rroll> HLVRCOOP
-                                                            if (packet.args.Length >= 12)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Vector LeftHandOrigin = new(
-                                                                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Angle LeftHandAngles = new(
-                                                                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Vector RightHandOrigin = new(
-                                                                        float.Parse(packet.args[6], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[7], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[8], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Angle RightHandAngles = new(
-                                                                        float.Parse(packet.args[9], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[10], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[11], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Response movementLeftHand = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_lefthand_" + player.Index + " " + LeftHandOrigin + " " + LeftHandAngles);
-                                                                    Response movementRightHand = new("command", "hlvrcoop_setlocation_nonuuid hlvrcoop_righthand_" + player.Index + " " + RightHandOrigin + " " + RightHandAngles);
-                                                                    foreach (IndexedClient broadcastClient2 in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementLeftHand));
-                                                                            broadcastClient2.Session.Send(JsonConvert.SerializeObject(movementRightHand));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.HandPosAng", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.PlayerPosAng:
-                                                            if (packet.args.Length >= 7)
-                                                            {
-                                                                try
-                                                                {
-                                                                    // Parse player body position and angles
-                                                                    Vector playerOrigin = new(
-                                                                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    Angle playerAngles = new(
-                                                                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                                                                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                                                                    );
-                                                                    int playerHealth = int.Parse(packet.args[6]);
-                                                                    
-                                                                    // Update player state
-                                                                    player.Origin = playerOrigin;
-                                                                    player.Angles = playerAngles;
-                                                                    player.Health = playerHealth;
-                                                                    
-                                                                    // Note: Body position is tracked for internal use (respawn, checkpoints, etc.)
-                                                                    // Body position is not broadcasted to other clients as head/hand positions
-                                                                    // are already synchronized and visible
-                                                                    // Health is stored for use in respawn logic, checkpoints, etc.
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.PlayerPosAng", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.Initialization:
-                                                            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.SessionPhase.InitPacketReceived);
-                                                            SyncLog($"[SYNC] {player.Client.Username}: INIT packet received");
-                                                            Response vconsoleInput2 = new("command", "ent_create logic_script {targetname hlvrcoop_script vscripts hlvrcoop_interval};ent_create logic_timer {targetname hlvrcoop_timer refiretime 0.01};echo IENT HLVRCOOP");
-                                                            Response output3 = new("status", "Initializing co-op...");
-                                                            socket.Send(JsonConvert.SerializeObject(output3));
-                                                            socket.Send(JsonConvert.SerializeObject(vconsoleInput2));
-                                                            break;
-                                                        case PacketType.InitializedEntities:
-                                                            Thread thr = new(new ThreadStart(() =>
-                                                            {
-                                                                Thread.Sleep(2500);
-                                                                Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>HLVRCoOpMod>0>-1");
-                                                                Response output4 = new("status", "Co-op initialized!");
-                                                                socket.Send(JsonConvert.SerializeObject(output4));
-                                                                socket.Send(JsonConvert.SerializeObject(vconsoleInput5));
-                                                            }));
-                                                            thr.Start();
-                                                            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.SessionPhase.SessionReady);
-                                                            SyncLog($"[SYNC] {player.Client.Username}: session ready");
-                                                            break;
-                                                        // ===== UNUSED/LEGACY PACKET TYPES =====
-                                                        // These packet types are defined but never sent by the game-side Lua scripts.
-                                                        // They appear to be legacy code or planned features that were never implemented.
-                                                        // Keeping empty handlers for backward compatibility.
-                                                        case PacketType.RightHandIndexes:      // UNUSED: Not sent (entities use fixed names)
-                                                        case PacketType.LeftHandIndexes:        // UNUSED: Not sent (entities use fixed names)
-                                                        case PacketType.HeadsetIndexes:         // UNUSED: Not sent (entities use fixed names)
-                                                        case PacketType.TextIndexes:            // UNUSED: Not sent (entities use fixed names)
-                                                        case PacketType.ColliderIndexes:        // UNUSED: Not sent
-                                                        case PacketType.Prefix:                 // UNUSED: Not sent (unknown purpose)
-                                                        case PacketType.Alive:                  // UNUSED: Not sent (health tracked via PLYR)
-                                                        case PacketType.ColliderDamage:         // UNUSED: Not sent
-                                                        case PacketType.PhysicsObjectIndexStartPos: // UNUSED: Not sent (handled via entity sync)
-                                                            // No-op: These packets are never sent, so no handling is needed
-                                                            break;
-                                                        case PacketType.PhysicsObjectPosAng:
-                                                            // Physics object position and angles update
-                                                            // Format: PHYS <name> <x> <y> <z> <pitch> <yaw> <roll> HLVRCOOP
-                                                            if (packet.args.Length >= 7)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Entity entity = new(packet.args[0], float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[6], CultureInfo.InvariantCulture.NumberFormat));
-                                                                    if (AlyxGlobalData.instance.AddManipulatedEntity(entity, socket.ConnectionInfo.Id, connections))
-                                                                    {
-                                                                        Response output4 = new("command", "hlvrcoop_setlocation " + packet.args[0] + " " + packet.args[1] + " " + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + " " + packet.args[5] + " " + packet.args[6]);
-                                                                        foreach (IndexedClient broadcastClient2 in connections)
-                                                                        {
-                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcastClient2.Session.ConnectionInfo.Id);
-                                                                            if (keyValuePair != null && broadcastClient2.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                            {
-                                                                                broadcastClient2.Session.Send(JsonConvert.SerializeObject(output4));
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.PhysicsObjectPosAng", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.MapName:
-                                                            // Map name and API version detection
-                                                            // Format: MAPN <mapname> <apiversion> HLVRCOOP
-                                                            if (packet.args.Length >= 2)
-                                                            {
-                                                                try
-                                                                {
-                                                                    string suffix = "";
-                                                                    /*
-                                                                    if (packet.args[0] != player.Client.Map)
-                                                                    {
-                                                                        Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
-                                                                        foreach (IndexedClient broadcast in connections)
-                                                                        {
-                                                                            Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                            if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                            {
-                                                                                broadcast.Session.Send(JsonConvert.SerializeObject(mapOutput));
-                                                                            }
-                                                                        }
-                                                                        suffix = " - Telling all clients to switch...";
-                                                                    }
-                                                                    */
-                                                                    Response jingle = new("command", "play sounds/hlvrcoop/jingle_up2.vsnd");
-                                                                    Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
-                                                                    socket.Send(JsonConvert.SerializeObject(jingle));
-                                                                    socket.Send(JsonConvert.SerializeObject(output2));
-                                                                    int gamemodeAPIVersion = int.Parse(packet.args[1]);
-                                                                    if (gamemodeAPIVersion != APIVersion)
-                                                                    {
-                                                                        Response versionOutput = new("status", "Version mismatch! Client reports API version " + gamemodeAPIVersion + ", server expects API version " + APIVersion + ". Please update the client and respective Workshop addons.");
-                                                                        socket.Send(JsonConvert.SerializeObject(versionOutput));
-                                                                    }
-                                                                    Map.map = packet.args[0];
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.MapName", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.ButtonIndexStartPos:     // UNUSED: Not sent
-                                                        case PacketType.ButtonPressIndex:       // UNUSED: Not sent (button presses use FIRE packet)
-                                                        case PacketType.DoorIndexStartPos:      // UNUSED: Not sent (doors handled via PHYS packet)
-                                                        case PacketType.TriggerIndexStartPos:    // UNUSED: Not sent (handled via entity sync)
-                                                        case PacketType.TriggerActivateIndex:    // UNUSED: Not sent (trigger activations use FIRE packet)
-                                                            // No-op: These packets are never sent, so no handling is needed
-                                                            break;
-                                                        case PacketType.BrokenProp:
-                                                            // Broken prop notification
-                                                            // Format: BRAK <name> HLVRCOOP
-                                                            if (packet.args.Length >= 1)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Response removeBreak = new("command", "hlvrcoop_break " + packet.args[0]);
-                                                                    foreach (IndexedClient broadcast in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            Response breakprop = new("status", "Broken prop: " + packet.args[0]);
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(removeBreak));
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(breakprop));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.BrokenProp", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.EntityRemoved:
-                                                            // Entity removed notification
-                                                            // Format: EREM <name> HLVRCOOP
-                                                            if (packet.args.Length >= 1)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Response remove = new("command", "ent_remove " + packet.args[0]);
-                                                                    foreach (IndexedClient broadcast in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(remove));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.EntityRemoved", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.EntityFired:
-                                                            // Entity output fired (trigger, button, etc.)
-                                                            // Format: FIRE <name> <output> HLVRCOOP
-                                                            if (packet.args.Length >= 2)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Entity entityfired = new(packet.args[0]);
-                                                                    Response fire = new("command", "hlvrcoop_fireoutput " + packet.args[0] + " " + packet.args[1]);
-                                                                    foreach (IndexedClient broadcast in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(fire));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.EntityFired", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.NPCHealth:
-                                                            // NPC health update
-                                                            // Format: NPHP <name> <health> HLVRCOOP
-                                                            if (packet.args.Length >= 2)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Response p = new("command", "hlvrcoop_npc_sethealth " + packet.args[0] + " " + packet.args[1]);
-                                                                    connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(p)));
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.NPCHealth", ex);
-                                                                }
-                                                            }
-                                                            break;
-                                                        case PacketType.HLVRCOOPCommand:
-                                                            // Custom HLVRCoop command (converted to chat)
-                                                            // Format: CMND <command> HLVRCOOP
-                                                            try
-                                                            {
-                                                                response.type = "chat";
-                                                                response.data = "/" + string.Join(" ", packet.args.Take(packet.args.Length - 1));
-                                                                State = HandleState.Continue;
-                                                                overrideState = true;
-                                                            }
-                                                            catch (Exception ex)
-                                                            {
-                                                                ErrorLogger.LogError("AlyxGamemode.HLVRCOOPCommand", ex);
-                                                            }
-                                                            break;
-                                                        case PacketType.TemplateEntity:
-                                                            // Template entity cache request (point_template)
-                                                            // Format: TENT <name> HLVRCOOP
-                                                            if (packet.args.Length >= 1)
-                                                            {
-                                                                try
-                                                                {
-                                                                    Response templateCache = new("command", "hlvrcoop_cache_entity " + packet.args[0]);
-                                                                    foreach (IndexedClient broadcast in connections)
-                                                                    {
-                                                                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
-                                                                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
-                                                                        {
-                                                                            broadcast.Session.Send(JsonConvert.SerializeObject(templateCache));
-                                                                        }
-                                                                    }
-                                                                }
-                                                                catch (Exception ex)
-                                                                {
-                                                                    ErrorLogger.LogError("AlyxGamemode.TemplateEntity", ex);
-                                                                }
-                                                            }
-                                                            break;
+                                                        switch (packet.type)
+                                                        {
+                                                            case PacketType.Spawn:
+                                                                HandleSpawnPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.Respawn:
+                                                                HandleRespawnPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.Teleport:
+                                                                HandleTeleportPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.HeadPosAng:
+                                                                HandleHeadPosAngPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.HandPosAng:
+                                                                HandleHandPosAngPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.PlayerPosAng:
+                                                                HandlePlayerPosAngPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.Initialization:
+                                                                HandleInitializationPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.InitializedEntities:
+                                                                HandleInitializedEntitiesPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.RightHandIndexes:
+                                                            case PacketType.LeftHandIndexes:
+                                                            case PacketType.HeadsetIndexes:
+                                                            case PacketType.TextIndexes:
+                                                            case PacketType.ColliderIndexes:
+                                                            case PacketType.Prefix:
+                                                            case PacketType.Alive:
+                                                            case PacketType.ColliderDamage:
+                                                            case PacketType.PhysicsObjectIndexStartPos:
+                                                            case PacketType.ButtonIndexStartPos:
+                                                            case PacketType.ButtonPressIndex:
+                                                            case PacketType.DoorIndexStartPos:
+                                                            case PacketType.TriggerIndexStartPos:
+                                                            case PacketType.TriggerActivateIndex:
+                                                                // No-op: These packets are never sent, so no handling is needed
+                                                                break;
+                                                            case PacketType.PhysicsObjectPosAng:
+                                                                HandlePhysicsObjectPosAngPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.MapName:
+                                                                HandleMapNamePacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.BrokenProp:
+                                                                HandleBrokenPropPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.EntityRemoved:
+                                                                HandleEntityRemovedPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.EntityFired:
+                                                                HandleEntityFiredPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.NPCHealth:
+                                                                HandleNPCHealthPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.HLVRCOOPCommand:
+                                                                overrideState = HandleHLVRCOOPCommandPacket(player, packet, socket, connections, ref response);
+                                                                break;
+                                                            case PacketType.TemplateEntity:
+                                                                HandleTemplateEntityPacket(player, packet, socket, connections);
+                                                                break;
+                                                        }
                                                     }
                                                 }
                                                 else
@@ -744,5 +412,350 @@ namespace AlyxGamemode
                 ErrorLogger.LogError("AlyxGamemode", ex);
             }
         }
+
+        #region Packet Handlers
+
+        private static void HandleSpawnPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 5)
+            {
+                try
+                {
+                    Response spawn = new("command", "ent_create " + packet.args[0] + " {targetname \"" + packet.args[1] + "\" origin \"" + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + "\"}");
+                    BroadcastToOthers(connections, socket, spawn);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Spawn", ex);
+                }
+            }
+        }
+
+        private static void HandleRespawnPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 3)
+            {
+                try
+                {
+                    Player? respawnedPlayer = AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id);
+                    if (respawnedPlayer != null)
+                    {
+                        respawnedPlayer.Health = 100;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Respawn", ex);
+                }
+            }
+        }
+
+        private static void HandleTeleportPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 6)
+            {
+                try
+                {
+                    Vector TeleOrigin = new(
+                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                    );
+                    Angle TeleAngles = new(
+                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                    );
+                    Response teleport = new("command", "hlvrcoop_teleportangles " + TeleOrigin.X + " " + TeleOrigin.Y + " " + TeleOrigin.Z + " " + TeleAngles.Pitch + " " + TeleAngles.Yaw + " " + TeleAngles.Roll);
+                    BroadcastToOthers(connections, socket, teleport);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Teleport", ex);
+                }
+            }
+        }
+
+        private static void HandleHeadPosAngPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 6)
+            {
+                try
+                {
+                    Vector HeadOrigin = new(
+                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                    );
+                    Angle HeadAngles = new(
+                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                    );
+                    Vector HatOrigin = new(
+                        HeadOrigin.X,
+                        HeadOrigin.Y,
+                        HeadOrigin.Z + 10
+                    );
+                    // Consolidated: head entity + text entity position + text message in one command
+                    Response headCommand = new("command", "hlvrcoop_setlocation_head " + player.Index + " " + HeadOrigin.X + " " + HeadOrigin.Y + " " + HeadOrigin.Z + " " + HeadAngles.Pitch + " " + HeadAngles.Yaw + " " + HeadAngles.Roll + " " + HatOrigin.X + " " + HatOrigin.Y + " " + HatOrigin.Z + " |" + player.Client.Username);
+                    BroadcastToOthers(connections, socket, headCommand);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.HeadPosAng", ex);
+                }
+            }
+        }
+
+        private static void HandleHandPosAngPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 12)
+            {
+                try
+                {
+                    // Consolidated: left + right hand in one command
+                    Response handsCommand = new("command", "hlvrcoop_setlocation_hands " + player.Index + " " + packet.args[0] + " " + packet.args[1] + " " + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + " " + packet.args[5] + " " + packet.args[6] + " " + packet.args[7] + " " + packet.args[8] + " " + packet.args[9] + " " + packet.args[10] + " " + packet.args[11]);
+                    BroadcastToOthers(connections, socket, handsCommand);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.HandPosAng", ex);
+                }
+            }
+        }
+
+        private static void HandlePlayerPosAngPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 7)
+            {
+                try
+                {
+                    Vector playerOrigin = new(
+                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
+                    );
+                    Angle playerAngles = new(
+                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
+                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
+                    );
+                    int playerHealth = int.Parse(packet.args[6]);
+
+                    player.Origin = playerOrigin;
+                    player.Angles = playerAngles;
+                    player.Health = playerHealth;
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.PlayerPosAng", ex);
+                }
+            }
+        }
+
+        private static void HandleInitializationPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.ConnectionState.Initializing);
+            SyncLog($"[SYNC] {player.Client.Username}: INIT packet received");
+            Response vconsoleInput2 = new("command", "ent_create logic_script {targetname hlvrcoop_script vscripts hlvrcoop_interval};ent_create logic_timer {targetname hlvrcoop_timer refiretime 0.01};echo IENT HLVRCOOP");
+            Response output3 = new("status", "Initializing co-op...");
+            socket.Send(JsonConvert.SerializeObject(output3));
+            socket.Send(JsonConvert.SerializeObject(vconsoleInput2));
+        }
+
+        private static void HandleInitializedEntitiesPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            Thread thr = new(new ThreadStart(() =>
+            {
+                Thread.Sleep(2500);
+                Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>HLVRCoOpMod>0>-1");
+                Response output4 = new("status", "Co-op initialized!");
+                socket.Send(JsonConvert.SerializeObject(output4));
+                socket.Send(JsonConvert.SerializeObject(vconsoleInput5));
+            }));
+            thr.Start();
+            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.ConnectionState.Ready);
+            SyncLog($"[SYNC] {player.Client.Username}: session ready");
+        }
+
+        private static void HandlePhysicsObjectPosAngPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 7)
+            {
+                try
+                {
+                    Entity entity = new(packet.args[0], float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat), float.Parse(packet.args[6], CultureInfo.InvariantCulture.NumberFormat));
+                    if (AlyxGlobalData.instance.AddManipulatedEntity(entity, socket.ConnectionInfo.Id, connections))
+                    {
+                        Response output4 = new("command", "hlvrcoop_setlocation " + packet.args[0] + " " + packet.args[1] + " " + packet.args[2] + " " + packet.args[3] + " " + packet.args[4] + " " + packet.args[5] + " " + packet.args[6]);
+                        BroadcastToOthers(connections, socket, output4);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.PhysicsObjectPosAng", ex);
+                }
+            }
+        }
+
+        private static void HandleMapNamePacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 2)
+            {
+                try
+                {
+                    string suffix = "";
+                    /*
+                    if (packet.args[0] != player.Client.Map)
+                    {
+                        Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
+                        BroadcastToOthers(connections, socket, mapOutput);
+                        suffix = " - Telling all clients to switch...";
+                    }
+                    */
+                    Response jingle = new("command", "play sounds/hlvrcoop/jingle_up2.vsnd");
+                    Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
+                    socket.Send(JsonConvert.SerializeObject(jingle));
+                    socket.Send(JsonConvert.SerializeObject(output2));
+                    int gamemodeAPIVersion = int.Parse(packet.args[1]);
+                    if (gamemodeAPIVersion != APIVersion)
+                    {
+                        Response versionOutput = new("status", "Version mismatch! Client API version " + gamemodeAPIVersion + " != server API version " + APIVersion + ". Disconnecting. Please update the client and Workshop addons.");
+                        socket.Send(JsonConvert.SerializeObject(versionOutput));
+                        socket.Close();
+                        SyncLog($"[SYNC] {player.Client.Username}: disconnected due to API version mismatch (client={gamemodeAPIVersion}, server={APIVersion})");
+                    }
+                    Map.map = packet.args[0];
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.MapName", ex);
+                }
+            }
+        }
+
+        private static void HandleBrokenPropPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 1)
+            {
+                try
+                {
+                    Response removeBreak = new("command", "hlvrcoop_break " + packet.args[0]);
+                    Response breakprop = new("status", "Broken prop: " + packet.args[0]);
+                    string serializedRemove = JsonConvert.SerializeObject(removeBreak);
+                    string serializedBreak = JsonConvert.SerializeObject(breakprop);
+                    foreach (IndexedClient broadcast in connections)
+                    {
+                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                        {
+                            broadcast.Session.Send(serializedRemove);
+                            broadcast.Session.Send(serializedBreak);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.BrokenProp", ex);
+                }
+            }
+        }
+
+        private static void HandleEntityRemovedPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 1)
+            {
+                try
+                {
+                    Response remove = new("command", "ent_remove " + packet.args[0]);
+                    BroadcastToOthers(connections, socket, remove);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.EntityRemoved", ex);
+                }
+            }
+        }
+
+        private static void HandleEntityFiredPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 2)
+            {
+                try
+                {
+                    Entity entityfired = new(packet.args[0]);
+                    Response fire = new("command", "hlvrcoop_fireoutput " + packet.args[0] + " " + packet.args[1]);
+                    foreach (IndexedClient broadcast in connections)
+                    {
+                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                        {
+                            broadcast.Session.Send(JsonConvert.SerializeObject(fire));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.EntityFired", ex);
+                }
+            }
+        }
+
+        private static void HandleNPCHealthPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 2)
+            {
+                try
+                {
+                    Response p = new("command", "hlvrcoop_npc_sethealth " + packet.args[0] + " " + packet.args[1]);
+                    foreach (IndexedClient broadcast in connections)
+                    {
+                        Player? keyValuePair = AlyxGlobalData.instance.GetPlayer(broadcast.Session.ConnectionInfo.Id);
+                        if (keyValuePair != null && broadcast.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                        {
+                            broadcast.Session.Send(JsonConvert.SerializeObject(p));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.NPCHealth", ex);
+                }
+            }
+        }
+
+        private static bool HandleHLVRCOOPCommandPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections, ref Response response)
+        {
+            try
+            {
+                response.type = "chat";
+                response.data = "/" + string.Join(" ", packet.args.Take(packet.args.Length - 1));
+                return true; // overrideState = true, State stays Continue
+            }
+            catch (Exception ex)
+            {
+                ErrorLogger.LogError("AlyxGamemode.HLVRCOOPCommand", ex);
+                return false;
+            }
+        }
+
+        private static void HandleTemplateEntityPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 1)
+            {
+                try
+                {
+                    Response templateCache = new("command", "hlvrcoop_cache_entity " + packet.args[0]);
+                    BroadcastToOthers(connections, socket, templateCache);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.TemplateEntity", ex);
+                }
+            }
+        }
+
+        #endregion
     }
 }

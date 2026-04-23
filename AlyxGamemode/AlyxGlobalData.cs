@@ -15,20 +15,21 @@ namespace AlyxGamemode
         private readonly List<Player> players = new();
         private readonly List<Moveable> manipulatedEntities = new();
 
-        public enum SessionPhase
+        public enum ConnectionState
         {
+            Connecting,
             Connected,
-            AddonEnabled,
-            ScriptBootstrapSent,
-            InitPacketReceived,
-            SessionReady
+            Authenticated,
+            Initializing,
+            Ready,
+            Disconnected
         }
 
         public sealed class SessionState
         {
             public Guid ClientId { get; set; }
             public string Username { get; set; } = "";
-            public SessionPhase Phase { get; set; } = SessionPhase.Connected;
+            public ConnectionState Phase { get; set; } = ConnectionState.Connecting;
             public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
             public int DroppedPacketCount { get; set; } = 0;
             public string LastDropReason { get; set; } = "";
@@ -59,7 +60,7 @@ namespace AlyxGamemode
             return players;
         }
 
-        public SessionState UpsertSession(Guid id, string username, SessionPhase phase)
+        public SessionState UpsertSession(Guid id, string username, ConnectionState phase)
         {
             lock (sync)
             {
@@ -100,7 +101,7 @@ namespace AlyxGamemode
             {
                 if (!sessionStates.TryGetValue(id, out SessionState? state))
                     return false;
-                return state.Phase == SessionPhase.SessionReady;
+                return state.Phase == ConnectionState.Ready;
             }
         }
 
@@ -113,7 +114,7 @@ namespace AlyxGamemode
                     state = new SessionState
                     {
                         ClientId = id,
-                        Phase = SessionPhase.Connected
+                        Phase = ConnectionState.Connecting
                     };
                     sessionStates[id] = state;
                 }
@@ -133,7 +134,7 @@ namespace AlyxGamemode
                     state = new SessionState
                     {
                         ClientId = id,
-                        Phase = SessionPhase.Connected
+                        Phase = ConnectionState.Connecting
                     };
                     sessionStates[id] = state;
                 }
@@ -156,7 +157,7 @@ namespace AlyxGamemode
                     state = new SessionState
                     {
                         ClientId = id,
-                        Phase = SessionPhase.Connected
+                        Phase = ConnectionState.Connecting
                     };
                     sessionStates[id] = state;
                 }
@@ -176,7 +177,7 @@ namespace AlyxGamemode
                     state = new SessionState
                     {
                         ClientId = id,
-                        Phase = SessionPhase.Connected
+                        Phase = ConnectionState.Connecting
                     };
                     sessionStates[id] = state;
                 }

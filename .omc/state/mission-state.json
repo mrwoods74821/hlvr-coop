@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-04-23T22:31:03.329Z",
+  "updatedAt": "2026-04-23T22:45:36.176Z",
   "missions": [
     {
       "id": "session:c7a4d31b-faff-412f-b238-e8e05ecbf997:none",
@@ -332,6 +332,118 @@
           "agent": "critic:a99bbaf",
           "detail": "completed",
           "sourceKey": "session-stop:a99bbafced1465b41"
+        }
+      ]
+    },
+    {
+      "id": "session:c7a4d31b-faff-412f-b238-e8e05ecbf997:team",
+      "source": "session",
+      "name": "team",
+      "objective": "Session mission",
+      "createdAt": "2026-04-23T22:37:19.813Z",
+      "updatedAt": "2026-04-23T22:45:36.176Z",
+      "status": "done",
+      "workerCount": 5,
+      "taskCounts": {
+        "total": 5,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 0,
+        "completed": 5,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "csharp-worker:a5926e2",
+          "role": "csharp-worker",
+          "ownership": "a5926e2c0bb2a15db",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-04-23T22:44:52.471Z"
+        },
+        {
+          "name": "lua-worker:a3bfba1",
+          "role": "lua-worker",
+          "ownership": "a3bfba19f75d37a0f",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-04-23T22:42:28.090Z"
+        },
+        {
+          "name": "csharp-worker:a4acf74",
+          "role": "csharp-worker",
+          "ownership": "a4acf748aaa5a8e6b",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-04-23T22:45:12.964Z"
+        },
+        {
+          "name": "csharp-worker:a8d771b",
+          "role": "csharp-worker",
+          "ownership": "a8d771bc1b322fdda",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-04-23T22:45:36.176Z"
+        },
+        {
+          "name": "lua-worker:a073dce",
+          "role": "lua-worker",
+          "ownership": "a073dce3a2b855573",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-04-23T22:45:35.101Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-stop:a4acf748aaa5a8e6b:2026-04-23T22:45:12.964Z",
+          "at": "2026-04-23T22:45:12.964Z",
+          "kind": "completion",
+          "agent": "csharp-worker:a4acf74",
+          "detail": "completed",
+          "sourceKey": "session-stop:a4acf748aaa5a8e6b"
+        },
+        {
+          "id": "session-start:a8d771bc1b322fdda:2026-04-23T22:45:20.875Z",
+          "at": "2026-04-23T22:45:20.875Z",
+          "kind": "update",
+          "agent": "csharp-worker:a8d771b",
+          "detail": "started csharp-worker:a8d771b",
+          "sourceKey": "session-start:a8d771bc1b322fdda"
+        },
+        {
+          "id": "session-start:a073dce3a2b855573:2026-04-23T22:45:20.990Z",
+          "at": "2026-04-23T22:45:20.990Z",
+          "kind": "update",
+          "agent": "lua-worker:a073dce",
+          "detail": "started lua-worker:a073dce",
+          "sourceKey": "session-start:a073dce3a2b855573"
+        },
+        {
+          "id": "session-stop:a073dce3a2b855573:2026-04-23T22:45:35.101Z",
+          "at": "2026-04-23T22:45:35.101Z",
+          "kind": "completion",
+          "agent": "lua-worker:a073dce",
+          "detail": "completed",
+          "sourceKey": "session-stop:a073dce3a2b855573"
+        },
+        {
+          "id": "session-stop:a8d771bc1b322fdda:2026-04-23T22:45:36.176Z",
+          "at": "2026-04-23T22:45:36.176Z",
+          "kind": "completion",
+          "agent": "csharp-worker:a8d771b",
+          "detail": "completed",
+          "sourceKey": "session-stop:a8d771bc1b322fdda"
         }
       ]
     }
