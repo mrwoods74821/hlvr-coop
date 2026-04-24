@@ -39,6 +39,7 @@ namespace AlyxGamemode
         }
 
         private readonly Dictionary<Guid, SessionState> sessionStates = new();
+        private readonly Dictionary<string, EntityState> entityStates = new();
         private readonly object sync = new();
         public bool AddManipulatedEntity(Entity MovedObject, Guid ClientID, List<IndexedClient> Connections)
         {
@@ -74,6 +75,39 @@ namespace AlyxGamemode
         public List<Player> GetPlayers()
         {
             return players;
+        }
+
+        public EntityState? GetEntityState(string name)
+        {
+            lock (sync)
+            {
+                entityStates.TryGetValue(name, out EntityState state);
+                return state;
+            }
+        }
+
+        public void SetEntityState(string name, EntityState state)
+        {
+            lock (sync)
+            {
+                entityStates[name] = state;
+            }
+        }
+
+        public Dictionary<string, EntityState> GetEntityStateSnapshot()
+        {
+            lock (sync)
+            {
+                return new Dictionary<string, EntityState>(entityStates);
+            }
+        }
+
+        public void ClearEntityStates()
+        {
+            lock (sync)
+            {
+                entityStates.Clear();
+            }
         }
 
         public SessionState UpsertSession(Guid id, string username, ConnectionState phase)

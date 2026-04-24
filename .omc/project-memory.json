@@ -128,45 +128,51 @@
   "hotPaths": [
     {
       "path": "AlyxGamemode\\AlyxGamemode.cs",
-      "accessCount": 144,
-      "lastAccessed": 1777002728229,
+      "accessCount": 179,
+      "lastAccessed": 1777005363403,
       "type": "file"
     },
     {
       "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts\\hlvrcoop_interval.lua",
-      "accessCount": 122,
-      "lastAccessed": 1777002450874,
+      "accessCount": 168,
+      "lastAccessed": 1777005258438,
+      "type": "file"
+    },
+    {
+      "path": "AlyxGamemode\\AlyxGlobalData.cs",
+      "accessCount": 47,
+      "lastAccessed": 1777005258680,
       "type": "file"
     },
     {
       "path": "",
-      "accessCount": 41,
-      "lastAccessed": 1777001459222,
+      "accessCount": 46,
+      "lastAccessed": 1777004896736,
       "type": "directory"
     },
     {
-      "path": "AlyxGamemode\\AlyxGlobalData.cs",
-      "accessCount": 40,
-      "lastAccessed": 1777002928942,
+      "path": "AlyxGamemode\\Packet.cs",
+      "accessCount": 37,
+      "lastAccessed": 1777005258088,
       "type": "file"
     },
     {
       "path": "HLVRCoOpMod\\VConsole.cs",
-      "accessCount": 31,
-      "lastAccessed": 1777000855225,
-      "type": "file"
-    },
-    {
-      "path": "AlyxGamemode\\Packet.cs",
-      "accessCount": 27,
-      "lastAccessed": 1777002426726,
+      "accessCount": 34,
+      "lastAccessed": 1777004301124,
       "type": "file"
     },
     {
       "path": "AlyxGamemode",
-      "accessCount": 11,
-      "lastAccessed": 1777001604214,
+      "accessCount": 13,
+      "lastAccessed": 1777003590820,
       "type": "directory"
+    },
+    {
+      "path": "AlyxGamemode\\Entity.cs",
+      "accessCount": 12,
+      "lastAccessed": 1777004220810,
+      "type": "file"
     },
     {
       "path": "HLVRCoOpMod\\ServerProgram.cs",
@@ -181,15 +187,15 @@
       "type": "file"
     },
     {
-      "path": "HLVRCoOpMod\\ClientProgram.cs",
-      "accessCount": 9,
-      "lastAccessed": 1776998243712,
+      "path": "AlyxGamemode\\Moveable.cs",
+      "accessCount": 10,
+      "lastAccessed": 1777003581958,
       "type": "file"
     },
     {
-      "path": "AlyxGamemode\\Moveable.cs",
+      "path": "HLVRCoOpMod\\ClientProgram.cs",
       "accessCount": 9,
-      "lastAccessed": 1777002927627,
+      "lastAccessed": 1776998243712,
       "type": "file"
     },
     {
@@ -208,12 +214,6 @@
       "path": "AlyxGamemode\\Player.cs",
       "accessCount": 8,
       "lastAccessed": 1777002430339,
-      "type": "file"
-    },
-    {
-      "path": "AlyxGamemode\\Entity.cs",
-      "accessCount": 8,
-      "lastAccessed": 1777002928159,
       "type": "file"
     },
     {
@@ -241,6 +241,18 @@
       "type": "file"
     },
     {
+      "path": "Roadmap.md",
+      "accessCount": 4,
+      "lastAccessed": 1777003910472,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 4,
+      "lastAccessed": 1777003910874,
+      "type": "file"
+    },
+    {
       "path": "HLVRCoOpMod\\Settings.Designer.cs",
       "accessCount": 3,
       "lastAccessed": 1776981192859,
@@ -250,18 +262,6 @@
       "path": "HLVRCoOpModCore\\Response.cs",
       "accessCount": 3,
       "lastAccessed": 1776982004066,
-      "type": "file"
-    },
-    {
-      "path": "Roadmap.md",
-      "accessCount": 3,
-      "lastAccessed": 1777000750353,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 3,
-      "lastAccessed": 1777000751622,
       "type": "file"
     },
     {

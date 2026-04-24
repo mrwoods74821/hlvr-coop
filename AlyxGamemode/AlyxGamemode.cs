@@ -117,23 +117,17 @@ namespace AlyxGamemode
                             // Remote clients don't send "has joined the game" message, so we need to:
                             // 1. Add the player to the game state
                             // 2. Send initialization command to trigger game-side script
+                            Guid connectionId = openSocket.ConnectionInfo.Id;
+                            string username = openingUsername;
                             Task.Run(async () =>
                             {
                                 await Task.Delay(2000); // Wait 2 seconds for addon to enable
 
                                 // Check if player still doesn't exist (connection not closed)
-                                if (AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id) == null)
+                                if (AlyxGlobalData.instance.GetPlayer(connectionId) == null)
                                 {
-                                    // Find the client in connections list
-                                    IndexedClient? clientToAdd = null;
-                                    foreach (IndexedClient client in openConnections)
-                                    {
-                                        if (client.Session.ConnectionInfo.Id == openSocket.ConnectionInfo.Id)
-                                        {
-                                            clientToAdd = client;
-                                            break;
-                                        }
-                                    }
+                                    // Find the client in connections list using captured ID
+                                    IndexedClient? clientToAdd = openConnections.Find(c => c.Session.ConnectionInfo.Id == connectionId);
 
                                     if (clientToAdd != null)
                                     {
@@ -144,9 +138,9 @@ namespace AlyxGamemode
                                             // CRITICAL: Remote clients can't send INIT packet until script entities exist
                                             // Create script entities immediately (normally done when INIT packet is received)
                                             // The script will then send INIT packet automatically when it loads
-                                            SendBootstrap(openSocket, clientToAdd.Username);
+                                            SendBootstrap(clientToAdd.Session, username);
 
-                                            SyncLog($"{clientToAdd.Username}: waiting for first HLVRCOOP packet before starting readiness watchdog");
+                                            SyncLog($"{username}: waiting for first HLVRCOOP packet before starting readiness watchdog");
 
                                             // Start the timer after a delay (script entities need time to create)
                                             Task.Run(async () =>
@@ -154,29 +148,29 @@ namespace AlyxGamemode
                                                 await Task.Delay(2500); // Wait for script entities to create and initialize
                                                 Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>HLVRCoOpMod>0>-1");
                                                 Response output4 = new("status", "Co-op initialized!");
-                                                openSocket.Send(JsonConvert.SerializeObject(output4));
-                                                openSocket.Send(JsonConvert.SerializeObject(vconsoleInput5));
+                                                clientToAdd.Session.Send(JsonConvert.SerializeObject(output4));
+                                                clientToAdd.Session.Send(JsonConvert.SerializeObject(vconsoleInput5));
                                             });
 
                                             // Notify other clients that player joined
-                                            Response output2 = new("status", "♩ " + clientToAdd.Username + " joined as index " + player.Index);
+                                            Response output2 = new("status", "♩ " + username + " joined as index " + player.Index);
                                             Response blip = new("command", "play hlvrcoop/blip" + rnd.Next(1, 4));
                                             openConnections.ForEach(c =>
                                             {
-                                                if (c.Session.ConnectionInfo.Id != clientToAdd.Session.ConnectionInfo.Id)
+                                                if (c.Session.ConnectionInfo.Id != connectionId)
                                                 {
                                                     c.Session.Send(JsonConvert.SerializeObject(blip));
                                                     c.Session.Send(JsonConvert.SerializeObject(output2));
                                                 }
                                             });
-                                            SyncLog($"{clientToAdd.Username}: player object added with index {player.Index}");
+                                            SyncLog($"{username}: player object added with index {player.Index}");
                                         }
                                         else
                                         {
                                             // Server is full - disconnect client
                                             Response output2 = new("status", "The server is currently at maximum capacity, please try again later.");
-                                            openSocket.Send(JsonConvert.SerializeObject(output2));
-                                            openSocket.Close();
+                                            clientToAdd.Session.Send(JsonConvert.SerializeObject(output2));
+                                            clientToAdd.Session.Close();
                                         }
                                     }
                                 }
@@ -323,10 +317,8 @@ namespace AlyxGamemode
                                                             case PacketType.LeftHandIndexes:
                                                             case PacketType.HeadsetIndexes:
                                                             case PacketType.TextIndexes:
-                                                            case PacketType.ColliderIndexes:
                                                             case PacketType.Prefix:
                                                             case PacketType.Alive:
-                                                            case PacketType.ColliderDamage:
                                                             case PacketType.PhysicsObjectIndexStartPos:
                                                             case PacketType.ButtonIndexStartPos:
                                                             case PacketType.ButtonPressIndex:
@@ -361,6 +353,15 @@ namespace AlyxGamemode
                                                                 break;
                                                             case PacketType.Crafting:
                                                                 HandleCraftingPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.Ownership:
+                                                                HandleOwnershipPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.ColliderIndexes:
+                                                                HandleColliderPacket(player, packet, socket, connections);
+                                                                break;
+                                                            case PacketType.ColliderDamage:
+                                                                HandleDamagePacket(player, packet, socket, connections);
                                                                 break;
                                                         }
                                                     }
@@ -650,6 +651,7 @@ namespace AlyxGamemode
                 try
                 {
                     AlyxGlobalData.instance.RemoveManipulatedEntity(packet.args[0]);
+                    AlyxGlobalData.instance.SetEntityState(packet.args[0], EntityState.Dead);
                     Response removeBreak = new("command", "hlvrcoop_break " + packet.args[0]);
                     Response breakprop = new("status", "Broken prop: " + packet.args[0]);
                     string serializedRemove = JsonConvert.SerializeObject(removeBreak);
@@ -678,6 +680,7 @@ namespace AlyxGamemode
                 try
                 {
                     AlyxGlobalData.instance.RemoveManipulatedEntity(packet.args[0]);
+                    AlyxGlobalData.instance.SetEntityState(packet.args[0], EntityState.Despawned);
                     Response remove = new("command", "ent_remove " + packet.args[0]);
                     BroadcastToOthers(connections, socket, remove);
                 }
@@ -778,6 +781,77 @@ namespace AlyxGamemode
                 catch (Exception ex)
                 {
                     ErrorLogger.LogError("AlyxGamemode.Crafting", ex);
+                }
+            }
+        }
+
+        private static void HandleOwnershipPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 2)
+            {
+                try
+                {
+                    string action = packet.args[0];
+                    string entityName = packet.args[1];
+
+                    if (action == "grab")
+                    {
+                        if (AlyxGlobalData.instance.AddManipulatedEntity(new Entity(entityName), socket.ConnectionInfo.Id, connections))
+                        {
+                            Response grant = new("command", "hlvrcoop_ownership grant " + entityName);
+                            socket.Send(JsonConvert.SerializeObject(grant));
+                            Response broadcast = new("command", "hlvrcoop_ownership lock " + entityName + " " + player.Index);
+                            BroadcastToOthers(connections, socket, broadcast);
+                        }
+                        else
+                        {
+                            Response deny = new("command", "hlvrcoop_ownership deny " + entityName);
+                            socket.Send(JsonConvert.SerializeObject(deny));
+                        }
+                    }
+                    else if (action == "release")
+                    {
+                        AlyxGlobalData.instance.RemoveManipulatedEntity(entityName);
+                        Response broadcast = new("command", "hlvrcoop_ownership release " + entityName);
+                        BroadcastToOthers(connections, socket, broadcast);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Ownership", ex);
+                }
+            }
+        }
+
+        private static void HandleColliderPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 4)
+            {
+                try
+                {
+                    AlyxGlobalData.instance.SetEntityState(packet.args[0], EntityState.Active);
+                    Response broadcast = new("command", "hlvrcoop_npc_collider " + packet.args[0] + " " + packet.args[1] + " " + packet.args[2] + " " + packet.args[3]);
+                    BroadcastToOthers(connections, socket, broadcast);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Collider", ex);
+                }
+            }
+        }
+
+        private static void HandleDamagePacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 2)
+            {
+                try
+                {
+                    Response broadcast = new("command", "hlvrcoop_damage " + packet.args[0] + " " + packet.args[1] + " " + player.Index);
+                    BroadcastToOthers(connections, socket, broadcast);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Damage", ex);
                 }
             }
         }

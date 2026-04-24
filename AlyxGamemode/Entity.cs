@@ -6,9 +6,19 @@ using System.Threading.Tasks;
 
 namespace AlyxGamemode
 {
+    public enum EntityState
+    {
+        Spawned,
+        Active,
+        Dying,
+        Dead,
+        Despawned
+    }
+
     public class Entity : Location
     {
         public string Name { get; set; }
+        public EntityState State { get; set; } = EntityState.Spawned;
         public Entity(string Name) : base()
         {
             this.Name = Name;

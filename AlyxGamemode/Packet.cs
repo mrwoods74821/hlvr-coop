@@ -49,6 +49,8 @@ namespace AlyxGamemode
         Respawn,
         /// <summary>Resin crafting sync. Sent when resin is deposited. Code: CRFT</summary>
         Crafting,
+        /// <summary>Physics ownership request/event. Sent on grab/release. Code: OWNR</summary>
+        Ownership,
         
         // ===== UNUSED/LEGACY PACKETS (Not sent from Lua) =====
         // These packet types are defined but never sent by the game-side Lua scripts.
@@ -188,6 +190,7 @@ namespace AlyxGamemode
                 "SPWN" => PacketType.Spawn,
                 "RESP" => PacketType.Respawn,
                 "CRFT" => PacketType.Crafting,
+                "OWNR" => PacketType.Ownership,
                 _ => PacketType.None,
             };
         }
@@ -226,6 +229,7 @@ namespace AlyxGamemode
                 PacketType.Spawn => "SPWN",
                 PacketType.Respawn => "RESP",
                 PacketType.Crafting => "CRFT",
+                PacketType.Ownership => "OWNR",
                 _ => "NONE",
             };
         }

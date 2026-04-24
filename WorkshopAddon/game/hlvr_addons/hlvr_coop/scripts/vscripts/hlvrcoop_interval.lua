@@ -265,9 +265,21 @@ function HLVRCoOpMod()
                                     HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
                                     print("NPHP "..object.name.." 0 "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                                 elseif object.health == nil or object.health > health then
+                                    local prevHealth = object.health;
                                     HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
                                     print("NPHP "..object.name.." "..health.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                    if prevHealth ~= nil then
+                                        HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                        print("DMGE "..object.name.." "..(prevHealth - health).." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                    end
                                     object.health = health;
+                                end
+                                -- Send NPCS once on first detection
+                                if object.collider_sent == nil then
+                                    local origin = entity:GetAbsOrigin();
+                                    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                    print("NPCS "..object.name.." "..math.floor(origin[1]).." "..math.floor(origin[2]).." "..math.floor(origin[3]).." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                    object.collider_sent = true;
                                 end
                             end
                         end
@@ -533,20 +545,26 @@ function HLVRCoOpMod()
             end
             local name = ent:GetName();
             local class = ent:GetClassname();
-            if class == "trigger_once" then
-                if HLVRCOOP_FIRED_TRIGGERS[name] then return end
-                HLVRCOOP_FIRED_TRIGGERS[name] = true;
+            local firedKey = name;
+
+            if HLVRCOOP_USE_UUIDS then
+                local origin = ent:GetOrigin();
+                firedKey = uuid(name, origin[1], origin[2], origin[3], class);
             end
+
+            if class == "trigger_once" then
+                if HLVRCOOP_FIRED_TRIGGERS[firedKey] then return end
+                HLVRCOOP_FIRED_TRIGGERS[firedKey] = true;
+            end
+
             if not HLVRCOOP_USE_UUIDS then
                 if name ~= "" then
                     HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
                     print("FIRE "..name.." "..output.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                 end
             else
-                local origin = ent:GetOrigin();
-                local uu = uuid(name, origin[1], origin[2], origin[3], class);
                 HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
-                print("FIRE "..uu.." "..output.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                print("FIRE "..firedKey.." "..output.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
             end
         end
 
@@ -829,6 +847,9 @@ function HLVRCoOpMod()
             if not interp_state or not entity or not IsValidEntity(entity) then
                 return
             end
+
+            -- Skip if no network update received yet
+            if interp_state.target_pos == nil or interp_state.target_ang == nil then return end
 
             -- First update - snap immediately
             if interp_state.prev_pos == nil then
@@ -1232,6 +1253,60 @@ function HLVRCoOpMod()
 
         Convars:RegisterCommand("hlvrcoop_cache_all_entities", function(command)
             HLVRCOOP_EntitySync(false)
+        end, "HLVR Co-Op Mod", 0);
+
+        -- Phase 3: Physics ownership protocol
+        HLVRCOOP_OWNED_ENTITIES = {};
+        Convars:RegisterCommand("hlvrcoop_ownership", function(command, action, entityName, ownerIndex)
+            if action == "grant" then
+                HLVRCOOP_OWNED_ENTITIES[entityName] = true;
+            elseif action == "deny" then
+                HLVRCOOP_OWNED_ENTITIES[entityName] = nil;
+            elseif action == "lock" then
+                HLVRCOOP_OWNED_ENTITIES[entityName] = true;
+            elseif action == "release" then
+                HLVRCOOP_OWNED_ENTITIES[entityName] = nil;
+            end
+        end, "HLVR Co-Op Mod", 0);
+
+        -- Phase 3: NPC collider sync (received from other clients)
+        Convars:RegisterCommand("hlvrcoop_npc_collider", function(command, name, x, y, z)
+            -- Store collider info for late-join sync awareness
+        end, "HLVR Co-Op Mod", 0);
+
+        -- Phase 3: Damage sync (received from other clients)
+        Convars:RegisterCommand("hlvrcoop_damage", function(command, target, damage, attackerIndex)
+            if not HLVRCOOP_USE_UUIDS then
+                local entities = Entities:FindAllByName(target);
+                if entities ~= nil then
+                    for _, entity in pairs(entities) do
+                        local health = entity:GetHealth();
+                        if health > 0 then
+                            entity:SetHealth(math.max(0, health - tonumber(damage)));
+                            if entity:GetHealth() <= 0 then
+                                DoEntFireByInstanceHandle(entity, "BecomeRagdoll", "", 0, nil, nil);
+                            end
+                        end
+                    end
+                end
+            else
+                local object = HLVRCOOP_ENTCACHE[target];
+                if not object then return end
+                local entity = object.entity;
+                if not IsValidEntity(entity) then return end
+                local health = entity:GetHealth();
+                if health > 0 then
+                    entity:SetHealth(math.max(0, health - tonumber(damage)));
+                    if entity:GetHealth() <= 0 then
+                        DoEntFireByInstanceHandle(entity, "BecomeRagdoll", "", 0, nil, nil);
+                    end
+                end
+            end
+        end, "HLVR Co-Op Mod", 0);
+
+        -- Phase 3: Resin sync (received from other clients)
+        Convars:RegisterCommand("hlvrcoop_setresin", function(command, playerIndex, resinCount)
+            -- Resin count sync - other player's resin deposited
         end, "HLVR Co-Op Mod", 0);
 
         HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
