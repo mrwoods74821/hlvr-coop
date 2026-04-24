@@ -1,7 +1,7 @@
 {
   "tool_name": "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
-  "tool_input_preview": "{\"file\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\AlyxGamemode\\\\Packet.cs\",\"severity\":\"error\"}",
+  "tool_input_preview": "{\"file\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\AlyxGamemode\\\\AlyxGlobalData.cs\",\"severity\":\"error\"}",
   "error": "Language server 'omnisharp' not found.\nInstall with: dotnet tool install -g omnisharp",
-  "timestamp": "2026-04-24T04:33:10.674Z",
+  "timestamp": "2026-04-24T05:13:18.113Z",
   "retry_count": 2
 }

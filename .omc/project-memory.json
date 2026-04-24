@@ -128,44 +128,44 @@
   "hotPaths": [
     {
       "path": "AlyxGamemode\\AlyxGamemode.cs",
-      "accessCount": 179,
-      "lastAccessed": 1777005363403,
+      "accessCount": 241,
+      "lastAccessed": 1777008067805,
       "type": "file"
     },
     {
       "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts\\hlvrcoop_interval.lua",
-      "accessCount": 168,
-      "lastAccessed": 1777005258438,
-      "type": "file"
-    },
-    {
-      "path": "AlyxGamemode\\AlyxGlobalData.cs",
-      "accessCount": 47,
-      "lastAccessed": 1777005258680,
+      "accessCount": 181,
+      "lastAccessed": 1777008067793,
       "type": "file"
     },
     {
       "path": "",
-      "accessCount": 46,
-      "lastAccessed": 1777004896736,
+      "accessCount": 87,
+      "lastAccessed": 1777007933588,
       "type": "directory"
     },
     {
+      "path": "AlyxGamemode\\AlyxGlobalData.cs",
+      "accessCount": 69,
+      "lastAccessed": 1777008059492,
+      "type": "file"
+    },
+    {
       "path": "AlyxGamemode\\Packet.cs",
-      "accessCount": 37,
-      "lastAccessed": 1777005258088,
+      "accessCount": 39,
+      "lastAccessed": 1777006680065,
       "type": "file"
     },
     {
       "path": "HLVRCoOpMod\\VConsole.cs",
-      "accessCount": 34,
-      "lastAccessed": 1777004301124,
+      "accessCount": 35,
+      "lastAccessed": 1777006107431,
       "type": "file"
     },
     {
       "path": "AlyxGamemode",
-      "accessCount": 13,
-      "lastAccessed": 1777003590820,
+      "accessCount": 29,
+      "lastAccessed": 1777008071739,
       "type": "directory"
     },
     {
@@ -229,6 +229,12 @@
       "type": "file"
     },
     {
+      "path": "WorkshopAddon",
+      "accessCount": 5,
+      "lastAccessed": 1777006206081,
+      "type": "directory"
+    },
+    {
       "path": "HLVRCoOpMod\\StreamWatcher.cs",
       "accessCount": 4,
       "lastAccessed": 1776981989657,
@@ -265,12 +271,6 @@
       "type": "file"
     },
     {
-      "path": "WorkshopAddon",
-      "accessCount": 3,
-      "lastAccessed": 1777001480510,
-      "type": "directory"
-    },
-    {
       "path": "PlayerBodySyncPlugin\\PlayerBodySyncPlugin.cs",
       "accessCount": 2,
       "lastAccessed": 1776981973572,
@@ -293,6 +293,12 @@
       "accessCount": 2,
       "lastAccessed": 1777002439647,
       "type": "file"
+    },
+    {
+      "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts",
+      "accessCount": 2,
+      "lastAccessed": 1777008067916,
+      "type": "directory"
     },
     {
       "path": "HLVRCOOP.sln",
@@ -371,12 +377,6 @@
       "accessCount": 1,
       "lastAccessed": 1776986280877,
       "type": "file"
-    },
-    {
-      "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts",
-      "accessCount": 1,
-      "lastAccessed": 1776998153222,
-      "type": "directory"
     }
   ],
   "userDirectives": []

@@ -36,6 +36,7 @@ namespace AlyxGamemode
             public DateTime? FirstPacketUtc { get; set; }
             public bool WatchdogStarted { get; set; } = false;
             public int BootstrapRetryCount { get; set; } = 0;
+            public bool HasReceivedIENT { get; set; } = false;
         }
 
         private readonly Dictionary<Guid, SessionState> sessionStates = new();
@@ -215,6 +216,15 @@ namespace AlyxGamemode
                 state.BootstrapRetryCount++;
                 state.LastUpdatedUtc = DateTime.UtcNow;
                 return state;
+            }
+        }
+
+        public void MarkReceivedIENT(Guid id)
+        {
+            lock (sync)
+            {
+                if (sessionStates.TryGetValue(id, out SessionState? state))
+                    state.HasReceivedIENT = true;
             }
         }
 

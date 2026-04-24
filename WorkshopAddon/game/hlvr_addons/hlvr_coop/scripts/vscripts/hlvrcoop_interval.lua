@@ -1309,6 +1309,19 @@ function HLVRCoOpMod()
             -- Resin count sync - other player's resin deposited
         end, "HLVR Co-Op Mod", 0);
 
+        -- Phase 4: Player body tracking from other clients
+        Convars:RegisterCommand("hlvrcoop_setbody", function(command, index, x, y, z, pitch, yaw, roll, health)
+            local idx = tonumber(index) + 1
+            if idx >= 1 and idx <= hlvrcoop_player_count then
+                hlvrcoop_player_body = hlvrcoop_player_body or {}
+                hlvrcoop_player_body[idx] = {
+                    origin = Vector(tonumber(x), tonumber(y), tonumber(z)),
+                    angles = Vector(tonumber(pitch), tonumber(yaw), tonumber(roll)),
+                    health = tonumber(health)
+                }
+            end
+        end, "HLVR Co-Op Mod", 0);
+
         HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
         print("MAPN "..GetMapName().." "..HLVRCOOP_API_VERSION.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
         HLVRCOOP_EntitySync(true);

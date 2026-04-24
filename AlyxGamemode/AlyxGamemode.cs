@@ -142,14 +142,30 @@ namespace AlyxGamemode
 
                                             SyncLog($"{username}: waiting for first HLVRCOOP packet before starting readiness watchdog");
 
-                                            // Start the timer after a delay (script entities need time to create)
+                                            // Start the timer once IENT is received (poll for HasReceivedIENT flag)
                                             Task.Run(async () =>
                                             {
-                                                await Task.Delay(2500); // Wait for script entities to create and initialize
-                                                Response vconsoleInput5 = new("command", "buddha 1;unpause;ent_fire hlvrcoop_timer addoutput OnTimer>hlvrcoop_script>CallScriptFunction>HLVRCoOpMod>0>-1");
-                                                Response output4 = new("status", "Co-op initialized!");
-                                                clientToAdd.Session.Send(JsonConvert.SerializeObject(output4));
-                                                clientToAdd.Session.Send(JsonConvert.SerializeObject(vconsoleInput5));
+                                                try
+                                                {
+                                                    // Poll for HasReceivedIENT flag (max 30 seconds)
+                                                    // HandleInitializedEntitiesPacket sends init commands when IENT arrives,
+                                                    // so we only need to confirm receipt here for diagnostic purposes.
+                                                    for (int i = 0; i < 300; i++)
+                                                    {
+                                                        await Task.Delay(100);
+                                                        AlyxGlobalData.SessionState? session = AlyxGlobalData.instance.GetSession(connectionId);
+                                                        if (session != null && session.HasReceivedIENT)
+                                                        {
+                                                            SyncLog($"{username}: IENT confirmed, init commands will be sent by IENT handler");
+                                                            return;
+                                                        }
+                                                    }
+                                                    SyncLog($"[TIMEOUT] {username}: IENT polling timed out after 30 seconds");
+                                                }
+                                                catch (Exception ex)
+                                                {
+                                                    ErrorLogger.LogError("AlyxGamemode.IENTPolling", ex);
+                                                }
                                             });
 
                                             // Notify other clients that player joined
@@ -257,7 +273,7 @@ namespace AlyxGamemode
 
                                                     Task.Run(async () =>
                                                     {
-                                                        await Task.Delay(12000);
+                                                        await Task.Delay(20000);
                                                         AlyxGlobalData.SessionState? phaseState = AlyxGlobalData.instance.GetSession(socket.ConnectionInfo.Id);
                                                         if (phaseState != null && phaseState.Phase != AlyxGlobalData.ConnectionState.Ready)
                                                         {
@@ -549,6 +565,10 @@ namespace AlyxGamemode
                     player.Origin = playerOrigin;
                     player.Angles = playerAngles;
                     player.Health = playerHealth;
+
+                    // Broadcast to other clients for body tracking
+                    Response bodyCommand = new("command", $"hlvrcoop_setbody {player.Index} {playerOrigin.X} {playerOrigin.Y} {playerOrigin.Z} {playerAngles.Pitch} {playerAngles.Yaw} {playerAngles.Roll} {playerHealth}");
+                    BroadcastToOthers(connections, socket, bodyCommand);
                 }
                 catch (Exception ex)
                 {
@@ -582,10 +602,14 @@ namespace AlyxGamemode
                         socket.Send(JsonConvert.SerializeObject(vconsoleInput5));
                     }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("HandleInitializedEntitiesPacket", ex);
+                }
             });
             AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, player.Client.Username, AlyxGlobalData.ConnectionState.Ready);
-            SyncLog($"{player.Client.Username}: session ready");
+            AlyxGlobalData.instance.MarkReceivedIENT(socket.ConnectionInfo.Id);
+            SyncLog($"{player.Client.Username}: session ready, IENT received");
         }
 
         private static void HandlePhysicsObjectPosAngPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
