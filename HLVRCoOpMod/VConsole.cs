@@ -79,7 +79,8 @@ namespace HLVRCoOpMod
 
             if (command.StartsWith("hlvrcoop_setlocation_head") ||
                 command.StartsWith("hlvrcoop_setlocation_hands") ||
-                command.StartsWith("hlvrcoop_setlocation "))
+                command.StartsWith("hlvrcoop_setlocation ") ||
+                command.StartsWith("hlvrcoop_setbody "))
                 return CommandPriority.Normal;
 
             return CommandPriority.Low;
@@ -653,6 +654,8 @@ namespace HLVRCoOpMod
                 }
                 
                 byte[] commandBytes = BuildCommandBytes(command);
+                if (commandBytes.Length == 0)
+                    return; // Command too long, already logged
                 try
                 {
                     currentStream.Write(commandBytes);
@@ -663,17 +666,13 @@ namespace HLVRCoOpMod
                 }
                 catch (ObjectDisposedException)
                 {
-                    // Stream was disposed (game quit), mark as killed silently
-                    // Don't log this error - it's expected when the game quits
                     killed = true;
-                    return; // Exit immediately to prevent any further processing
+                    return;
                 }
                 catch (SocketException)
                 {
-                    // Connection was aborted (game quit/network error), mark as killed silently
-                    // Don't log this error - it's expected when the game quits
                     killed = true;
-                    return; // Exit immediately to prevent any further processing
+                    return;
                 }
                 catch (Exception ex)
                 {
@@ -697,10 +696,17 @@ namespace HLVRCoOpMod
             }
         }
         
+        private const int MAX_VCONSOLE_COMMAND_LENGTH = 242; // 255 (byte max) - 13 (protocol overhead)
+
         private byte[] BuildCommandBytes(string command)
         {
             byte[] vcmd = Encoding.ASCII.GetBytes("CMND").Reverse().ToArray();
             byte[] data = Encoding.ASCII.GetBytes(command);
+            if (data.Length + 13 > 255)
+            {
+                ErrorLogger.LogSync($"VConsole: command too long ({data.Length} bytes, max {MAX_VCONSOLE_COMMAND_LENGTH}), skipped: {command.Substring(0, Math.Min(80, command.Length))}...");
+                return Array.Empty<byte>();
+            }
             byte dataLength = Convert.ToByte(data.Length + 13);
             byte protocol = Convert.ToByte(Settings.Default.VconsoleProtocol);
             List<byte> dataList = new()
@@ -758,7 +764,9 @@ namespace HLVRCoOpMod
                         break;
                     
                     byte[] commandBytes = BuildCommandBytes(command);
-                    
+                    if (commandBytes.Length == 0)
+                        continue; // Command too long, already logged, try next
+
                     try
                     {
                         // Re-check stream is still valid before writing (use streamLock for consistency)

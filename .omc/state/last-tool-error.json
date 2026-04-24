@@ -1,7 +1,7 @@
 {
-  "tool_name": "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
-  "tool_input_preview": "{\"file\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\AlyxGamemode\\\\AlyxGlobalData.cs\",\"severity\":\"error\"}",
-  "error": "Language server 'omnisharp' not found.\nInstall with: dotnet tool install -g omnisharp",
-  "timestamp": "2026-04-24T05:13:18.113Z",
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\ServerProgram\\\\ServerProgram.cs\",\"offset\":310,\"limit\":30}",
+  "error": "File does not exist. Note: your current working directory is C:\\Users\\elija\\OneDrive\\Documents\\GitHub\\hlvr-coop.",
+  "timestamp": "2026-04-24T05:41:03.960Z",
   "retry_count": 2
 }

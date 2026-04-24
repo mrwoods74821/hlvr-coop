@@ -100,7 +100,7 @@ namespace AlyxGamemode
                     case GamemodeHandleType.ClientOpen:
                         if (vs != null)
                         {
-                            List<IndexedClient> openConnections = (List<IndexedClient>)vs[0];
+                            List<IndexedClient> openConnections = ((List<IndexedClient>)vs[0]).ToList();
                             IWebSocketConnection openSocket = (IWebSocketConnection)vs[1];
                             Player? player2 = AlyxGlobalData.instance.GetPlayer(openSocket.ConnectionInfo.Id);
                             IndexedClient? openingClient = openConnections.Find(c => c.Session.ConnectionInfo.Id == openSocket.ConnectionInfo.Id);
@@ -434,9 +434,34 @@ namespace AlyxGamemode
 
         #region Packet Handlers
 
+        private static readonly System.Text.RegularExpressions.Regex SafeEntityName = new(@"^[a-zA-Z0-9_\-\.\+]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static bool IsValidSpawnPacket(Packet packet)
+        {
+            if (packet.args.Length < 5)
+                return false;
+
+            if (!SafeEntityName.IsMatch(packet.args[0]) || !SafeEntityName.IsMatch(packet.args[1]))
+            {
+                SyncLog($"[DROP] SPWN packet rejected: invalid entity/targetname chars - entity='{packet.args[0]}' target='{packet.args[1]}'");
+                return false;
+            }
+
+            for (int i = 2; i <= 4; i++)
+            {
+                if (!float.TryParse(packet.args[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _))
+                {
+                    SyncLog($"[DROP] SPWN packet rejected: coordinate '{packet.args[i]}' is not a valid float");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static void HandleSpawnPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 5)
+            if (IsValidSpawnPacket(packet))
             {
                 try
                 {

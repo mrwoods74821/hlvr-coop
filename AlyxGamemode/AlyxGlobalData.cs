@@ -252,15 +252,7 @@ namespace AlyxGamemode
         {
             lock (sync)
             {
-                Player? oldPlayer = players.Find(p => {
-                    if (p != null)
-                        return p.Client.Session.ConnectionInfo.Id == id;
-                    else
-                        return false;
-                });
-                if (oldPlayer != null)
-                    return oldPlayer;
-                return null;
+                return players.Find(p => p.Client.Session.ConnectionInfo.Id == id);
             }
         }
         public Player? AddPlayer(IndexedClient client)

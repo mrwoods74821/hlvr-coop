@@ -69,13 +69,18 @@ namespace HLVRCoOpMod
                         LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PostStart, gamemodeType, plugins, Map.map);
                     }
                     executeThink = true;
-                    // Tick/thinking
+                    // Tick/thinking with Stopwatch to prevent drift
                     Task.Run(() =>
                     {
+                        Stopwatch sw = Stopwatch.StartNew();
                         while (executeThink)
                         {
+                            sw.Restart();
                             Tick();
-                            Thread.Sleep(tickrate);
+                            int elapsed = (int)sw.ElapsedMilliseconds;
+                            int remaining = tickrate - elapsed;
+                            if (remaining > 0)
+                                Thread.Sleep(remaining);
                         }
                     });
                 }
@@ -316,7 +321,7 @@ namespace HLVRCoOpMod
                                     }
                                     if (response.clientUsername != null)
                                     {
-                                        if (response.clientUsername.Length > 32 || Regex.Match(response.clientUsername, @"[\;""]").Success)
+                                        if (response.clientUsername.Length > 32 || Regex.Match(response.clientUsername, @"[\p{Cc}""]").Success)
                                         {
                                             Response outputRegex = new("status", "Invalid username, closing connection...");
                                             socket.Send(JsonConvert.SerializeObject(outputRegex));

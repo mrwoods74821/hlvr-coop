@@ -260,19 +260,24 @@ function HLVRCoOpMod()
                         end
                         if string.find(object.class, "npc_") or object.class == "generic_actor" then
                             if object.class ~= "npc_furniture" then
-                                local health = entity:GetHealth();
-                                if health <= 0 then
-                                    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
-                                    print("NPHP "..object.name.." 0 "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
-                                elseif object.health == nil or object.health > health then
-                                    local prevHealth = object.health;
-                                    HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
-                                    print("NPHP "..object.name.." "..health.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
-                                    if prevHealth ~= nil then
+                                if object.dead then
+                                    -- Already reported dead, skip
+                                else
+                                    local health = entity:GetHealth();
+                                    if health <= 0 then
+                                        object.dead = true;
                                         HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
-                                        print("DMGE "..object.name.." "..(prevHealth - health).." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                        print("NPHP "..object.name.." 0 "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                    elseif object.health == nil or object.health > health then
+                                        local prevHealth = object.health;
+                                        HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                        print("NPHP "..object.name.." "..health.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                        if prevHealth ~= nil then
+                                            HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
+                                            print("DMGE "..object.name.." "..(prevHealth - health).." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
+                                        end
+                                        object.health = health;
                                     end
-                                    object.health = health;
                                 end
                                 -- Send NPCS once on first detection
                                 if object.collider_sent == nil then
