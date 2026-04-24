@@ -620,4 +620,4 @@ else
     CBaseEntity.Load        = Storage.Load
 end
 
-return "sdf"
+return Storage

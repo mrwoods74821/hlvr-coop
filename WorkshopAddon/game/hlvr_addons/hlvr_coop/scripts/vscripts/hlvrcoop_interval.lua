@@ -295,6 +295,7 @@ function HLVRCoOpMod()
                             -- bruteforce npc death
                             if object.health == nil or object.health > 0 then
                                 object.health = 0
+                                object.dead = true
                                 HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
                                 print("NPHP "..object.name.." 0 "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                             end

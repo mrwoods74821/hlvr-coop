@@ -13,7 +13,7 @@ lua_env.persistence["pregame_timer_active"] = lua_env.persistence["pregame_timer
 lua_env.persistence["pregame_timer_count"] = lua_env.persistence["pregame_timer_count"] or 0
 
 lua_env.handlers[lua_env.persistence["gamemode_campaign"]] = function(handleType, arg1, arg2, arg3, arg4)
-    if not lua_env.persistence["configjson"].sub_gamemode == gamemodetype then
+    if lua_env.persistence["configjson"].sub_gamemode ~= gamemodetype then
         return -- Not the right gamemode
     end
     if handleType == "Server_PreGamemode_PreStart" then

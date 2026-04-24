@@ -436,12 +436,17 @@ namespace AlyxGamemode
 
         private static readonly System.Text.RegularExpressions.Regex SafeEntityName = new(@"^[a-zA-Z0-9_\-\.\+]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
+        private static bool IsValidEntityName(string? name)
+        {
+            return !string.IsNullOrEmpty(name) && SafeEntityName.IsMatch(name);
+        }
+
         private static bool IsValidSpawnPacket(Packet packet)
         {
             if (packet.args.Length < 5)
                 return false;
 
-            if (!SafeEntityName.IsMatch(packet.args[0]) || !SafeEntityName.IsMatch(packet.args[1]))
+            if (!IsValidEntityName(packet.args[0]) || !IsValidEntityName(packet.args[1]))
             {
                 SyncLog($"[DROP] SPWN packet rejected: invalid entity/targetname chars - entity='{packet.args[0]}' target='{packet.args[1]}'");
                 return false;
@@ -695,7 +700,7 @@ namespace AlyxGamemode
 
         private static void HandleBrokenPropPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 1)
+            if (packet.args.Length >= 1 && IsValidEntityName(packet.args[0]))
             {
                 try
                 {
@@ -724,7 +729,7 @@ namespace AlyxGamemode
 
         private static void HandleEntityRemovedPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 1)
+            if (packet.args.Length >= 1 && IsValidEntityName(packet.args[0]))
             {
                 try
                 {
@@ -742,7 +747,7 @@ namespace AlyxGamemode
 
         private static void HandleEntityFiredPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 2)
+            if (packet.args.Length >= 2 && IsValidEntityName(packet.args[0]) && IsValidEntityName(packet.args[1]))
             {
                 try
                 {
@@ -766,7 +771,7 @@ namespace AlyxGamemode
 
         private static void HandleNPCHealthPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 2)
+            if (packet.args.Length >= 2 && IsValidEntityName(packet.args[0]))
             {
                 try
                 {
@@ -804,7 +809,7 @@ namespace AlyxGamemode
 
         private static void HandleTemplateEntityPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 1)
+            if (packet.args.Length >= 1 && IsValidEntityName(packet.args[0]))
             {
                 try
                 {
@@ -874,7 +879,7 @@ namespace AlyxGamemode
 
         private static void HandleColliderPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 4)
+            if (packet.args.Length >= 4 && IsValidEntityName(packet.args[0]))
             {
                 try
                 {
@@ -891,7 +896,7 @@ namespace AlyxGamemode
 
         private static void HandleDamagePacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
         {
-            if (packet.args.Length >= 2)
+            if (packet.args.Length >= 2 && IsValidEntityName(packet.args[0]))
             {
                 try
                 {

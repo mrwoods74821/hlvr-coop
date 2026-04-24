@@ -541,7 +541,7 @@ local function listenEventPlayerActivate(_, data)
             Player.Hands[1].Literal = Player.Hands[1]:GetLiteralHandType()
             Player.Hands[2].Literal = Player.Hands[2]:GetLiteralHandType()
             Player.Hands[1]:SetEntityName("player_hand_left")
-            Player.Hands[1]:SetEntityName("player_hand_right")
+            Player.Hands[2]:SetEntityName("player_hand_right")
             Player.LeftHand = Player.Hands[1]
             Player.RightHand = Player.Hands[2]
             Player.IsLeftHanded = Convars:GetBool("hlvr_left_hand_primary") --[[@as boolean]]

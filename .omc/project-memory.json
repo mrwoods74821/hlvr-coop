@@ -128,74 +128,80 @@
   "hotPaths": [
     {
       "path": "AlyxGamemode\\AlyxGamemode.cs",
-      "accessCount": 254,
-      "lastAccessed": 1777009453552,
+      "accessCount": 284,
+      "lastAccessed": 1777010945555,
       "type": "file"
     },
     {
       "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts\\hlvrcoop_interval.lua",
-      "accessCount": 191,
-      "lastAccessed": 1777009547265,
+      "accessCount": 206,
+      "lastAccessed": 1777010974955,
       "type": "file"
     },
     {
       "path": "",
-      "accessCount": 116,
-      "lastAccessed": 1777009289175,
+      "accessCount": 167,
+      "lastAccessed": 1777010944253,
       "type": "directory"
     },
     {
       "path": "AlyxGamemode\\AlyxGlobalData.cs",
-      "accessCount": 76,
-      "lastAccessed": 1777009547667,
+      "accessCount": 87,
+      "lastAccessed": 1777010967116,
       "type": "file"
     },
     {
       "path": "HLVRCoOpMod\\VConsole.cs",
-      "accessCount": 50,
-      "lastAccessed": 1777009520536,
+      "accessCount": 61,
+      "lastAccessed": 1777010915705,
       "type": "file"
     },
     {
       "path": "AlyxGamemode\\Packet.cs",
-      "accessCount": 41,
-      "lastAccessed": 1777008997925,
+      "accessCount": 43,
+      "lastAccessed": 1777010228012,
       "type": "file"
     },
     {
       "path": "AlyxGamemode",
-      "accessCount": 31,
-      "lastAccessed": 1777009095986,
+      "accessCount": 33,
+      "lastAccessed": 1777010225605,
       "type": "directory"
     },
     {
       "path": "HLVRCoOpMod\\ServerProgram.cs",
-      "accessCount": 19,
-      "lastAccessed": 1777009520939,
-      "type": "file"
-    },
-    {
-      "path": "AlyxGamemode\\Entity.cs",
-      "accessCount": 12,
-      "lastAccessed": 1777004220810,
+      "accessCount": 33,
+      "lastAccessed": 1777010949153,
       "type": "file"
     },
     {
       "path": "HLVRCoOpMod\\ClientProgram.cs",
-      "accessCount": 12,
-      "lastAccessed": 1777009135522,
+      "accessCount": 14,
+      "lastAccessed": 1777010495509,
+      "type": "file"
+    },
+    {
+      "path": "AlyxGamemode\\Entity.cs",
+      "accessCount": 13,
+      "lastAccessed": 1777009843431,
       "type": "file"
     },
     {
       "path": "HLVRCoOpMod\\ErrorLogger.cs",
-      "accessCount": 11,
-      "lastAccessed": 1777008516406,
+      "accessCount": 13,
+      "lastAccessed": 1777010432478,
       "type": "file"
     },
     {
       "path": "AlyxGamemode\\Moveable.cs",
+      "accessCount": 12,
+      "lastAccessed": 1777009844423,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpModCore\\Client.cs",
       "accessCount": 11,
-      "lastAccessed": 1777008821106,
+      "lastAccessed": 1777010439104,
       "type": "file"
     },
     {
@@ -205,39 +211,39 @@
       "type": "directory"
     },
     {
-      "path": "HLVRCoOpModCore\\Client.cs",
-      "accessCount": 9,
-      "lastAccessed": 1777008508018,
-      "type": "file"
-    },
-    {
       "path": "AlyxGamemode\\Player.cs",
-      "accessCount": 8,
-      "lastAccessed": 1777002430339,
+      "accessCount": 9,
+      "lastAccessed": 1777009843798,
       "type": "file"
     },
     {
       "path": "HLVRCoOpModCore\\IndexedClient.cs",
-      "accessCount": 7,
-      "lastAccessed": 1776984064791,
+      "accessCount": 9,
+      "lastAccessed": 1777010439679,
       "type": "file"
     },
     {
       "path": "HLVRCoOpModCore\\Response.cs",
-      "accessCount": 6,
-      "lastAccessed": 1777009118526,
+      "accessCount": 8,
+      "lastAccessed": 1777010438313,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpModCore\\Channel.cs",
+      "accessCount": 7,
+      "lastAccessed": 1777010443857,
       "type": "file"
     },
     {
       "path": "WorkshopAddon\\game\\hlvr_addons\\hlvr_coop\\scripts\\vscripts",
-      "accessCount": 6,
-      "lastAccessed": 1777009123942,
+      "accessCount": 7,
+      "lastAccessed": 1777010476073,
       "type": "directory"
     },
     {
-      "path": "HLVRCoOpModCore\\Channel.cs",
-      "accessCount": 5,
-      "lastAccessed": 1776985681104,
+      "path": "HLVRCoOpMod\\StreamWatcher.cs",
+      "accessCount": 6,
+      "lastAccessed": 1777010431967,
       "type": "file"
     },
     {
@@ -259,15 +265,57 @@
       "type": "file"
     },
     {
-      "path": "HLVRCoOpMod\\StreamWatcher.cs",
-      "accessCount": 4,
-      "lastAccessed": 1776981989657,
+      "path": "AlyxGamemode\\Location.cs",
+      "accessCount": 5,
+      "lastAccessed": 1777009844109,
       "type": "file"
     },
     {
-      "path": "AlyxGamemode\\Location.cs",
+      "path": "HLVRCoOpMod\\UserInterface.cs",
+      "accessCount": 5,
+      "lastAccessed": 1777010433057,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpMod\\Program.cs",
+      "accessCount": 5,
+      "lastAccessed": 1777010434048,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpModCore\\CoreGamemode.cs",
+      "accessCount": 5,
+      "lastAccessed": 1777010451643,
+      "type": "file"
+    },
+    {
+      "path": "PlayerBodySyncPlugin\\PlayerBodySyncPlugin.cs",
+      "accessCount": 5,
+      "lastAccessed": 1777010466206,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpMod\\LuaEnvironment.cs",
       "accessCount": 4,
-      "lastAccessed": 1777002438167,
+      "lastAccessed": 1777010433227,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpModCore\\Map.cs",
+      "accessCount": 4,
+      "lastAccessed": 1777010447381,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpModCore\\Plugin.cs",
+      "accessCount": 4,
+      "lastAccessed": 1777010450385,
+      "type": "file"
+    },
+    {
+      "path": "HLVRCoOpModCore\\BasePlugin.cs",
+      "accessCount": 4,
+      "lastAccessed": 1777010451169,
       "type": "file"
     },
     {
@@ -277,39 +325,39 @@
       "type": "file"
     },
     {
-      "path": "HLVRCoOpModCore\\CoreGamemode.cs",
+      "path": "HLVRCoOpMod\\ServerDiscovery.cs",
       "accessCount": 3,
-      "lastAccessed": 1777008508032,
+      "lastAccessed": 1777010437772,
       "type": "file"
     },
     {
-      "path": "HLVRCoOpMod\\UserInterface.cs",
+      "path": "HLVRCoOpModCore\\ServerInfo.cs",
       "accessCount": 3,
-      "lastAccessed": 1777008531805,
+      "lastAccessed": 1777010443419,
       "type": "file"
     },
     {
-      "path": "PlayerBodySyncPlugin\\PlayerBodySyncPlugin.cs",
+      "path": "HLVRCoOpModCore\\Vector.cs",
       "accessCount": 3,
-      "lastAccessed": 1777008550628,
+      "lastAccessed": 1777010444287,
       "type": "file"
     },
     {
-      "path": "HLVRCoOpMod\\Program.cs",
+      "path": "HLVRCoOpModCore\\Angle.cs",
       "accessCount": 3,
-      "lastAccessed": 1777008557044,
+      "lastAccessed": 1777010444778,
       "type": "file"
     },
     {
-      "path": "HLVRCoOpModCore\\Map.cs",
-      "accessCount": 2,
-      "lastAccessed": 1776986251219,
+      "path": "HLVRCoOpModCore\\Gamemode.cs",
+      "accessCount": 3,
+      "lastAccessed": 1777010450004,
       "type": "file"
     },
     {
-      "path": "HLVRCoOpModCore\\BasePlugin.cs",
-      "accessCount": 2,
-      "lastAccessed": 1777008498494,
+      "path": "WorkshopAddonCompatibilityPlugin\\WorkshopAddonCompatibilityPlugin.cs",
+      "accessCount": 3,
+      "lastAccessed": 1777010466615,
       "type": "file"
     },
     {
@@ -319,39 +367,9 @@
       "type": "file"
     },
     {
-      "path": "HLVRCoOpModCore\\Plugin.cs",
-      "accessCount": 2,
-      "lastAccessed": 1777008508080,
-      "type": "file"
-    },
-    {
       "path": "wiki\\Architecture-Overview.md",
       "accessCount": 2,
       "lastAccessed": 1777008524217,
-      "type": "file"
-    },
-    {
-      "path": "HLVRCoOpMod\\LuaEnvironment.cs",
-      "accessCount": 2,
-      "lastAccessed": 1777008550537,
-      "type": "file"
-    },
-    {
-      "path": "HLVRCoOpModCore\\ServerInfo.cs",
-      "accessCount": 1,
-      "lastAccessed": 1776981071055,
-      "type": "file"
-    },
-    {
-      "path": "HLVRCoOpModCore\\Vector.cs",
-      "accessCount": 1,
-      "lastAccessed": 1776981114317,
-      "type": "file"
-    },
-    {
-      "path": "HLVRCoOpModCore\\Angle.cs",
-      "accessCount": 1,
-      "lastAccessed": 1776981114369,
       "type": "file"
     },
     {
@@ -359,12 +377,6 @@
       "accessCount": 1,
       "lastAccessed": 1776985870405,
       "type": "directory"
-    },
-    {
-      "path": "WorkshopAddonCompatibilityPlugin\\WorkshopAddonCompatibilityPlugin.cs",
-      "accessCount": 1,
-      "lastAccessed": 1776986261371,
-      "type": "file"
     },
     {
       "path": "wiki\\Workshop-Addon-System.md",
@@ -379,12 +391,6 @@
       "type": "file"
     },
     {
-      "path": "HLVRCoOpModCore\\Gamemode.cs",
-      "accessCount": 1,
-      "lastAccessed": 1777008508061,
-      "type": "file"
-    },
-    {
       "path": "wiki\\System-Components.md",
       "accessCount": 1,
       "lastAccessed": 1777008526846,
@@ -394,12 +400,6 @@
       "path": "wiki\\How-Everything-Works-Together.md",
       "accessCount": 1,
       "lastAccessed": 1777008527717,
-      "type": "file"
-    },
-    {
-      "path": "HLVRCoOpMod\\ServerDiscovery.cs",
-      "accessCount": 1,
-      "lastAccessed": 1777008530675,
       "type": "file"
     },
     {
