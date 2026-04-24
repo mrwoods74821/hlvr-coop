@@ -1,7 +1,7 @@
 {
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"ls -la \\\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\.omc\\\\state\\\\\\\"\",\"description\":\"List OMC state directory contents\"}",
-  "error": "Exit code 2\n/usr/bin/bash: eval: line 1: unexpected EOF while looking for matching `\"'",
-  "timestamp": "2026-04-24T02:31:54.008Z",
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\HLVRCoOpMod\\\\Packet.cs\"}",
+  "error": "File does not exist. Note: your current working directory is C:\\Users\\elija\\OneDrive\\Documents\\GitHub\\hlvr-coop.",
+  "timestamp": "2026-04-24T03:46:50.829Z",
   "retry_count": 1
 }

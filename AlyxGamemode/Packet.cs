@@ -47,6 +47,8 @@ namespace AlyxGamemode
         Spawn,
         /// <summary>Player respawn notification. Sent when player respawns after death. Code: RESP</summary>
         Respawn,
+        /// <summary>Resin crafting sync. Sent when resin is deposited. Code: CRFT</summary>
+        Crafting,
         
         // ===== UNUSED/LEGACY PACKETS (Not sent from Lua) =====
         // These packet types are defined but never sent by the game-side Lua scripts.
@@ -185,6 +187,7 @@ namespace AlyxGamemode
                 "TENT" => PacketType.TemplateEntity,
                 "SPWN" => PacketType.Spawn,
                 "RESP" => PacketType.Respawn,
+                "CRFT" => PacketType.Crafting,
                 _ => PacketType.None,
             };
         }
@@ -222,6 +225,7 @@ namespace AlyxGamemode
                 PacketType.TemplateEntity => "TENT",
                 PacketType.Spawn => "SPWN",
                 PacketType.Respawn => "RESP",
+                PacketType.Crafting => "CRFT",
                 _ => "NONE",
             };
         }

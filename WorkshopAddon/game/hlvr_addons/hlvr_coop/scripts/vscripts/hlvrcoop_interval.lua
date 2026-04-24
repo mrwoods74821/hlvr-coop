@@ -532,13 +532,17 @@ function HLVRCoOpMod()
                 return -- the entity must have been deleted?
             end
             local name = ent:GetName();
+            local class = ent:GetClassname();
+            if class == "trigger_once" then
+                if HLVRCOOP_FIRED_TRIGGERS[name] then return end
+                HLVRCOOP_FIRED_TRIGGERS[name] = true;
+            end
             if not HLVRCOOP_USE_UUIDS then
                 if name ~= "" then
                     HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
                     print("FIRE "..name.." "..output.." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                 end
             else
-                local class = ent:GetClassname();
                 local origin = ent:GetOrigin();
                 local uu = uuid(name, origin[1], origin[2], origin[3], class);
                 HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
@@ -751,6 +755,7 @@ function HLVRCoOpMod()
         hlvrcoop_lefthands = {};
         hlvrcoop_righthands = {};
         hlvrcoop_text = {};
+        HLVRCOOP_FIRED_TRIGGERS = {};
         hlvrcoop_player_count = 16;
         hlvrcoop_inbetween = 0;
         hlvrcoop_tick = 0;
@@ -1076,10 +1081,14 @@ function HLVRCoOpMod()
                 if entities ~= nil then
                     for _, entity in pairs(entities) do
                         local class = entity:GetClassname();
-                        entity:FireOutput(type, Player, Player, {}, 0);
-                        if class == "trigger_once" then
-                            -- TODO: trigger_once, does it disable after firing?
+                        if class == "trigger_once" and HLVRCOOP_FIRED_TRIGGERS[name] then
                             DoEntFireByInstanceHandle(entity, "Disable", "", 0, nil, nil);
+                        else
+                            entity:FireOutput(type, Player, Player, {}, 0);
+                            if class == "trigger_once" then
+                                HLVRCOOP_FIRED_TRIGGERS[name] = true;
+                                DoEntFireByInstanceHandle(entity, "Disable", "", 0, nil, nil);
+                            end
                         end
                     end
                 end
@@ -1088,10 +1097,14 @@ function HLVRCoOpMod()
                 if not object then return end
                 local entity = object.entity;
                 if not IsValidEntity(entity) then return end
-                entity:FireOutput(type, Player, Player, {}, 0);
-                if object.class == "trigger_once" then
-                    -- TODO: trigger_once, does it disable after firing?
+                if object.class == "trigger_once" and HLVRCOOP_FIRED_TRIGGERS[name] then
                     DoEntFireByInstanceHandle(entity, "Disable", "", 0, nil, nil);
+                else
+                    entity:FireOutput(type, Player, Player, {}, 0);
+                    if object.class == "trigger_once" then
+                        HLVRCOOP_FIRED_TRIGGERS[name] = true;
+                        DoEntFireByInstanceHandle(entity, "Disable", "", 0, nil, nil);
+                    end
                 end
             end
         end, "HLVR Co-Op Mod", 0);

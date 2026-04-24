@@ -42,19 +42,35 @@ namespace AlyxGamemode
         private readonly object sync = new();
         public bool AddManipulatedEntity(Entity MovedObject, Guid ClientID, List<IndexedClient> Connections)
         {
-            Moveable? oldMoveable = manipulatedEntities.Find(m => m.GetMovedObject().Name == MovedObject.Name);
-            if (oldMoveable == null)
+            lock (sync)
             {
-                manipulatedEntities.Add(new Moveable(MovedObject, ClientID, Connections));
-                return true;
+                Moveable? oldMoveable = manipulatedEntities.Find(m => m.GetMovedObject().Name == MovedObject.Name);
+                if (oldMoveable == null)
+                {
+                    manipulatedEntities.Add(new Moveable(MovedObject, ClientID, Connections));
+                    return true;
+                }
+                else if(oldMoveable.GetClientID() == ClientID || oldMoveable.GetTimedOut())
+                {
+                    oldMoveable.Update(MovedObject, ClientID, Connections);
+                    return true;
+                }
+                return false;
             }
-            else if(oldMoveable.GetClientID() == ClientID || oldMoveable.GetTimedOut())
-            {
-                oldMoveable.Update(MovedObject, ClientID, Connections);
-                return true;
-            }
-            return false;
         }
+        public void RemoveManipulatedEntity(string name)
+        {
+            lock (sync)
+            {
+                Moveable? moveable = manipulatedEntities.Find(m => m.GetMovedObject().Name == name);
+                if (moveable != null)
+                {
+                    moveable.Dispose();
+                    manipulatedEntities.Remove(moveable);
+                }
+            }
+        }
+
         public List<Player> GetPlayers()
         {
             return players;
@@ -190,47 +206,56 @@ namespace AlyxGamemode
         }
         public Player? GetPlayer(Guid id)
         {
-            Player? oldPlayer = players.Find(p => {
-                if (p != null)
-                    return p.Client.Session.ConnectionInfo.Id == id;
-                else
-                    return false;
-            });
-            if (oldPlayer != null)
-                return oldPlayer;
-            return null;
+            lock (sync)
+            {
+                Player? oldPlayer = players.Find(p => {
+                    if (p != null)
+                        return p.Client.Session.ConnectionInfo.Id == id;
+                    else
+                        return false;
+                });
+                if (oldPlayer != null)
+                    return oldPlayer;
+                return null;
+            }
         }
         public Player? AddPlayer(IndexedClient client)
         {
-            if(players.Count < 16)
+            lock (sync)
             {
-                Player player = new(players.Count, client);
-                players.Add(player);
-                return player;
+                if(players.Count < 16)
+                {
+                    int newIndex = Enumerable.Range(0, 16).Except(players.Select(p => p.Index)).First();
+                    Player player = new(newIndex, client);
+                    players.Add(player);
+                    return player;
+                }
+                return null;
             }
-            return null;
         }
         public bool RemovePlayer(Guid id)
         {
             lock (sync)
             {
                 sessionStates.Remove(id);
+                Player? oldPlayer = players.Find(p => p != null && p.Client.Session.ConnectionInfo.Id == id);
+                if (oldPlayer != null)
+                    return players.Remove(oldPlayer);
+                return false;
             }
-
-            Player? oldPlayer = players.Find(p => p != null && p.Client.Session.ConnectionInfo.Id == id);
-            if (oldPlayer != null)
-                return players.Remove(oldPlayer);
-            return false;
         }
         public bool RemovePlayer(int index)
         {
-            Player? oldPlayer = players.Find(p => p.Index == index);
-            if (oldPlayer != null)
+            lock (sync)
             {
-                players.Remove(oldPlayer);
-                return true;
+                Player? oldPlayer = players.Find(p => p.Index == index);
+                if (oldPlayer != null)
+                {
+                    players.Remove(oldPlayer);
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
     }
 }

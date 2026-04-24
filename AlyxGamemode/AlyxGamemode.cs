@@ -359,6 +359,9 @@ namespace AlyxGamemode
                                                             case PacketType.TemplateEntity:
                                                                 HandleTemplateEntityPacket(player, packet, socket, connections);
                                                                 break;
+                                                            case PacketType.Crafting:
+                                                                HandleCraftingPacket(player, packet, socket, connections);
+                                                                break;
                                                         }
                                                     }
                                                 }
@@ -646,6 +649,7 @@ namespace AlyxGamemode
             {
                 try
                 {
+                    AlyxGlobalData.instance.RemoveManipulatedEntity(packet.args[0]);
                     Response removeBreak = new("command", "hlvrcoop_break " + packet.args[0]);
                     Response breakprop = new("status", "Broken prop: " + packet.args[0]);
                     string serializedRemove = JsonConvert.SerializeObject(removeBreak);
@@ -673,6 +677,7 @@ namespace AlyxGamemode
             {
                 try
                 {
+                    AlyxGlobalData.instance.RemoveManipulatedEntity(packet.args[0]);
                     Response remove = new("command", "ent_remove " + packet.args[0]);
                     BroadcastToOthers(connections, socket, remove);
                 }
@@ -757,6 +762,22 @@ namespace AlyxGamemode
                 catch (Exception ex)
                 {
                     ErrorLogger.LogError("AlyxGamemode.TemplateEntity", ex);
+                }
+            }
+        }
+
+        private static void HandleCraftingPacket(Player player, Packet packet, IWebSocketConnection socket, List<IndexedClient> connections)
+        {
+            if (packet.args.Length >= 1)
+            {
+                try
+                {
+                    Response craftSync = new("command", "hlvrcoop_setresin " + player.Index + " " + packet.args[0]);
+                    BroadcastToOthers(connections, socket, craftSync);
+                }
+                catch (Exception ex)
+                {
+                    ErrorLogger.LogError("AlyxGamemode.Crafting", ex);
                 }
             }
         }
