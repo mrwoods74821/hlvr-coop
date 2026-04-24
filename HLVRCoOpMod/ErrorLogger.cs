@@ -7,6 +7,7 @@ namespace HLVRCoOpMod
     public static class ErrorLogger
     {
         private static readonly Channel errorChannel = new("ERR", "Errors", Color.Red);
+        private static readonly Channel syncChannel = new("SYNC", "Sync", Color.DarkCyan);
 
         public static void LogError(string source, Exception ex)
         {
@@ -38,6 +39,24 @@ namespace HLVRCoOpMod
             }
 
             System.Diagnostics.Debug.WriteLine(fullMessage);
+        }
+
+        public static void LogSync(string message)
+        {
+            try
+            {
+                if (Program.userInterface != null)
+                {
+                    Program.userInterface.Invoke(() =>
+                    {
+                        Program.userInterface.LogToOutput(syncChannel, message);
+                    });
+                }
+            }
+            catch
+            {
+                // Best-effort diagnostics; never break gameplay flow
+            }
         }
     }
 }

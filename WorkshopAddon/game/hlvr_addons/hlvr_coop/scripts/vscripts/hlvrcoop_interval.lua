@@ -182,7 +182,10 @@ function HLVRCoOpMod()
         -- Check for death every frame (not just when sending PLYR packet)
         -- This ensures we can restore health before the death screen appears
         HLVRCOOP_CheckDeath();
-        
+
+        -- Interpolate remote player entities every tick
+        HLVRCOOP_Interpolate();
+
         hlvrcoop_tick = hlvrcoop_tick + 1;
 
         local playerOrigin = Player:GetOrigin();
@@ -582,12 +585,12 @@ function HLVRCoOpMod()
         HLVRCOOP_OnCompletionD_Forward = function(params) fireit(params, "OnCompletionD_Forward") end
         HLVRCOOP_OnCompletionE_Forward = function(params) fireit(params, "OnCompletionE_Forward") end
         HLVRCOOP_OnCompletionF_Forward = function(params) fireit(params, "OnCompletionF_Forward") end
-        HLVRCOOP_OnCompletionA_Backward = function(params) fireit(params, "OnCompletionA_Forward") end
-        HLVRCOOP_OnCompletionB_Backward = function(params) fireit(params, "OnCompletionB_Forward") end
-        HLVRCOOP_OnCompletionC_Backward = function(params) fireit(params, "OnCompletionC_Forward") end
-        HLVRCOOP_OnCompletionD_Backward = function(params) fireit(params, "OnCompletionD_Forward") end
-        HLVRCOOP_OnCompletionE_Backward = function(params) fireit(params, "OnCompletionE_Forward") end
-        HLVRCOOP_OnCompletionF_Backward = function(params) fireit(params, "OnCompletionF_Forward") end
+        HLVRCOOP_OnCompletionA_Backward = function(params) fireit(params, "OnCompletionA_Backward") end
+        HLVRCOOP_OnCompletionB_Backward = function(params) fireit(params, "OnCompletionB_Backward") end
+        HLVRCOOP_OnCompletionC_Backward = function(params) fireit(params, "OnCompletionC_Backward") end
+        HLVRCOOP_OnCompletionD_Backward = function(params) fireit(params, "OnCompletionD_Backward") end
+        HLVRCOOP_OnCompletionE_Backward = function(params) fireit(params, "OnCompletionE_Backward") end
+        HLVRCOOP_OnCompletionF_Backward = function(params) fireit(params, "OnCompletionF_Backward") end
         HLVRCOOP_OnCompletionExitA = function(params) fireit(params, "OnCompletionExitA") end
         HLVRCOOP_OnCompletionExitB = function(params) fireit(params, "OnCompletionExitB") end
         HLVRCOOP_OnCompletionExitC = function(params) fireit(params, "OnCompletionExitC") end
@@ -752,6 +755,16 @@ function HLVRCoOpMod()
         hlvrcoop_inbetween = 0;
         hlvrcoop_tick = 0;
 
+        -- Initialize interpolation state arrays
+        hlvrcoop_interp = {}
+        for i = 1, hlvrcoop_player_count do
+            hlvrcoop_interp[i] = {
+                head = { prev_pos = nil, prev_ang = nil, target_pos = nil, target_ang = nil, last_update = 0 },
+                lefthand = { prev_pos = nil, prev_ang = nil, target_pos = nil, target_ang = nil, last_update = 0 },
+                righthand = { prev_pos = nil, prev_ang = nil, target_pos = nil, target_ang = nil, last_update = 0 },
+            }
+        end
+
         SpawnEntityFromTableSynchronous("point_worldtext", {
             origin = "16128 16128 16128",
             targetname = "hlvrcoop_hud",
@@ -804,6 +817,84 @@ function HLVRCoOpMod()
                 rendercolor = "255 255 255 255",
                 enabled = "1",
             }));
+        end
+
+        -- Interpolation helper function
+        function InterpolateEntity(interp_state, entity, current_time)
+            if not interp_state or not entity or not IsValidEntity(entity) then
+                return
+            end
+
+            -- First update - snap immediately
+            if interp_state.prev_pos == nil then
+                entity:SetAbsOrigin(interp_state.target_pos)
+                entity:SetAbsAngles(interp_state.target_ang[1], interp_state.target_ang[2], interp_state.target_ang[3])
+                interp_state.prev_pos = interp_state.target_pos
+                interp_state.prev_ang = interp_state.target_ang
+                return
+            end
+
+            -- Check if we haven't received updates for too long (>500ms)
+            local time_since_update = current_time - interp_state.last_update
+            if time_since_update > 0.5 then
+                -- Snap to target and stop interpolating
+                entity:SetAbsOrigin(interp_state.target_pos)
+                entity:SetAbsAngles(interp_state.target_ang[1], interp_state.target_ang[2], interp_state.target_ang[3])
+                interp_state.prev_pos = interp_state.target_pos
+                interp_state.prev_ang = interp_state.target_ang
+                return
+            end
+
+            -- Calculate interpolation factor t
+            -- Network updates come at 10Hz (100ms window), so we use 0.1 as the base
+            local t = time_since_update / 0.1
+            -- Clamp t to [0, 1.2] for slight extrapolation
+            if t < 0 then t = 0 end
+            if t > 1.2 then t = 1.2 end
+
+            -- Lerp position
+            local lerp_pos = Vector(
+                interp_state.prev_pos[1] + (interp_state.target_pos[1] - interp_state.prev_pos[1]) * t,
+                interp_state.prev_pos[2] + (interp_state.target_pos[2] - interp_state.prev_pos[2]) * t,
+                interp_state.prev_pos[3] + (interp_state.target_pos[3] - interp_state.prev_pos[3]) * t
+            )
+
+            -- Lerp angles
+            local lerp_ang = Vector(
+                interp_state.prev_ang[1] + (interp_state.target_ang[1] - interp_state.prev_ang[1]) * t,
+                interp_state.prev_ang[2] + (interp_state.target_ang[2] - interp_state.prev_ang[2]) * t,
+                interp_state.prev_ang[3] + (interp_state.target_ang[3] - interp_state.prev_ang[3]) * t
+            )
+
+            entity:SetAbsOrigin(lerp_pos)
+            entity:SetAbsAngles(lerp_ang[1], lerp_ang[2], lerp_ang[3])
+        end
+
+        -- Main interpolation function called every tick
+        function HLVRCOOP_Interpolate()
+            local current_time = GameRules:GetGameTime()
+
+            for i = 1, hlvrcoop_player_count do
+                local idx = i
+                local interp = hlvrcoop_interp[i]
+
+                if interp then
+                    -- Interpolate head
+                    if hlvrcoop_heads[idx] and IsValidEntity(hlvrcoop_heads[idx]) then
+                        InterpolateEntity(interp.head, hlvrcoop_heads[idx], current_time)
+                    end
+
+                    -- Interpolate left hand
+                    if hlvrcoop_lefthands[idx] and IsValidEntity(hlvrcoop_lefthands[idx]) then
+                        InterpolateEntity(interp.lefthand, hlvrcoop_lefthands[idx], current_time)
+                    end
+
+                    -- Interpolate right hand
+                    if hlvrcoop_righthands[idx] and IsValidEntity(hlvrcoop_righthands[idx]) then
+                        InterpolateEntity(interp.righthand, hlvrcoop_righthands[idx], current_time)
+                    end
+                end
+            end
         end
 
         Convars:RegisterCommand("hlvrcoop_teleport", function(command, x, y, z)
@@ -874,6 +965,9 @@ function HLVRCoOpMod()
         -- Format: hlvrcoop_setlocation_head <index> <hx> <hy> <hz> <hp> <hyaw> <hr> <tx> <ty> <tz> |<name>
         Convars:RegisterCommand("hlvrcoop_setlocation_head", function(command, index, hx, hy, hz, hp, hyaw, hr, tx, ty, tz, nameRaw)
             local i = tonumber(index)
+            local idx = i + 1
+            local current_time = GameRules:GetGameTime()
+
             -- Parse name: | delimiter separates last coordinate from the display name
             -- nameRaw may contain the name after |, or if Convars splits on spaces,
             -- the caller uses |prefix to capture the rest
@@ -883,14 +977,32 @@ function HLVRCoOpMod()
                 displayName = string.sub(displayName, 2)
             end
 
-            -- Update head entity
-            local idx = i + 1
-            if hlvrcoop_heads[idx] and IsValidEntity(hlvrcoop_heads[idx]) then
-                hlvrcoop_heads[idx]:SetAbsOrigin(Vector(tonumber(hx), tonumber(hy), tonumber(hz)));
-                hlvrcoop_heads[idx]:SetAbsAngles(tonumber(hp), tonumber(hyaw), tonumber(hr));
+            -- Update head interpolation state
+            if hlvrcoop_interp[idx] and hlvrcoop_heads[idx] and IsValidEntity(hlvrcoop_heads[idx]) then
+                local new_pos = Vector(tonumber(hx), tonumber(hy), tonumber(hz))
+                local new_ang = Vector(tonumber(hp), tonumber(hyaw), tonumber(hr))
+
+                -- Store current target as previous if we have one
+                if hlvrcoop_interp[idx].head.target_pos ~= nil then
+                    hlvrcoop_interp[idx].head.prev_pos = hlvrcoop_interp[idx].head.target_pos
+                    hlvrcoop_interp[idx].head.prev_ang = hlvrcoop_interp[idx].head.target_ang
+                end
+
+                -- Store new values as target
+                hlvrcoop_interp[idx].head.target_pos = new_pos
+                hlvrcoop_interp[idx].head.target_ang = new_ang
+                hlvrcoop_interp[idx].head.last_update = current_time
+
+                -- First update - snap immediately (don't interpolate from 16128,16128,16128)
+                if hlvrcoop_interp[idx].head.prev_pos == nil then
+                    hlvrcoop_heads[idx]:SetAbsOrigin(new_pos)
+                    hlvrcoop_heads[idx]:SetAbsAngles(tonumber(hp), tonumber(hyaw), tonumber(hr))
+                    hlvrcoop_interp[idx].head.prev_pos = new_pos
+                    hlvrcoop_interp[idx].head.prev_ang = new_ang
+                end
             end
 
-            -- Update text entity position
+            -- Update text entity position (no interpolation needed for text)
             if hlvrcoop_text[idx] and IsValidEntity(hlvrcoop_text[idx]) then
                 hlvrcoop_text[idx]:SetAbsOrigin(Vector(tonumber(tx), tonumber(ty), tonumber(tz)));
                 -- Update the text message via DoEntFireByInstanceHandle
@@ -905,17 +1017,56 @@ function HLVRCoOpMod()
         Convars:RegisterCommand("hlvrcoop_setlocation_hands", function(command, index, lx, ly, lz, lp, lyaw, lr, rx, ry, rz, rp, ryaw, rr)
             local i = tonumber(index)
             local idx = i + 1
+            local current_time = GameRules:GetGameTime()
 
-            -- Update left hand
-            if hlvrcoop_lefthands[idx] and IsValidEntity(hlvrcoop_lefthands[idx]) then
-                hlvrcoop_lefthands[idx]:SetAbsOrigin(Vector(tonumber(lx), tonumber(ly), tonumber(lz)));
-                hlvrcoop_lefthands[idx]:SetAbsAngles(tonumber(lp), tonumber(lyaw), tonumber(lr));
+            -- Update left hand interpolation state
+            if hlvrcoop_interp[idx] and hlvrcoop_lefthands[idx] and IsValidEntity(hlvrcoop_lefthands[idx]) then
+                local new_pos = Vector(tonumber(lx), tonumber(ly), tonumber(lz))
+                local new_ang = Vector(tonumber(lp), tonumber(lyaw), tonumber(lr))
+
+                -- Store current target as previous if we have one
+                if hlvrcoop_interp[idx].lefthand.target_pos ~= nil then
+                    hlvrcoop_interp[idx].lefthand.prev_pos = hlvrcoop_interp[idx].lefthand.target_pos
+                    hlvrcoop_interp[idx].lefthand.prev_ang = hlvrcoop_interp[idx].lefthand.target_ang
+                end
+
+                -- Store new values as target
+                hlvrcoop_interp[idx].lefthand.target_pos = new_pos
+                hlvrcoop_interp[idx].lefthand.target_ang = new_ang
+                hlvrcoop_interp[idx].lefthand.last_update = current_time
+
+                -- First update - snap immediately
+                if hlvrcoop_interp[idx].lefthand.prev_pos == nil then
+                    hlvrcoop_lefthands[idx]:SetAbsOrigin(new_pos)
+                    hlvrcoop_lefthands[idx]:SetAbsAngles(tonumber(lp), tonumber(lyaw), tonumber(lr))
+                    hlvrcoop_interp[idx].lefthand.prev_pos = new_pos
+                    hlvrcoop_interp[idx].lefthand.prev_ang = new_ang
+                end
             end
 
-            -- Update right hand
-            if hlvrcoop_righthands[idx] and IsValidEntity(hlvrcoop_righthands[idx]) then
-                hlvrcoop_righthands[idx]:SetAbsOrigin(Vector(tonumber(rx), tonumber(ry), tonumber(rz)));
-                hlvrcoop_righthands[idx]:SetAbsAngles(tonumber(rp), tonumber(ryaw), tonumber(rr));
+            -- Update right hand interpolation state
+            if hlvrcoop_interp[idx] and hlvrcoop_righthands[idx] and IsValidEntity(hlvrcoop_righthands[idx]) then
+                local new_pos = Vector(tonumber(rx), tonumber(ry), tonumber(rz))
+                local new_ang = Vector(tonumber(rp), tonumber(ryaw), tonumber(rr))
+
+                -- Store current target as previous if we have one
+                if hlvrcoop_interp[idx].righthand.target_pos ~= nil then
+                    hlvrcoop_interp[idx].righthand.prev_pos = hlvrcoop_interp[idx].righthand.target_pos
+                    hlvrcoop_interp[idx].righthand.prev_ang = hlvrcoop_interp[idx].righthand.target_ang
+                end
+
+                -- Store new values as target
+                hlvrcoop_interp[idx].righthand.target_pos = new_pos
+                hlvrcoop_interp[idx].righthand.target_ang = new_ang
+                hlvrcoop_interp[idx].righthand.last_update = current_time
+
+                -- First update - snap immediately
+                if hlvrcoop_interp[idx].righthand.prev_pos == nil then
+                    hlvrcoop_righthands[idx]:SetAbsOrigin(new_pos)
+                    hlvrcoop_righthands[idx]:SetAbsAngles(tonumber(rp), tonumber(ryaw), tonumber(rr))
+                    hlvrcoop_interp[idx].righthand.prev_pos = new_pos
+                    hlvrcoop_interp[idx].righthand.prev_ang = new_ang
+                end
             end
         end, "HLVR Co-Op Mod", 0);
 

@@ -1,7 +1,7 @@
 {
-  "tool_name": "TeamCreate",
-  "tool_input_preview": "{\"team_name\":\"hlvr-phase1-exec\",\"description\":\"Execute Phase 1 of HLVR Co-Op fix plan: NPHP fix, God handler extraction, command consolidation, connection state, packet sequences\"}",
-  "error": "Already leading team \"hlvr-coop-analysis\". A leader can only manage one team at a time. Use TeamDelete to end the current team before creating a new one.",
-  "timestamp": "2026-04-23T22:35:41.366Z",
-  "retry_count": 2
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"ls -la \\\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\.omc\\\\state\\\\\\\"\",\"description\":\"List OMC state directory contents\"}",
+  "error": "Exit code 2\n/usr/bin/bash: eval: line 1: unexpected EOF while looking for matching `\"'",
+  "timestamp": "2026-04-24T02:31:54.008Z",
+  "retry_count": 1
 }

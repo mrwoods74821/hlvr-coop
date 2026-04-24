@@ -19,7 +19,19 @@ namespace HLVRCoOpMod
         private volatile bool killed = false;
         private volatile bool shouldStopReconnecting = false; // Flag to stop reconnection loop (set when client closes)
         private List<byte[]> commandQueue = new(); // Queue for byte[] commands when connection is killed
-        private Queue<string> bufferFullCommandQueue = new(); // Queue for string commands when buffer is full
+
+        // Priority queue system for buffer full commands
+        private enum CommandPriority { Low = 0, Normal = 1, Critical = 2 }
+
+        private class PrioritizedCommand
+        {
+            public string Command { get; set; } = "";
+            public CommandPriority Priority { get; set; }
+        }
+
+        private readonly Queue<PrioritizedCommand> criticalQueue = new();
+        private readonly Queue<PrioritizedCommand> normalQueue = new();
+        private readonly Queue<PrioritizedCommand> lowQueue = new();
         private StreamWatcher? watcher;
         private int reconnectAttempts = 0;
         private const int INITIAL_RETRY_DELAY = 1000; // 1 second
@@ -31,7 +43,8 @@ namespace HLVRCoOpMod
         // Command buffer full handling
         private bool bufferFull = false;
         private int bufferFullCount = 0;
-        private const int MAX_QUEUE_SIZE = 100;
+        private const int MAX_QUEUE_SIZE = 150;
+        private DateTime lastQueueWarningTime = DateTime.MinValue;
         private const int BUFFER_FULL_THRESHOLD = 3;
         private const int BUFFER_FULL_RECONNECT_THRESHOLD = 10;
         private const int MIN_COMMAND_INTERVAL_MS = 50; // 20 commands/second max
@@ -40,8 +53,120 @@ namespace HLVRCoOpMod
         private bool isHandlingPersistentBufferFull = false;
         private readonly object bufferLock = new object(); // Lock for thread-safe buffer state access
         private readonly object streamLock = new object(); // Lock for thread-safe stream operations
-        
+
         public event EventHandler? Reconnected;
+
+        /// <summary>
+        /// Classifies a command by priority based on its content
+        /// </summary>
+        private static CommandPriority ClassifyCommand(string command)
+        {
+            if (command.StartsWith("addon_enable") ||
+                command.StartsWith("ent_create") ||
+                command.StartsWith("ent_remove") ||
+                command.StartsWith("ent_fire") ||
+                command.StartsWith("hlvrcoop_fireoutput") ||
+                command.StartsWith("hlvrcoop_cache_entity") ||
+                command.StartsWith("hlvrcoop_teleport") ||
+                command.StartsWith("hlvrcoop_sethealth") ||
+                command.StartsWith("hlvrcoop_break") ||
+                command.StartsWith("echo ") ||
+                command.StartsWith("sv_cheats") ||
+                command.StartsWith("buddha") ||
+                command.StartsWith("unpause") ||
+                command.StartsWith("play "))
+                return CommandPriority.Critical;
+
+            if (command.StartsWith("hlvrcoop_setlocation_head") ||
+                command.StartsWith("hlvrcoop_setlocation_hands") ||
+                command.StartsWith("hlvrcoop_setlocation "))
+                return CommandPriority.Normal;
+
+            return CommandPriority.Low;
+        }
+
+        /// <summary>
+        /// Gets the total size of all priority queues combined
+        /// </summary>
+        private int GetTotalQueueSize()
+        {
+            return criticalQueue.Count + normalQueue.Count + lowQueue.Count;
+        }
+
+        /// <summary>
+        /// Dequeues the next command based on priority (Critical > Normal > Low)
+        /// Returns null if all queues are empty
+        /// </summary>
+        private PrioritizedCommand? DequeueNext()
+        {
+            if (criticalQueue.Count > 0)
+                return criticalQueue.Dequeue();
+            if (normalQueue.Count > 0)
+                return normalQueue.Dequeue();
+            if (lowQueue.Count > 0)
+                return lowQueue.Dequeue();
+            return null;
+        }
+
+        /// <summary>
+        /// Enqueues a command to the appropriate priority queue with overflow handling
+        /// </summary>
+        private void EnqueuePrioritizedCommand(string command)
+        {
+            CommandPriority priority = ClassifyCommand(command);
+            int totalSize = GetTotalQueueSize();
+
+            // Check for queue depth warning
+            if (totalSize > 75 && (DateTime.Now - lastQueueWarningTime).TotalSeconds > 10)
+            {
+                lastQueueWarningTime = DateTime.Now;
+                ErrorLogger.LogSync($"VConsole queue depth: {totalSize}/150");
+            }
+
+            // Handle overflow - drop from low priority first, then normal, never critical
+            if (totalSize >= MAX_QUEUE_SIZE)
+            {
+                if (priority == CommandPriority.Critical)
+                {
+                    // Always accept critical commands
+                    criticalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                }
+                else if (priority == CommandPriority.Normal)
+                {
+                    // Drop from low queue first to make room
+                    if (lowQueue.Count > 0)
+                    {
+                        lowQueue.Dequeue();
+                        normalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                    }
+                    // If low queue is empty, drop the command
+                }
+                else // Low priority
+                {
+                    // Drop low priority commands when queue is full
+                    if (lowQueue.Count < MAX_QUEUE_SIZE / 3) // Allow some low priority commands
+                    {
+                        lowQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                    }
+                }
+            }
+            else
+            {
+                // Add to appropriate queue
+                switch (priority)
+                {
+                    case CommandPriority.Critical:
+                        criticalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                        break;
+                    case CommandPriority.Normal:
+                        normalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                        break;
+                    case CommandPriority.Low:
+                        lowQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                        break;
+                }
+            }
+        }
         
         public VConsole()
         {
@@ -129,7 +254,9 @@ namespace HLVRCoOpMod
             {
                 bufferFull = false; // Reset buffer state on successful connect
                 bufferFullCount = 0;
-                bufferFullCommandQueue.Clear(); // Clear any queued commands from previous session
+                criticalQueue.Clear();
+                normalQueue.Clear();
+                lowQueue.Clear();
             }
             return true;
         }
@@ -475,22 +602,16 @@ namespace HLVRCoOpMod
                     TimeSpan timeSinceLastCommand = DateTime.Now - lastCommandTime;
                     if (timeSinceLastCommand.TotalMilliseconds < MIN_COMMAND_INTERVAL_MS)
                     {
-                        // Sending too fast - queue the command
-                        if (bufferFullCommandQueue.Count < MAX_QUEUE_SIZE)
-                        {
-                            bufferFullCommandQueue.Enqueue(command);
-                        }
+                        // Sending too fast - queue the command with priority
+                        EnqueuePrioritizedCommand(command);
                         return;
                     }
                 }
-                
+
                 // If buffer is full, queue the command (unless urgent)
                 if (bufferFull && !urgent)
                 {
-                    if (bufferFullCommandQueue.Count < MAX_QUEUE_SIZE)
-                    {
-                        bufferFullCommandQueue.Enqueue(command);
-                    }
+                    EnqueuePrioritizedCommand(command);
                     return;
                 }
             }
@@ -618,14 +739,18 @@ namespace HLVRCoOpMod
                     
                     lock (bufferLock)
                     {
-                        if (bufferFullCommandQueue.Count == 0 || bufferFull || killed)
+                        if (GetTotalQueueSize() == 0 || bufferFull || killed)
                             break;
-                        
+
                         currentStream = stream;
                         if (currentStream == null)
                             break;
-                        
-                        command = bufferFullCommandQueue.Dequeue();
+
+                        PrioritizedCommand? prioritizedCommand = DequeueNext();
+                        if (prioritizedCommand == null)
+                            break;
+
+                        command = prioritizedCommand.Command;
                         shouldContinue = true;
                     }
                     
@@ -674,9 +799,9 @@ namespace HLVRCoOpMod
                         // If write fails, re-queue the command (unless queue is full)
                         lock (bufferLock)
                         {
-                            if (bufferFullCommandQueue.Count < MAX_QUEUE_SIZE)
+                            if (GetTotalQueueSize() < MAX_QUEUE_SIZE)
                             {
-                                bufferFullCommandQueue.Enqueue(command);
+                                EnqueuePrioritizedCommand(command);
                             }
                         }
                         break; // Stop processing on error
