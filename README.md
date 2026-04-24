@@ -4,7 +4,7 @@
 
 > **Note:** This is a fork of [Kiwifruit's HLVRCOOP (Half-Life: Alyx Co-Op Mod)](https://github.com/KiwifruitDev/KCOM).
 
-<a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/8ExaaRw.png"></a>
+<a href="https://github.com/dayflaree/hlvr-coop"><img align="left" width="256" src="https://i.imgur.com/ZxVjlXI.jpeg"></a>
 
 [![Releases](https://img.shields.io/github/v/tag/dayflaree/hlvr-coop?label=release)](https://github.com/dayflaree/hlvr-coop/releases)
 
