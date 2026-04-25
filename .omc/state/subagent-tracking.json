@@ -1,125 +1,229 @@
 {
   "agents": [
     {
-      "agent_id": "a4c82a760872b345c",
+      "agent_id": "a01089bbd60e08d63",
       "agent_type": "Explore",
-      "started_at": "2026-04-24T05:27:58.387Z",
+      "started_at": "2026-04-25T00:04:39.924Z",
       "parent_mode": "none",
       "status": "completed",
-      "completed_at": "2026-04-24T05:33:13.092Z",
-      "duration_ms": 314705
+      "completed_at": "2026-04-25T00:06:04.855Z",
+      "duration_ms": 84931
     },
     {
-      "agent_id": "ac795b82fa2615e65",
-      "agent_type": "Explore",
-      "started_at": "2026-04-24T05:27:58.447Z",
+      "agent_id": "af8b7d29c32e6fd38",
+      "agent_type": "cs-analyst",
+      "started_at": "2026-04-25T00:07:37.583Z",
       "parent_mode": "none",
       "status": "completed",
-      "completed_at": "2026-04-24T05:30:20.513Z",
-      "duration_ms": 142066
+      "completed_at": "2026-04-25T00:13:59.774Z",
+      "duration_ms": 382191
     },
     {
-      "agent_id": "adfee1d717ef0df0d",
+      "agent_id": "ab7f86472e842c865",
+      "agent_type": "lua-analyst",
+      "started_at": "2026-04-25T00:07:56.324Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:09:58.150Z",
+      "duration_ms": 121826
+    },
+    {
+      "agent_id": "ae042e34bf22dea23",
+      "agent_type": "source2-researcher",
+      "started_at": "2026-04-25T00:08:10.324Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:10:32.177Z",
+      "duration_ms": 141853
+    },
+    {
+      "agent_id": "a423fe94bdd2fffd6",
+      "agent_type": "build-verifier",
+      "started_at": "2026-04-25T00:08:21.233Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:10:59.273Z",
+      "duration_ms": 158040
+    },
+    {
+      "agent_id": "a381be40f3fa3c09f",
+      "agent_type": "architect-reviewer",
+      "started_at": "2026-04-25T00:08:35.138Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:12:09.599Z",
+      "duration_ms": 214461
+    },
+    {
+      "agent_id": "a49c5646ede582aef",
+      "agent_type": "lua-analyst",
+      "started_at": "2026-04-25T00:12:21.785Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:12:52.368Z",
+      "duration_ms": 30583
+    },
+    {
+      "agent_id": "aff8d05f04508e2bf",
+      "agent_type": "source2-researcher",
+      "started_at": "2026-04-25T00:12:22.318Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:12:57.110Z",
+      "duration_ms": 34792
+    },
+    {
+      "agent_id": "a1def75eb330e8eac",
+      "agent_type": "build-verifier",
+      "started_at": "2026-04-25T00:12:22.904Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:12:43.439Z",
+      "duration_ms": 20535
+    },
+    {
+      "agent_id": "adb91137f1dd7aa3b",
+      "agent_type": "architect-reviewer",
+      "started_at": "2026-04-25T00:12:23.480Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:12:45.023Z",
+      "duration_ms": 21543
+    },
+    {
+      "agent_id": "a9761884b1cec2ba8",
+      "agent_type": "cs-analyst",
+      "started_at": "2026-04-25T00:14:00.082Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:14:12.065Z",
+      "duration_ms": 11983
+    },
+    {
+      "agent_id": "aa4d14aacfa5f4cc8",
+      "agent_type": "cs-analyst",
+      "started_at": "2026-04-25T00:14:12.388Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:14:19.037Z",
+      "duration_ms": 6649
+    },
+    {
+      "agent_id": "afda76eb1a6292a3e",
+      "agent_type": "oh-my-claudecode:planner",
+      "started_at": "2026-04-25T00:17:02.701Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-04-25T00:18:37.999Z",
+      "duration_ms": 95298
+    },
+    {
+      "agent_id": "ac9d9345967174df0",
       "agent_type": "oh-my-claudecode:architect",
-      "started_at": "2026-04-24T05:36:21.966Z",
+      "started_at": "2026-04-25T00:18:56.448Z",
       "parent_mode": "none",
       "status": "completed",
-      "completed_at": "2026-04-24T05:37:09.761Z",
-      "duration_ms": 47795
+      "completed_at": "2026-04-25T00:19:50.121Z",
+      "duration_ms": 53673
     },
     {
-      "agent_id": "afa1fb3604ae03068",
+      "agent_id": "aa45880c7e564b03b",
       "agent_type": "oh-my-claudecode:critic",
-      "started_at": "2026-04-24T05:37:39.567Z",
+      "started_at": "2026-04-25T00:20:35.947Z",
       "parent_mode": "none",
       "status": "completed",
-      "completed_at": "2026-04-24T05:40:15.440Z",
-      "duration_ms": 155873
+      "completed_at": "2026-04-25T00:20:49.851Z",
+      "duration_ms": 13904
     },
     {
-      "agent_id": "aa1190d84df5c47af",
-      "agent_type": "oh-my-claudecode:architect",
-      "started_at": "2026-04-24T05:40:58.438Z",
-      "parent_mode": "none",
+      "agent_id": "a550b5816a45aec3e",
+      "agent_type": "lua-fixer",
+      "started_at": "2026-04-25T00:23:55.371Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T05:42:09.475Z",
-      "duration_ms": 71037
+      "completed_at": "2026-04-25T00:26:03.965Z",
+      "duration_ms": 128594
     },
     {
-      "agent_id": "a3d33c7d071d9d8a4",
-      "agent_type": "oh-my-claudecode:critic",
-      "started_at": "2026-04-24T05:42:32.650Z",
-      "parent_mode": "none",
+      "agent_id": "a39abb18fcf6c730c",
+      "agent_type": "csharp-fixer",
+      "started_at": "2026-04-25T00:23:55.414Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T05:42:58.512Z",
-      "duration_ms": 25862
+      "completed_at": "2026-04-25T00:31:10.866Z",
+      "duration_ms": 435452
     },
     {
-      "agent_id": "a18a29088e02279e0",
-      "agent_type": "oh-my-claudecode:code-reviewer",
-      "started_at": "2026-04-24T05:50:20.704Z",
-      "parent_mode": "ralph",
+      "agent_id": "af12bc05521a3251b",
+      "agent_type": "minor-fixer",
+      "started_at": "2026-04-25T00:24:05.727Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T05:52:51.286Z",
-      "duration_ms": 150582
+      "completed_at": "2026-04-25T00:25:27.961Z",
+      "duration_ms": 82234
     },
     {
-      "agent_id": "a0a354b9b6b9a98d7",
-      "agent_type": "oh-my-claudecode:code-reviewer",
-      "started_at": "2026-04-24T05:50:27.593Z",
-      "parent_mode": "ralph",
+      "agent_id": "a2d2333f14a64d1de",
+      "agent_type": "lua-fixer",
+      "started_at": "2026-04-25T00:31:30.400Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T05:51:58.500Z",
-      "duration_ms": 90907
+      "completed_at": "2026-04-25T00:31:43.059Z",
+      "duration_ms": 12659
     },
     {
-      "agent_id": "a37ed5c23ebcc5ec3",
-      "agent_type": "oh-my-claudecode:architect",
-      "started_at": "2026-04-24T05:56:31.323Z",
-      "parent_mode": "ralph",
+      "agent_id": "a9004fad8b61add87",
+      "agent_type": "csharp-fixer",
+      "started_at": "2026-04-25T00:31:30.897Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T05:58:05.149Z",
-      "duration_ms": 93826
+      "completed_at": "2026-04-25T00:32:16.163Z",
+      "duration_ms": 45266
     },
     {
-      "agent_id": "a98cd77af2eab3b5a",
-      "agent_type": "oh-my-claudecode:code-reviewer",
-      "started_at": "2026-04-24T06:00:22.301Z",
-      "parent_mode": "ralph",
+      "agent_id": "aaec95725a28bd291",
+      "agent_type": "minor-fixer",
+      "started_at": "2026-04-25T00:31:31.397Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T06:02:33.819Z",
-      "duration_ms": 131518
+      "completed_at": "2026-04-25T00:31:47.687Z",
+      "duration_ms": 16290
     },
     {
-      "agent_id": "a2b64117e6c77272a",
-      "agent_type": "oh-my-claudecode:code-reviewer",
-      "started_at": "2026-04-24T06:00:22.337Z",
-      "parent_mode": "ralph",
+      "agent_id": "aa3067aca5f8478e0",
+      "agent_type": "cs-reviewer",
+      "started_at": "2026-04-25T00:37:16.373Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T06:02:22.177Z",
-      "duration_ms": 119840
+      "completed_at": "2026-04-25T00:44:00.469Z",
+      "duration_ms": 404096
     },
     {
-      "agent_id": "a4b44488e26134057",
-      "agent_type": "oh-my-claudecode:architect",
-      "started_at": "2026-04-24T06:04:33.699Z",
-      "parent_mode": "ralph",
-      "status": "completed",
-      "completed_at": "2026-04-24T06:05:05.378Z",
-      "duration_ms": 31679
+      "agent_id": "a1898944836415659",
+      "agent_type": "lua-reviewer",
+      "started_at": "2026-04-25T00:37:22.111Z",
+      "parent_mode": "team",
+      "status": "running"
     },
     {
-      "agent_id": "a1d374fe3252a3f97",
-      "agent_type": "oh-my-claudecode:architect",
-      "started_at": "2026-04-24T06:08:19.240Z",
-      "parent_mode": "ralph",
+      "agent_id": "ade7a5288339c91b6",
+      "agent_type": "source2-reviewer",
+      "started_at": "2026-04-25T00:37:27.273Z",
+      "parent_mode": "team",
+      "status": "running"
+    },
+    {
+      "agent_id": "afe77621c06b9b0d8",
+      "agent_type": "arch-reviewer",
+      "started_at": "2026-04-25T00:37:32.022Z",
+      "parent_mode": "team",
       "status": "completed",
-      "completed_at": "2026-04-24T06:09:54.304Z",
-      "duration_ms": 95064
+      "completed_at": "2026-04-25T00:40:16.855Z",
+      "duration_ms": 164833
     }
   ],
-  "total_spawned": 11,
-  "total_completed": 13,
+  "total_spawned": 24,
+  "total_completed": 23,
   "total_failed": 0,
-  "last_updated": "2026-04-24T06:09:54.413Z"
+  "last_updated": "2026-04-25T00:44:00.585Z"
 }

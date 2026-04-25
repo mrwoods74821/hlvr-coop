@@ -88,6 +88,7 @@ namespace DiscordRpcPlugin
                                 LargeImageKey = "hlvrcoop",
                                 LargeImageText = "HLVR Co-Op Mod",
                             };
+                            DiscordRpcGlobalData.instance.SetServerStarted(true);
                             discord4.SetPresence(richPresence3);
                         }
                     }

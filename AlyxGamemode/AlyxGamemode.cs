@@ -503,18 +503,21 @@ namespace AlyxGamemode
         {
             if (packet.args.Length >= 6)
             {
+                if (!float.TryParse(packet.args[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) ||
+                    !float.TryParse(packet.args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y) ||
+                    !float.TryParse(packet.args[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z) ||
+                    !float.TryParse(packet.args[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float pitch) ||
+                    !float.TryParse(packet.args[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float yaw) ||
+                    !float.TryParse(packet.args[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float roll))
+                {
+                    SyncLog($"Invalid coordinates in Teleport packet from {player.Client.Username}");
+                    return;
+                }
+
                 try
                 {
-                    Vector TeleOrigin = new(
-                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                    );
-                    Angle TeleAngles = new(
-                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                    );
+                    Vector TeleOrigin = new(x, y, z);
+                    Angle TeleAngles = new(pitch, yaw, roll);
                     Response teleport = new("command", "hlvrcoop_teleportangles " + TeleOrigin.X + " " + TeleOrigin.Y + " " + TeleOrigin.Z + " " + TeleAngles.Pitch + " " + TeleAngles.Yaw + " " + TeleAngles.Roll);
                     BroadcastToOthers(connections, socket, teleport);
                 }
@@ -529,18 +532,21 @@ namespace AlyxGamemode
         {
             if (packet.args.Length >= 6)
             {
+                if (!float.TryParse(packet.args[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) ||
+                    !float.TryParse(packet.args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y) ||
+                    !float.TryParse(packet.args[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z) ||
+                    !float.TryParse(packet.args[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float pitch) ||
+                    !float.TryParse(packet.args[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float yaw) ||
+                    !float.TryParse(packet.args[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float roll))
+                {
+                    SyncLog($"Invalid coordinates in HeadPosAng packet from {player.Client.Username}");
+                    return;
+                }
+
                 try
                 {
-                    Vector HeadOrigin = new(
-                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                    );
-                    Angle HeadAngles = new(
-                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                    );
+                    Vector HeadOrigin = new(x, y, z);
+                    Angle HeadAngles = new(pitch, yaw, roll);
                     Vector HatOrigin = new(
                         HeadOrigin.X,
                         HeadOrigin.Y,
@@ -578,19 +584,22 @@ namespace AlyxGamemode
         {
             if (packet.args.Length >= 7)
             {
+                if (!float.TryParse(packet.args[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) ||
+                    !float.TryParse(packet.args[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y) ||
+                    !float.TryParse(packet.args[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z) ||
+                    !float.TryParse(packet.args[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float pitch) ||
+                    !float.TryParse(packet.args[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float yaw) ||
+                    !float.TryParse(packet.args[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float roll) ||
+                    !int.TryParse(packet.args[6], out int playerHealth))
+                {
+                    SyncLog($"Invalid coordinates in PlayerPosAng packet from {player.Client.Username}");
+                    return;
+                }
+
                 try
                 {
-                    Vector playerOrigin = new(
-                        float.Parse(packet.args[0], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[1], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[2], CultureInfo.InvariantCulture.NumberFormat)
-                    );
-                    Angle playerAngles = new(
-                        float.Parse(packet.args[3], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[4], CultureInfo.InvariantCulture.NumberFormat),
-                        float.Parse(packet.args[5], CultureInfo.InvariantCulture.NumberFormat)
-                    );
-                    int playerHealth = int.Parse(packet.args[6]);
+                    Vector playerOrigin = new(x, y, z);
+                    Angle playerAngles = new(pitch, yaw, roll);
 
                     player.Origin = playerOrigin;
                     player.Angles = playerAngles;
@@ -666,6 +675,12 @@ namespace AlyxGamemode
         {
             if (packet.args.Length >= 2)
             {
+                if (!int.TryParse(packet.args[1], out int gamemodeAPIVersion))
+                {
+                    SyncLog($"Invalid API version in MapName packet from {player.Client.Username}");
+                    return;
+                }
+
                 try
                 {
                     string suffix = "";
@@ -681,7 +696,6 @@ namespace AlyxGamemode
                     Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
                     socket.Send(JsonConvert.SerializeObject(jingle));
                     socket.Send(JsonConvert.SerializeObject(output2));
-                    int gamemodeAPIVersion = int.Parse(packet.args[1]);
                     if (gamemodeAPIVersion != APIVersion)
                     {
                         Response versionOutput = new("status", "Version mismatch! Client API version " + gamemodeAPIVersion + " != server API version " + APIVersion + ". Disconnecting. Please update the client and Workshop addons.");

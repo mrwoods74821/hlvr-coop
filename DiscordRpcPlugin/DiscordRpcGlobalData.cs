@@ -15,6 +15,7 @@ namespace DiscordRpcPlugin
         private RichPresence? presence;
         private Client? client;
         private string? gamemode;
+        private bool serverStarted = false;
         public static readonly DiscordRpcGlobalData instance = new();
         private DiscordRpcGlobalData()
         { }
@@ -36,7 +37,11 @@ namespace DiscordRpcPlugin
         }
         public bool GetServerStarted()
         {
-            return presence;
+            return serverStarted;
+        }
+        public void SetServerStarted(bool value)
+        {
+            serverStarted = value;
         }
         public Client? GetClient()
         {

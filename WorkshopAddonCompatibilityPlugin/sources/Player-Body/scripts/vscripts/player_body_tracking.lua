@@ -34,8 +34,9 @@ function Activate()
 	end
 	
 	-- Determine if logic_playerproxy is already in the map, then copy all I/O to it, and delete the prefab one
-	if (Entities:FindAllByClassname('logic_playerproxy')[2] ~= nil) then
-		for k, v in pairs(Entities:FindAllByClassname('logic_playerproxy')) do
+	local proxies = Entities:FindAllByClassname('logic_playerproxy')
+	if proxies and #proxies >= 2 then
+		for k, v in pairs(proxies) do
 			if (v:GetName() == 'player_body_proxy') then
 				v:Kill()
 			else
@@ -333,7 +334,7 @@ function MainThinkFunc()
 		local hmdRFootVecXY = Vector(thisEntity:GetAttachmentOrigin(5)[1], thisEntity:GetAttachmentOrigin(5)[2], 0) -- attachment 5 is right_foot
 		
 		if (disableFootAdjustment == false) then
-			if (VectorDistanceSq(hmdAvatarVecXY, hmdLFootVecXY) > 256) or (VectorDistanceSq(hmdAvatarVecXY, hmdRFootVecXY) > 441) then --bias for retarded right foot, as its distance stays unusually larger. Consider testing just one foot
+			if (VectorDistanceSq(hmdAvatarVecXY, hmdLFootVecXY) > 256) or (VectorDistanceSq(hmdAvatarVecXY, hmdRFootVecXY) > 441) then --bias for slower right foot, as its distance stays unusually larger. Consider testing just one foot
 				thisEntity:SetGraphLookTarget(thisEntity:GetAttachmentOrigin(7))
 				disableFootAdjustment = true
 			end

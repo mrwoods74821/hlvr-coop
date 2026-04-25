@@ -12,7 +12,10 @@ function OnTakeDamage(dmgInfo)
     end
 	
 	if (localPlayer:GetHealth() > Convars:GetInt('vr_rapidfire_dmg')) then -- Temporary fix for killing self with SMG causing game crash
-		localPlayer:TakeDamage(CreateDamageInfo(dmgInflictor, dmgAttacker, dmgForce, dmgPosition, dmgAmount, 0))
+		local ok, damageInfo = pcall(CreateDamageInfo, dmgInflictor, dmgAttacker, dmgForce, dmgPosition, dmgAmount, 0)
+		if ok then
+			localPlayer:TakeDamage(damageInfo)
+		end
 	end
 	
 end

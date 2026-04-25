@@ -1,7 +1,7 @@
 {
   "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\HLVRCoOpMod\\\\base_scripts\\\\base\\\\__init__.lua\"}",
+  "tool_input_preview": "{\"file_path\":\"C:\\\\Users\\\\elija\\\\OneDrive\\\\Documents\\\\GitHub\\\\hlvr-coop\\\\WorkshopAddon\\\\game\\\\hlvr_addons\\\\hlvr_coop\\\\scripts\\\\vscripts\\\\vlua_globals.lua\",\"offset\":1715,\"limit\":50}",
   "error": "File does not exist. Note: your current working directory is C:\\Users\\elija\\OneDrive\\Documents\\GitHub\\hlvr-coop.",
-  "timestamp": "2026-04-24T06:08:44.411Z",
-  "retry_count": 1
+  "timestamp": "2026-04-25T00:39:14.090Z",
+  "retry_count": 7
 }

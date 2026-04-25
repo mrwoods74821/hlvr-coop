@@ -248,7 +248,7 @@ function HLVRCoOpMod()
                     if not string.find(object.class, "trigger_") and not string.find(object.class, "func_") then
                         local origin = entity:GetAbsOrigin();
                         local angles = entity:GetAnglesAsVector();
-                        if object.class == "prop_door_rotating_physics" and (math.floor(angles[1]) ~= math.floor(object.angles[1])) or (math.floor(angles[2]) ~= math.floor(object.angles[2])) or (math.floor(angles[3]) ~= math.floor(object.angles[3])) then
+                        if object.class == "prop_door_rotating_physics" and ((math.floor(angles[1]) ~= math.floor(object.angles[1])) or (math.floor(angles[2]) ~= math.floor(object.angles[2])) or (math.floor(angles[3]) ~= math.floor(object.angles[3]))) then
                             HLVRCOOP_SEQ = HLVRCOOP_SEQ + 1;
                             print("PHYS "..object.name.." "..origin[1].." "..origin[2].." "..origin[3].." "..angles[1].." "..angles[2].." "..angles[3].." "..HLVRCOOP_SEQ.." "..GameRules:GetGameTime().." HLVRCOOP");
                             object.angles = angles;

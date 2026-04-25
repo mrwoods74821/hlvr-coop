@@ -60,12 +60,6 @@ local UPDATE_INTERVAL = 0
 local ANALOG_ITER = pairs(Input.ANALOG)
 local DIGITAL_ITER = pairs(Input.DIGITAL)
 
----@type boolean[][]
-local pressed_flags = {}
----@type number[][]
-local pressed_time = {}
----@type table<any,boolean>[][]
-local pressed_contexts = {}
 local frame_forgiveness = 0.01
 
 ---@type function[][][]
@@ -88,14 +82,6 @@ local input_data =
 
 -- Populate tables
 for l = 0, 1 do
-    -- pressed_flags[l] = {}
-    -- pressed_time[l] = {}
-    -- pressed_contexts[l] = {}
-    -- callbacks[l] = {}
-    -- for _, value in DIGITAL_ITER,Input.DIGITAL do
-    --     pressed_flags[value] = false
-    --     pressed_time[value] = 0
-    -- end
     for _, value in DIGITAL_ITER,Input.DIGITAL do
         input_data[l][value].time = 0
         input_data[l][value].pressed_callbacks = {}
@@ -109,7 +95,7 @@ end
 local function resolveHand(hand)
     if not hand then
         return Player.PrimaryHand.Literal
-    elseif not type(hand)=="number" then
+    elseif type(hand) ~= "number" then
         return hand.Literal
     end
     return hand
@@ -147,27 +133,7 @@ end
 ---This will not return true again until the button is released.
 ---@param digital_button integer|"Input.DIGITAL."
 ---@param hand? integer|EntityHandle|nil # Can be hand literal, entity, or nil to use primary.
----@param context? any|"thisEntity" # Used to track pressed state for specific context, pass nil to use player.
----@return boolean
-function Input.GetPressed(digital_button, hand, context)
-    hand = resolveHand(hand)
-    context = context or Player
-    if (Time() - pressed_time[hand][digital_button]) <= frame_forgiveness
-    and not pressed_contexts[hand][digital_button][context] then
-        pressed_contexts[hand][digital_button][context] = true
-        return true
-    end
-    return false
-    -- return pressed_flags[digital_button] > 0 and pressed_flags[digital_button] < frame_forgiveness
-end
 
----comment
----@param digital_button integer|"Input.DIGITAL."
----@param hand? integer|EntityHandle|nil # Can be hand literal, entity, or nil to use primary.
-function Input.GetHeld(digital_button, hand)
-    hand = resolveHand(hand)
-    return pressed_flags[digital_button] > 0
-end
 
 local function InputThink()
 
@@ -175,33 +141,16 @@ local function InputThink()
         for _, value in DIGITAL_ITER,Input.DIGITAL do
             local id = input_data[i][value]
             if Player:IsDigitalActionOnForHand(i, value) then
-                -- if pressed_flags[value] < frame_forgiveness then
-                --     pressed_flags[value] = pressed_flags[value] + 1
-                --     -- do callback here
-                -- end
-                if not pressed_flags[i][value] then
+                if id.time == 0 then
                     Input.LastPressed = value
-                    -- pressed_time[l][value] = Time()
-                    -- pressed_flags[l][value] = true
-                    -- for _, callback in ipairs(callbacks[i][value]) do
-                    --     callback(i, value)
-                    -- end
                     id.time = Time()
                     for _, callback in ipairs(id.pressed_callbacks) do
                         callback(i, value)
                     end
                 end
             else
-                -- pressed_flags[value] = 0
-                -- -- do callback here
-                if pressed_flags[i][value] then
+                if id.time ~= 0 then
                     Input.LastReleased = value
-                    -- pressed_time[i][value] = 0
-                    -- pressed_flags[i][value] = false
-                    -- pressed_contexts[i][value] = {}
-                    -- for _, callback in ipairs(callbacks[i][value]) do
-                    --     callback(i, value)
-                    -- end
                     id.time = Time()
                     for _, callback in ipairs(id.release_callbacks) do
                         callback(i, value)

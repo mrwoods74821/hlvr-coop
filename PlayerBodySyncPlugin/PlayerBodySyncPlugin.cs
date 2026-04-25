@@ -34,6 +34,7 @@ namespace PlayerBodySyncPlugin
         /// </summary>
         private static readonly HashSet<Guid> queriedClients = new();
 
+        private static readonly object syncLock = new();
         private static bool pluginInitialized = false;
 
         public PlayerBodySyncPlugin() : base()
@@ -98,7 +99,10 @@ namespace PlayerBodySyncPlugin
             socket.Send(JsonConvert.SerializeObject(queryCommand));
 
             // Mark this client as queried (we'll process the response when it comes back)
-            queriedClients.Add(clientId);
+            lock(syncLock)
+            {
+                queriedClients.Add(clientId);
+            }
 
             // Note: We don't send existing players' preferences to the new client here.
             // The player_body_preference convar is per-client and determines what body model
@@ -116,8 +120,11 @@ namespace PlayerBodySyncPlugin
             if (socket == null) return;
 
             Guid clientId = socket.ConnectionInfo.Id;
-            playerBodyPreferences.Remove(clientId);
-            queriedClients.Remove(clientId);
+            lock(syncLock)
+            {
+                playerBodyPreferences.Remove(clientId);
+                queriedClients.Remove(clientId);
+            }
         }
 
         /// <summary>
@@ -147,7 +154,12 @@ namespace PlayerBodySyncPlugin
                 {
                     // Try to handle as a query response first
                     var queryMatch = Regex.Match(response.data, @"""player_body_preference""\s*=\s*""(\d+)""");
-                    if (queryMatch.Success && queriedClients.Contains(clientId))
+                    bool isQueriedClient;
+                    lock(syncLock)
+                    {
+                        isQueriedClient = queriedClients.Contains(clientId);
+                    }
+                    if (queryMatch.Success && isQueriedClient)
                     {
                         HandleConvarResponse(response.data, connections, socket);
                         handledByConvarResponse = true;
@@ -214,11 +226,19 @@ namespace PlayerBodySyncPlugin
                     if (int.TryParse(match.Groups[1].Value, out int preference) && preference >= 0 && preference <= 2)
                     {
                         Guid clientId = socket.ConnectionInfo.Id;
-                        
+
                         // Only update if this was a query response (not a change notification)
-                        if (queriedClients.Contains(clientId))
+                        bool shouldProcess;
+                        lock(syncLock)
                         {
-                            queriedClients.Remove(clientId);
+                            shouldProcess = queriedClients.Contains(clientId);
+                            if (shouldProcess)
+                            {
+                                queriedClients.Remove(clientId);
+                            }
+                        }
+                        if (shouldProcess)
+                        {
                             UpdatePlayerPreference(clientId, preference, connections, socket, isInitialQuery: true);
                         }
                     }
@@ -237,20 +257,30 @@ namespace PlayerBodySyncPlugin
         {
             if (socket == null || preference < 0 || preference > 2) return;
 
-            // Check if preference actually changed (before storing)
-            bool hadPreference = playerBodyPreferences.ContainsKey(clientId);
-            bool preferenceChanged = !hadPreference || playerBodyPreferences[clientId] != preference;
-
-            // Store the preference
-            playerBodyPreferences[clientId] = preference;
-
-            // If this was just an initial query and we already had the same preference,
-            // skip broadcasting (client reconnected with same preference)
-            if (isInitialQuery && !preferenceChanged && hadPreference)
+            bool shouldBroadcast;
+            lock(syncLock)
             {
-                // Preference unchanged and we already had it - no need to broadcast
-                return;
+                // Check if preference actually changed (before storing)
+                bool hadPreference = playerBodyPreferences.ContainsKey(clientId);
+                bool preferenceChanged = !hadPreference || playerBodyPreferences[clientId] != preference;
+
+                // Store the preference
+                playerBodyPreferences[clientId] = preference;
+
+                // If this was just an initial query and we already had the same preference,
+                // skip broadcasting (client reconnected with same preference)
+                if (isInitialQuery && !preferenceChanged && hadPreference)
+                {
+                    // Preference unchanged and we already had it - no need to broadcast
+                    shouldBroadcast = false;
+                }
+                else
+                {
+                    shouldBroadcast = true;
+                }
             }
+
+            if (!shouldBroadcast) return;
 
             // Broadcast the preference change to all OTHER clients
             // Each client will set the convar, and the Player Body addon will automatically
@@ -279,7 +309,10 @@ namespace PlayerBodySyncPlugin
         /// </summary>
         public static int? GetPlayerPreference(Guid clientId)
         {
-            return playerBodyPreferences.ContainsKey(clientId) ? playerBodyPreferences[clientId] : null;
+            lock(syncLock)
+            {
+                return playerBodyPreferences.ContainsKey(clientId) ? playerBodyPreferences[clientId] : null;
+            }
         }
 
         /// <summary>
@@ -287,7 +320,10 @@ namespace PlayerBodySyncPlugin
         /// </summary>
         public static Dictionary<Guid, int> GetAllPreferences()
         {
-            return new Dictionary<Guid, int>(playerBodyPreferences);
+            lock(syncLock)
+            {
+                return new Dictionary<Guid, int>(playerBodyPreferences);
+            }
         }
     }
 }

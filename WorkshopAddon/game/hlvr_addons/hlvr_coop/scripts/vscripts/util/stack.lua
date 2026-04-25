@@ -98,7 +98,7 @@ end
 ---@param count? number # Default is 1
 ---@return any
 function StackClass:Pop(count)
-    count = min(count or 1, #self.items)
+    count = math.min(count or 1, #self.items)
     local tbl = {}
     for i = 1, count do
         tbl[#tbl+1] = table.remove(self.items, 1)
@@ -110,7 +110,7 @@ end
 ---@param count? number # Default is 1
 ---@return any
 function StackClass:Peek(count)
-    count = min(count or 1, #self.items)
+    count = math.min(count or 1, #self.items)
     local tbl = {}
     for i = 1, count do
         tbl[#tbl+1] = self.items[i]

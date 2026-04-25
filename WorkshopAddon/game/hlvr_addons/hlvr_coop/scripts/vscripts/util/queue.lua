@@ -67,7 +67,7 @@ end
 ---@param count? number # Default is 1
 ---@return ...
 function QueueClass:Dequeue(count)
-    count = min(count or 1, #self.items)
+    count = math.min(count or 1, #self.items)
     local tbl = {}
     for i = #self.items, #self.items-count+1, -1 do
         tbl[#tbl+1] = table.remove(self.items, i)
@@ -79,7 +79,7 @@ end
 ---@param count? number # Default is 1
 ---@return any
 function QueueClass:Peek(count)
-    count = min(count or 1, #self.items)
+    count = math.min(count or 1, #self.items)
     local tbl = {}
     for i = #self.items, #self.items-count+1, -1 do
         tbl[#tbl+1] = self.items[i]

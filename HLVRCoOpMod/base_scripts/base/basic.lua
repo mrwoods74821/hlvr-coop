@@ -240,8 +240,10 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                     lua_env.persistence["configjson"].bans[#lua_env.persistence["configjson"].bans + 1] = arg2[i].Username
                     -- Save bans
                     local file = io.open("config.json", "w")
-                    file:write(json.encode(lua_env.persistence["configjson"]))
-                    file:close()
+                    if file then
+                        file:write(json.encode(lua_env.persistence["configjson"]))
+                        file:close()
+                    end
                     print("Banned " .. arg1[1])
                     return
                 end
@@ -267,8 +269,10 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                     lua_env.persistence["configjson"].ipbans[#lua_env.persistence["configjson"].ipbans + 1] = arg2[i].Session.ConnectionInfo.ClientIpAddress
                     -- Save bans
                     local file = io.open("config.json", "w")
-                    file:write(json.encode(lua_env.persistence["configjson"]))
-                    file:close()
+                    if file then
+                        file:write(json.encode(lua_env.persistence["configjson"]))
+                        file:close()
+                    end
                     print("Banned " .. arg1[1] .. " by IP address")
                     return
                 end
@@ -294,8 +298,10 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                     lua_env.persistence["configjson"].bans = newBans
                     -- Save bans
                     local file = io.open("bans.json", "w")
-                    file:write(json.encode(lua_env.persistence["configjson"].bans))
-                    file:close()
+                    if file then
+                        file:write(json.encode(lua_env.persistence["configjson"].bans))
+                        file:close()
+                    end
                     print("Unbanned " .. arg1[1])
                     break
                 end
@@ -313,8 +319,10 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
                     lua_env.persistence["configjson"].ipbans = newBans
                     -- Save bans
                     local file = io.open("ipbans.json", "w")
-                    file:write(json.encode(lua_env.persistence["configjson"].ipbans))
-                    file:close()
+                    if file then
+                        file:write(json.encode(lua_env.persistence["configjson"].ipbans))
+                        file:close()
+                    end
                     print("Unbanned " .. arg1[1] .. " by IP address")
                     break
                 end
@@ -404,8 +412,10 @@ lua_env.handlers[lua_env.persistence["script_basic"]] = function(handleType, arg
             if lua_config.sub_gamemodes[arg1[1]] then
                 lua_env.persistence["configjson"].sub_gamemode = arg1[1]
                 local file = io.open("config.json", "w")
-                file:write(json.encode(lua_env.persistence["configjson"]))
-                file:close()
+                if file then
+                    file:write(json.encode(lua_env.persistence["configjson"]))
+                    file:close()
+                end
                 print("Subgamemode set to " .. arg1[1])
             else
                 print("Invalid subgamemode")

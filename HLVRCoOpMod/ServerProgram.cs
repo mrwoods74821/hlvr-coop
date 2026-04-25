@@ -21,6 +21,7 @@ namespace HLVRCoOpMod
         public static readonly ServerProgram instance = new();
         public WebSocketServer? wss;
         public List<IndexedClient> connections = new() { };
+        private static readonly object connectionsLock = new();
         public Type? gamemodeType;
         public List<Type> plugins = new();
         public Channel channel = new("SV", "Server", Color.Olive);
@@ -170,7 +171,13 @@ namespace HLVRCoOpMod
         }
         public void OnClose(IWebSocketConnection socket)
         {
-            foreach(IndexedClient client in connections.ToList())
+            List<IndexedClient> connectionsCopy;
+            lock(connectionsLock)
+            {
+                connectionsCopy = connections.ToList();
+            }
+
+            foreach(IndexedClient client in connectionsCopy)
             {
                 if(client.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id)
                 {
@@ -186,9 +193,15 @@ namespace HLVRCoOpMod
                         PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientClose, connections, socket, client.Username);
                         LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientClose, connections, socket, client.Username);
                     }
-                    connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(outputDisconnect)));
+                    lock(connectionsLock)
+                    {
+                        connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(outputDisconnect)));
+                    }
                     Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, client.Username + " disconnected"));
-                    connections.Remove(client);
+                    lock(connectionsLock)
+                    {
+                        connections.Remove(client);
+                    }
                     break;
                 }
             }
@@ -220,16 +233,22 @@ namespace HLVRCoOpMod
                         // Get server's local IP address
                         string serverIp = GetLocalIPAddress();
                         
+                        int playerCount;
+                        lock(connectionsLock)
+                        {
+                            playerCount = connections.Count;
+                        }
+
                         ServerInfo serverInfo = new ServerInfo
                         {
                             IpAddress = serverIp, // Will be overridden by client with the IP they used to connect
                             Port = Settings.Default.ServerPort,
                             Map = Map.map,
-                            PlayerCount = connections.Count,
+                            PlayerCount = playerCount,
                             MaxPlayers = 16,
                             PasswordProtected = !string.IsNullOrEmpty(Settings.Default.ServerPassword),
                             Gamemode = gamemodeType?.Name ?? "Unknown",
-                            ServerName = !string.IsNullOrEmpty(Settings.Default.ServerMap) ? 
+                            ServerName = !string.IsNullOrEmpty(Settings.Default.ServerMap) ?
                                 Settings.Default.ServerMap + " Server" : "HLVR Co-Op Server"
                         };
                         
@@ -268,7 +287,11 @@ namespace HLVRCoOpMod
                         // Legacy workaround: response.type was changed to "lua_chat_handled"
                         responseHandled = true;
                         // Log the chat message that was handled (for chat commands)
-                        IndexedClient? handledClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                        IndexedClient? handledClient;
+                        lock(connectionsLock)
+                        {
+                            handledClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                        }
                         if (handledClient != null && response.data != null && response.data.Length > 0)
                         {
                             Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, handledClient.Username + ": " + response.data));
@@ -293,7 +316,11 @@ namespace HLVRCoOpMod
                                 else
                                 {
                                     // Check if this connection is already authenticated (same connection ID)
-                                    IndexedClient? existingClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                                    IndexedClient? existingClient;
+                                    lock(connectionsLock)
+                                    {
+                                        existingClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                                    }
                                     if (existingClient != null)
                                     {
                                         // Same connection re-authenticating (e.g., VConsole reconnected)
@@ -308,15 +335,26 @@ namespace HLVRCoOpMod
                                     }
                                     
                                     // Check if username is already taken by a different connection
-                                    foreach (IndexedClient indexed1 in connections)
+                                    IndexedClient? clientToRemove = null;
+                                    lock(connectionsLock)
                                     {
-                                        if (indexed1.Username == response.clientUsername)
+                                        foreach (IndexedClient indexed1 in connections)
                                         {
-                                            Response output2 = new("status", "Client reconnected elsewhere, closing connection...");
-                                            socket.Send(JsonConvert.SerializeObject(output2));
-                                            socket.Close();
-                                            connections.Remove(indexed1);
-                                            break;
+                                            if (indexed1.Username == response.clientUsername)
+                                            {
+                                                clientToRemove = indexed1;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (clientToRemove != null)
+                                    {
+                                        Response output2 = new("status", "Client reconnected elsewhere, closing connection...");
+                                        socket.Send(JsonConvert.SerializeObject(output2));
+                                        socket.Close();
+                                        lock(connectionsLock)
+                                        {
+                                            connections.Remove(clientToRemove);
                                         }
                                     }
                                     if (response.clientUsername != null)
@@ -335,7 +373,10 @@ namespace HLVRCoOpMod
                                                 map = Map.map,
                                             };
                                             IndexedClient client = new(socket, response.clientUsername, Map.map);
-                                            connections.Add(client);
+                                            lock(connectionsLock)
+                                            {
+                                                connections.Add(client);
+                                            }
                                             socket.Send(JsonConvert.SerializeObject(output2));
                                             OnOpen(socket);
                                         }
@@ -350,7 +391,11 @@ namespace HLVRCoOpMod
                             }
                             break;
                         case "chat":
-                            IndexedClient? indexedClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                            IndexedClient? indexedClient;
+                            lock(connectionsLock)
+                            {
+                                indexedClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                            }
                             if (indexedClient != null)
                             {
                                 if (response.data != null)

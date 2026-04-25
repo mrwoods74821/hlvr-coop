@@ -336,7 +336,15 @@ namespace HLVRCoOpMod
             }
         }
 
-        private async void OnConnectionLost(object? sender, EventArgs e)
+        private void OnConnectionLost(object? sender, EventArgs e)
+        {
+            _ = OnConnectionLostAsync(sender, e).ContinueWith(t =>
+            {
+                try { ErrorLogger.LogError("VConsole.OnConnectionLostAsync", t.Exception); } catch { }
+            }, TaskContinuationOptions.OnlyOnFaulted);
+        }
+
+        private async Task OnConnectionLostAsync(object? sender, EventArgs e)
         {
             // Prevent multiple simultaneous reconnection attempts
             if (isReconnecting)
@@ -350,7 +358,7 @@ namespace HLVRCoOpMod
             }
 
             System.Diagnostics.Debug.WriteLine("VConsole: Connection lost, attempting to reconnect...");
-            
+
             // Notify UI that connection was lost
             if (ui != null && channel != null)
             {
@@ -500,19 +508,22 @@ namespace HLVRCoOpMod
 
         public void WriteRaw(byte[] data)
         {
-            if (stream != null && !killed)
+            lock(streamLock)
             {
-                try
+                if (stream != null && !killed)
                 {
-                    stream.Write(data);
-                }
-                catch (ObjectDisposedException)
-                {
-                    killed = true;
-                }
-                catch (SocketException)
-                {
-                    killed = true;
+                    try
+                    {
+                        stream.Write(data);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        killed = true;
+                    }
+                    catch (SocketException)
+                    {
+                        killed = true;
+                    }
                 }
             }
         }
