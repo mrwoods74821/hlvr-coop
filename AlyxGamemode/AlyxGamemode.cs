@@ -826,7 +826,12 @@ namespace AlyxGamemode
                             {
                                 lock (transitionLock)
                                 {
-                                    pendingMapTransitions.Remove(socket.ConnectionInfo.Id);
+                                    // Only remove if this task still owns the slot (prevents
+                                    // a race where an earlier task's finally wipes a newer one).
+                                    if (pendingMapTransitions.TryGetValue(socket.ConnectionInfo.Id, out CancellationTokenSource? storedCts) && storedCts == cts)
+                                    {
+                                        pendingMapTransitions.Remove(socket.ConnectionInfo.Id);
+                                    }
                                 }
                             }
                         }, cts.Token);
