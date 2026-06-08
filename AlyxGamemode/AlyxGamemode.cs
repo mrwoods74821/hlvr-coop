@@ -17,6 +17,9 @@ namespace AlyxGamemode
         private const int APIVersion = 5;
         private static readonly Dictionary<Guid, uint> clientSequenceTracker = new();
         private static readonly object seqLock = new();
+        private static readonly Dictionary<Guid, CancellationTokenSource> pendingMapTransitions = new();
+        private static readonly object transitionLock = new();
+        private static DateTime lastHeartbeatCheck = DateTime.MinValue;
 
         private static void SyncLog(string message)
         {
@@ -207,6 +210,15 @@ namespace AlyxGamemode
                             {
                                 clientSequenceTracker.Remove(closeSocket.ConnectionInfo.Id);
                             }
+                        }
+                        break;
+                    case GamemodeHandleType.ReBootstrap:
+                        if (vs != null)
+                        {
+                            IWebSocketConnection reSocket = (IWebSocketConnection)vs[0];
+                            string reUsername = (string)vs[1];
+                            List<IndexedClient> reConnections = (List<IndexedClient>)vs[2];
+                            HandleReBootstrap(reSocket, reUsername, reConnections);
                         }
                         break;
                     case GamemodeHandleType.PreResponse:
@@ -400,6 +412,18 @@ namespace AlyxGamemode
                             }
                         }
                         break;
+                    case GamemodeHandleType.Think:
+                        if (vs != null)
+                        {
+                            List<IndexedClient> thinkConnections = (List<IndexedClient>)vs[0];
+                            DateTime utcNow = DateTime.UtcNow;
+                            if ((utcNow - lastHeartbeatCheck).TotalSeconds >= 1.0)
+                            {
+                                lastHeartbeatCheck = utcNow;
+                                CheckHeartbeats(thinkConnections);
+                            }
+                        }
+                        break;
                     case GamemodeHandleType.PostResponse:
                         if (vs != null)
                         {
@@ -429,6 +453,47 @@ namespace AlyxGamemode
             catch (Exception ex)
             {
                 ErrorLogger.LogError("AlyxGamemode", ex);
+            }
+        }
+
+        private static void HandleReBootstrap(IWebSocketConnection socket, string username, List<IndexedClient> connections)
+        {
+            AlyxGlobalData.instance.UpsertSession(socket.ConnectionInfo.Id, username, AlyxGlobalData.ConnectionState.Initializing);
+            SyncLog($"[BOOT] {username}: re-bootstrap triggered (packet heartbeat timeout)");
+
+            Response enableAddon = new("command", "addon_enable hlvr_coop");
+            socket.Send(JsonConvert.SerializeObject(enableAddon));
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                if (AlyxGlobalData.instance.GetPlayer(socket.ConnectionInfo.Id) != null)
+                {
+                    SendBootstrap(socket, username);
+                    SyncLog($"[BOOT] {username}: re-bootstrap commands sent");
+                }
+            });
+        }
+
+        private static void CheckHeartbeats(List<IndexedClient> connections)
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            foreach (IndexedClient client in connections)
+            {
+                AlyxGlobalData.SessionState? session = AlyxGlobalData.instance.GetSession(client.Session.ConnectionInfo.Id);
+                if (session == null) continue;
+                if (session.Phase != AlyxGlobalData.ConnectionState.Ready) continue;
+
+                if (session.LastPacketUtc.HasValue)
+                {
+                    double secondsSinceLastPacket = (utcNow - session.LastPacketUtc.Value).TotalSeconds;
+                    if (secondsSinceLastPacket > 5.0)
+                    {
+                        Player? player = AlyxGlobalData.instance.GetPlayer(client.Session.ConnectionInfo.Id);
+                        string username = player?.Client.Username ?? client.Username;
+                        HandleReBootstrap(client.Session, username, connections);
+                    }
+                }
             }
         }
 
@@ -683,17 +748,94 @@ namespace AlyxGamemode
 
                 try
                 {
+                    string newMap = packet.args[0];
                     string suffix = "";
-                    /*
-                    if (packet.args[0] != player.Client.Map)
+
+                    if (newMap != Map.map)
                     {
-                        Response mapOutput = new("command", "addon_play " + packet.args[0] + "; addon_tools_map " + packet.args[0]);
-                        BroadcastToOthers(connections, socket, mapOutput);
-                        suffix = " - Telling all clients to switch...";
+                        lock (transitionLock)
+                        {
+                            if (pendingMapTransitions.TryGetValue(socket.ConnectionInfo.Id, out CancellationTokenSource? oldCts))
+                            {
+                                oldCts.Cancel();
+                                oldCts.Dispose();
+                                pendingMapTransitions.Remove(socket.ConnectionInfo.Id);
+                            }
+                        }
+
+                        Map.map = newMap;
+
+                        // Entity names may be reused across HL:A maps; clear stale state
+                        // so positions/ownership from the previous map don't leak into the new one.
+                        AlyxGlobalData.instance.ClearEntityStates();
+                        AlyxGlobalData.instance.ClearManipulatedEntities();
+                        SyncLog($"[MAP] Entity caches cleared for transition to {newMap}");
+
+                        Response warning = new("status", $"♫ Host reached map exit. Changing to {newMap} in 30 seconds...");
+                        string serializedWarning = JsonConvert.SerializeObject(warning);
+                        foreach (IndexedClient client in connections)
+                        {
+                            client.Session.Send(serializedWarning);
+                        }
+                        SyncLog($"[MAP] {player.Client.Username}: transitioning to {newMap} in 30s");
+
+                        CancellationTokenSource cts = new();
+                        lock (transitionLock)
+                        {
+                            pendingMapTransitions[socket.ConnectionInfo.Id] = cts;
+                        }
+
+                        Task.Run(async () =>
+                        {
+                            try
+                            {
+                                await Task.Delay(TimeSpan.FromSeconds(30), cts.Token);
+
+                                IndexedClient? hostClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                                if (hostClient == null)
+                                {
+                                    SyncLog($"[MAP] Host disconnected during grace period, cancelling transition to {newMap}");
+                                    return;
+                                }
+
+                                Response mapChange = new("command", "addon_play " + newMap + "; addon_tools_map " + newMap);
+                                string serializedMapChange = JsonConvert.SerializeObject(mapChange);
+
+                                foreach (IndexedClient client in connections)
+                                {
+                                    if (client.Session.ConnectionInfo.Id != socket.ConnectionInfo.Id)
+                                    {
+                                        try
+                                        {
+                                            client.Session.Send(serializedMapChange);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            SyncLog($"[MAP] Failed to send map change to {client.Username}: {ex.Message}");
+                                        }
+                                    }
+                                }
+
+                                SyncLog($"[MAP] Map change broadcast to {connections.Count - 1} clients for {newMap}");
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                SyncLog($"[MAP] Pending transition to {newMap} cancelled");
+                            }
+                            finally
+                            {
+                                lock (transitionLock)
+                                {
+                                    pendingMapTransitions.Remove(socket.ConnectionInfo.Id);
+                                }
+                            }
+                        }, cts.Token);
+
+                        suffix = " - Transitioning in 30s...";
                     }
-                    */
+
                     Response jingle = new("command", "play sounds/hlvrcoop/jingle_up2.vsnd");
-                    Response output2 = new("status", "♫ Detected map: " + packet.args[0] + suffix);
+                    Response output2 = new("status", "♫ Detected map: " + newMap + suffix);
                     socket.Send(JsonConvert.SerializeObject(jingle));
                     socket.Send(JsonConvert.SerializeObject(output2));
                     if (gamemodeAPIVersion != APIVersion)
@@ -703,7 +845,7 @@ namespace AlyxGamemode
                         socket.Close();
                         SyncLog($"{player.Client.Username}: disconnected due to API version mismatch (client={gamemodeAPIVersion}, server={APIVersion})");
                     }
-                    Map.map = packet.args[0];
+                    Map.map = newMap;
                 }
                 catch (Exception ex)
                 {

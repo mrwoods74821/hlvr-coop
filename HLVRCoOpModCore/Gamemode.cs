@@ -25,6 +25,7 @@ namespace HLVRCoOpModCore
         ClientClose,
         Command,
         Think,
+        ReBootstrap,
     }
     public static class GamemodeHandler
     {

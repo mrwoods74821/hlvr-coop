@@ -1,0 +1,11 @@
+{
+  "active": true,
+  "started_at": "2026-04-27T23:41:10.205Z",
+  "current_phase": "ralplan",
+  "original_prompt": "/ralplan Alright so I need you to fix that issue and also what can we add to the logging? We should really use the logs to our advantage to tell us what is working and what is not as well as things that are firing, triggering, etc in the actual game.",
+  "session_id": "f3ebfc4a-3654-4793-a920-2a4f85bb356f",
+  "project_path": "C:\\Users\\elija\\OneDrive\\Documents\\GitHub\\hlvr-coop",
+  "awaiting_confirmation": true,
+  "awaiting_confirmation_set_at": "2026-04-27T23:41:10.205Z",
+  "last_checked_at": "2026-04-27T23:41:10.205Z"
+}

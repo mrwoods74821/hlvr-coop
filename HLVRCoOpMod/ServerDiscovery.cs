@@ -343,7 +343,7 @@ namespace HLVRCoOpMod
                 IpAddress = GetLocalIPAddress(),
                 Port = Settings.Default.ServerPort,
                 Map = Map.map,
-                PlayerCount = ServerProgram.instance.connections.Count,
+                PlayerCount = ServerProgram.instance.GetConnectionsCount(),
                 MaxPlayers = 16,
                 PasswordProtected = !string.IsNullOrEmpty(Settings.Default.ServerPassword),
                 Gamemode = ServerProgram.instance.gamemodeType?.Name ?? "Unknown",

@@ -30,7 +30,7 @@ namespace HLVRCoOpMod
         }
 
         private readonly Queue<PrioritizedCommand> criticalQueue = new();
-        private readonly Queue<PrioritizedCommand> normalQueue = new();
+        private readonly List<PrioritizedCommand> normalQueue = new(); // List for in-place coalescing
         private readonly Queue<PrioritizedCommand> lowQueue = new();
         private StreamWatcher? watcher;
         private int reconnectAttempts = 0;
@@ -43,7 +43,7 @@ namespace HLVRCoOpMod
         // Command buffer full handling
         private bool bufferFull = false;
         private int bufferFullCount = 0;
-        private const int MAX_QUEUE_SIZE = 150;
+        private const int MAX_QUEUE_SIZE = 500;
         private DateTime lastQueueWarningTime = DateTime.MinValue;
         private const int BUFFER_FULL_THRESHOLD = 3;
         private const int BUFFER_FULL_RECONNECT_THRESHOLD = 10;
@@ -87,6 +87,31 @@ namespace HLVRCoOpMod
         }
 
         /// <summary>
+        /// Returns a coalescing key for movement commands so only the latest per entity is kept.
+        /// Returns null for commands that should not be coalesced.
+        /// </summary>
+        private static string? GetCoalescingKey(string command)
+        {
+            // Movement commands: prefix + first argument (entity/player index)
+            if (command.StartsWith("hlvrcoop_setlocation_head ") ||
+                command.StartsWith("hlvrcoop_setlocation_hands ") ||
+                command.StartsWith("hlvrcoop_setlocation ") ||
+                command.StartsWith("hlvrcoop_setbody "))
+            {
+                int firstSpace = command.IndexOf(' ');
+                if (firstSpace > 0 && firstSpace + 1 < command.Length)
+                {
+                    int secondSpace = command.IndexOf(' ', firstSpace + 1);
+                    string entity = secondSpace > 0
+                        ? command.Substring(0, secondSpace)
+                        : command;
+                    return entity;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Gets the total size of all priority queues combined
         /// </summary>
         private int GetTotalQueueSize()
@@ -103,7 +128,11 @@ namespace HLVRCoOpMod
             if (criticalQueue.Count > 0)
                 return criticalQueue.Dequeue();
             if (normalQueue.Count > 0)
-                return normalQueue.Dequeue();
+            {
+                var cmd = normalQueue[0];
+                normalQueue.RemoveAt(0);
+                return cmd;
+            }
             if (lowQueue.Count > 0)
                 return lowQueue.Dequeue();
             return null;
@@ -112,16 +141,40 @@ namespace HLVRCoOpMod
         /// <summary>
         /// Enqueues a command to the appropriate priority queue with overflow handling
         /// </summary>
+        /// <summary>
+        /// Adds a command to the normal queue, replacing any existing command with the same coalescing key.
+        /// This prevents redundant movement updates from piling up.
+        /// </summary>
+        private void AddNormalCommandWithCoalescing(string command)
+        {
+            string? key = GetCoalescingKey(command);
+            if (key != null)
+            {
+                for (int i = 0; i < normalQueue.Count; i++)
+                {
+                    if (GetCoalescingKey(normalQueue[i].Command) == key)
+                    {
+                        normalQueue[i] = new PrioritizedCommand { Command = command, Priority = CommandPriority.Normal };
+                        return;
+                    }
+                }
+            }
+            normalQueue.Add(new PrioritizedCommand { Command = command, Priority = CommandPriority.Normal });
+        }
+
+        /// <summary>
+        /// Enqueues a command to the appropriate priority queue with overflow handling and coalescing
+        /// </summary>
         private void EnqueuePrioritizedCommand(string command)
         {
             CommandPriority priority = ClassifyCommand(command);
             int totalSize = GetTotalQueueSize();
 
             // Check for queue depth warning
-            if (totalSize > 75 && (DateTime.Now - lastQueueWarningTime).TotalSeconds > 10)
+            if (totalSize > 250 && (DateTime.Now - lastQueueWarningTime).TotalSeconds > 10)
             {
                 lastQueueWarningTime = DateTime.Now;
-                ErrorLogger.LogSync($"VConsole queue depth: {totalSize}/150");
+                ErrorLogger.LogSync($"VConsole queue depth: {totalSize}/{MAX_QUEUE_SIZE}");
             }
 
             // Handle overflow - drop from low priority first, then normal, never critical
@@ -138,9 +191,14 @@ namespace HLVRCoOpMod
                     if (lowQueue.Count > 0)
                     {
                         lowQueue.Dequeue();
-                        normalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                        AddNormalCommandWithCoalescing(command);
                     }
-                    // If low queue is empty, drop the command
+                    // If low queue is empty, try coalescing (replaces existing, no size increase)
+                    else if (GetCoalescingKey(command) != null)
+                    {
+                        AddNormalCommandWithCoalescing(command);
+                    }
+                    // Otherwise drop the command
                 }
                 else // Low priority
                 {
@@ -160,7 +218,7 @@ namespace HLVRCoOpMod
                         criticalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
                         break;
                     case CommandPriority.Normal:
-                        normalQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });
+                        AddNormalCommandWithCoalescing(command);
                         break;
                     case CommandPriority.Low:
                         lowQueue.Enqueue(new PrioritizedCommand { Command = command, Priority = priority });

@@ -34,6 +34,7 @@ namespace AlyxGamemode
             public int DroppedPacketCount { get; set; } = 0;
             public string LastDropReason { get; set; } = "";
             public DateTime? FirstPacketUtc { get; set; }
+            public DateTime? LastPacketUtc { get; set; }
             public bool WatchdogStarted { get; set; } = false;
             public int BootstrapRetryCount { get; set; } = 0;
             public bool HasReceivedIENT { get; set; } = false;
@@ -111,6 +112,18 @@ namespace AlyxGamemode
             }
         }
 
+        public void ClearManipulatedEntities()
+        {
+            lock (sync)
+            {
+                foreach (Moveable moveable in manipulatedEntities)
+                {
+                    moveable.Dispose();
+                }
+                manipulatedEntities.Clear();
+            }
+        }
+
         public SessionState UpsertSession(Guid id, string username, ConnectionState phase)
         {
             lock (sync)
@@ -171,6 +184,7 @@ namespace AlyxGamemode
                 }
 
                 state.FirstPacketUtc ??= DateTime.UtcNow;
+                state.LastPacketUtc = DateTime.UtcNow;
                 state.LastUpdatedUtc = DateTime.UtcNow;
                 return state;
             }

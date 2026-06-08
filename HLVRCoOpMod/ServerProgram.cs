@@ -22,6 +22,26 @@ namespace HLVRCoOpMod
         public WebSocketServer? wss;
         public List<IndexedClient> connections = new() { };
         private static readonly object connectionsLock = new();
+        /// <summary>
+        /// Returns a thread-safe snapshot of the current connections list.
+        /// </summary>
+        public List<IndexedClient> GetConnectionsSnapshot()
+        {
+            lock (connectionsLock)
+            {
+                return connections.ToList();
+            }
+        }
+        /// <summary>
+        /// Returns the current number of connected clients in a thread-safe manner.
+        /// </summary>
+        public int GetConnectionsCount()
+        {
+            lock (connectionsLock)
+            {
+                return connections.Count;
+            }
+        }
         public Type? gamemodeType;
         public List<Type> plugins = new();
         public Channel channel = new("SV", "Server", Color.Olive);
@@ -29,12 +49,13 @@ namespace HLVRCoOpMod
         public bool executeThink = false;
         public void Tick()
         {
-            PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_Think, tickrate, connections, Map.map);
-            LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_Think, tickrate, connections, Map.map);
-            if (GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.Think, tickrate, connections, Map.map) == HandleState.Continue)
+            var snapshot = GetConnectionsSnapshot();
+            PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_Think, tickrate, snapshot, Map.map);
+            LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_Think, tickrate, snapshot, Map.map);
+            if (GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.Think, tickrate, snapshot, Map.map) == HandleState.Continue)
             {
-                PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_Think, tickrate, connections, Map.map);
-                LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_Think, tickrate, connections, Map.map);
+                PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_Think, tickrate, snapshot, Map.map);
+                LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_Think, tickrate, snapshot, Map.map);
             }
         }
         public void Start(Type type, List<Type> plugins)
@@ -107,7 +128,7 @@ namespace HLVRCoOpMod
                 }
                 // Send disconnect command to all clients before closing
                 Response disconnectCommand = new("command", "disconnect");
-                foreach (IndexedClient con in connections.ToList())
+                foreach (IndexedClient con in GetConnectionsSnapshot())
                 {
                     try
                     {
@@ -128,7 +149,7 @@ namespace HLVRCoOpMod
         {
             Map.map = map;
             Response output2 = new("command", "addon_play "+map+"; addon_tools_map "+map);
-            foreach (IndexedClient con in connections)
+            foreach (IndexedClient con in GetConnectionsSnapshot())
             {
                 con.Session.Send(JsonConvert.SerializeObject(output2));
             }
@@ -140,14 +161,15 @@ namespace HLVRCoOpMod
         public void GlobalVConsole(string command)
         {
             Response output2 = new("command", command);
-            foreach (IndexedClient con in connections)
+            foreach (IndexedClient con in GetConnectionsSnapshot())
             {
                 con.Session.Send(JsonConvert.SerializeObject(output2));
             }
         }
         public void OnOpen(IWebSocketConnection socket)
         {
-            foreach (IndexedClient client in connections)
+            var snapshot = GetConnectionsSnapshot();
+            foreach (IndexedClient client in snapshot)
             {
                 if (client.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id)
                 {
@@ -157,13 +179,13 @@ namespace HLVRCoOpMod
                     };
                     if (gamemodeType != null)
                     {
-                        PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_ClientOpen, connections, socket, client.Username);
-                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_ClientOpen, connections, socket, client.Username);
-                        GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.ClientOpen, connections, socket, client.Username);
-                        PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientOpen, connections, socket, client.Username);
-                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientOpen, connections, socket, client.Username);
+                        PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_ClientOpen, snapshot, socket, client.Username);
+                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_ClientOpen, snapshot, socket, client.Username);
+                        GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.ClientOpen, snapshot, socket, client.Username);
+                        PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientOpen, snapshot, socket, client.Username);
+                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientOpen, snapshot, socket, client.Username);
                     }
-                    connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(outputDisconnect)));
+                    snapshot.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(outputDisconnect)));
                     Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, client.Username + " connected"));
                     break;
                 }
@@ -187,11 +209,11 @@ namespace HLVRCoOpMod
                     };
                     if (gamemodeType != null)
                     {
-                        PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_ClientClose, connections, socket, client.Username);
-                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_ClientClose, connections, socket, client.Username);
-                        GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.ClientClose, connections, socket, client.Username);
-                        PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientClose, connections, socket, client.Username);
-                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientClose, connections, socket, client.Username);
+                        PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_ClientClose, connectionsCopy, socket, client.Username);
+                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_ClientClose, connectionsCopy, socket, client.Username);
+                        GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.ClientClose, connectionsCopy, socket, client.Username);
+                        PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_ClientClose, connectionsCopy, socket, client.Username);
+                        LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_ClientClose, connectionsCopy, socket, client.Username);
                     }
                     lock(connectionsLock)
                     {
@@ -211,12 +233,13 @@ namespace HLVRCoOpMod
         {
             if (gamemodeType != null)
             {
-                PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_Command, command, connections, gamemodeType);
-                LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_Command, command, connections, gamemodeType);
-                if (GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.Command, command, connections, gamemodeType) != HandleState.Handled)
+                var snapshot = GetConnectionsSnapshot();
+                PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_Command, command, snapshot, gamemodeType);
+                LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_Command, command, snapshot, gamemodeType);
+                if (GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.Command, command, snapshot, gamemodeType) != HandleState.Handled)
                 {
-                    PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_Command, command, connections, gamemodeType);
-                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_Command, command, connections, gamemodeType);
+                    PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_Command, command, snapshot, gamemodeType);
+                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_Command, command, snapshot, gamemodeType);
                 }
             }
         }
@@ -271,12 +294,13 @@ namespace HLVRCoOpMod
             
             if (gamemodeType != null && response != null && response.type != null)
             {
-                PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_PreResponse, response, connections, socket, Map.map);
-                LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_PreResponse, response, connections, socket, Map.map);
-                if (GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.PreResponse, response, connections, socket, Map.map) == HandleState.Continue)
+                var snapshot = GetConnectionsSnapshot();
+                PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_PreResponse, response, snapshot, socket, Map.map);
+                LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_PreResponse, response, snapshot, socket, Map.map);
+                if (GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.PreResponse, response, snapshot, socket, Map.map) == HandleState.Continue)
                 {
-                    PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PreResponse, response, connections, socket, Map.map);
-                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PreResponse, response, connections, socket, Map.map);
+                    PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PreResponse, response, snapshot, socket, Map.map);
+                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PreResponse, response, snapshot, socket, Map.map);
                     
                     // Check if response was handled by plugins/Lua
                     // New proper mechanism: check response.handled property
@@ -287,11 +311,7 @@ namespace HLVRCoOpMod
                         // Legacy workaround: response.type was changed to "lua_chat_handled"
                         responseHandled = true;
                         // Log the chat message that was handled (for chat commands)
-                        IndexedClient? handledClient;
-                        lock(connectionsLock)
-                        {
-                            handledClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
-                        }
+                        IndexedClient? handledClient = snapshot.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
                         if (handledClient != null && response.data != null && response.data.Length > 0)
                         {
                             Program.userInterface.Invoke(() => Program.userInterface.LogToOutput(channel, handledClient.Username + ": " + response.data));
@@ -316,35 +336,33 @@ namespace HLVRCoOpMod
                                 else
                                 {
                                     // Check if this connection is already authenticated (same connection ID)
-                                    IndexedClient? existingClient;
-                                    lock(connectionsLock)
-                                    {
-                                        existingClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
-                                    }
+                                    IndexedClient? existingClient = snapshot.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
                                     if (existingClient != null)
                                     {
                                         // Same connection re-authenticating (e.g., VConsole reconnected)
-                                        // Just send the current map
+                                        // Send the current map and trigger re-bootstrap so the client
+                                        // receives addon_enable + script creation commands again.
                                         Response output2 = new("authenticated")
                                         {
                                             clientUsername = response.clientUsername,
                                             map = Map.map,
                                         };
                                         socket.Send(JsonConvert.SerializeObject(output2));
+                                        if (gamemodeType != null)
+                                        {
+                                            GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.ReBootstrap, socket, response.clientUsername, snapshot);
+                                        }
                                         return;
                                     }
                                     
                                     // Check if username is already taken by a different connection
                                     IndexedClient? clientToRemove = null;
-                                    lock(connectionsLock)
+                                    foreach (IndexedClient indexed1 in snapshot)
                                     {
-                                        foreach (IndexedClient indexed1 in connections)
+                                        if (indexed1.Username == response.clientUsername)
                                         {
-                                            if (indexed1.Username == response.clientUsername)
-                                            {
-                                                clientToRemove = indexed1;
-                                                break;
-                                            }
+                                            clientToRemove = indexed1;
+                                            break;
                                         }
                                     }
                                     if (clientToRemove != null)
@@ -391,11 +409,7 @@ namespace HLVRCoOpMod
                             }
                             break;
                         case "chat":
-                            IndexedClient? indexedClient;
-                            lock(connectionsLock)
-                            {
-                                indexedClient = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
-                            }
+                            IndexedClient? indexedClient = snapshot.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
                             if (indexedClient != null)
                             {
                                 if (response.data != null)
@@ -439,13 +453,13 @@ namespace HLVRCoOpMod
                                         {
                                             remoteClientUsername = indexedClient.Username
                                         };
-                                        connections.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(output4)));
+                                        snapshot.ForEach(c => c.Session.Send(JsonConvert.SerializeObject(output4)));
                                     }
                                 }
                             }
                             break;
                         case "print":
-                            IndexedClient? indexed2 = connections.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
+                            IndexedClient? indexed2 = snapshot.Find(c => c.Session.ConnectionInfo.Id == socket.ConnectionInfo.Id);
                             if (indexed2 != null)
                             {
                                 if (response.data != null)
@@ -463,11 +477,11 @@ namespace HLVRCoOpMod
                             break;
                         }
                     }
-                    PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_PostResponse, response, connections, socket, Map.map);
-                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_PostResponse, response, connections, socket, Map.map);
-                    GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.PostResponse, response, connections, socket, Map.map);
-                    PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PostResponse, response, connections, socket, Map.map);
-                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PostResponse, response, connections, socket, Map.map);
+                    PluginHandler.Handle(plugins, PluginHandleType.Server_PreGamemode_PostResponse, response, snapshot, socket, Map.map);
+                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PreGamemode_PostResponse, response, snapshot, socket, Map.map);
+                    GamemodeHandler.Handle(gamemodeType, GamemodeHandleType.PostResponse, response, snapshot, socket, Map.map);
+                    PluginHandler.Handle(plugins, PluginHandleType.Server_PostGamemode_PostResponse, response, snapshot, socket, Map.map);
+                    LuaEnvironment.instance.Handle(PluginHandleType.Server_PostGamemode_PostResponse, response, snapshot, socket, Map.map);
                 }
             }
         }

@@ -171,11 +171,13 @@ namespace HLVRCoOpMod
                 {
                     vConsole.Reconnected += (sender, e) =>
                     {
-                        // Re-authenticate with server when VConsole reconnects
-                        if (ws != null && ws.IsStarted)
-                        {
-                            // Reset map so it will always reload (game quit/resumed scenario)
-                            map = "";
+                            // Re-authenticate with server when VConsole reconnects
+                            if (ws != null && ws.IsStarted)
+                            {
+                                // Do NOT reset map here. Preserving the last known map prevents
+                                // a duplicate map reload during level transitions (the server already
+                                // sends the correct map via authenticated, and if it differs a change
+                                // will still fire).
                             
                             // Add delay before re-authenticating to ensure VConsole is fully ready
                             Task.Run(async () =>
